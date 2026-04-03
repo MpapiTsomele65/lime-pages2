@@ -2,7 +2,8 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Mail, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Mail, ExternalLink, ArrowRight } from "lucide-react";
 
 export function JoinCta() {
   return (
@@ -33,9 +34,17 @@ export function JoinCta() {
           starts <span className="text-lime">today.</span>
         </h2>
 
-        <p className="text-base text-white/55 leading-[1.8] mb-10 max-w-[600px] mx-auto">
+        <p className="text-base text-white/55 leading-[1.8] mb-8 max-w-[600px] mx-auto">
           Spots are limited to 30 Founding Members. Join the waitlist now and be part of the community that builds generational wealth together.
         </p>
+
+        {/* Onboard CTA */}
+        <Link
+          href="/lehumo/onboard"
+          className="inline-flex items-center gap-2.5 bg-lime text-navy px-10 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all mb-10"
+        >
+          Become a Founding Member <ArrowRight className="w-4 h-4" />
+        </Link>
 
         {/* Application form badge */}
         <div className="flex justify-center mb-6">

@@ -26,7 +26,8 @@ export const FOOTER_NAV = {
   community: [
     { label: "Lehumo Trust", href: "/lehumo" },
     { label: "Lime Capital", href: "/capital" },
-    { label: "Join Lehumo", href: "/lehumo#join" },
+    { label: "Join Lehumo", href: "/lehumo/onboard" },
+    { label: "Member Portal", href: "/lehumo/portal" },
   ],
 } as const;
 
