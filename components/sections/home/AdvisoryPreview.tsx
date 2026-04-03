@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Lightbulb, Wrench, TrendingUp, Check } from "lucide-react";
@@ -88,6 +89,16 @@ export function AdvisoryPreview() {
             honest, practical thinking about your specific situation — and then we
             figure out together what, if anything, makes sense next.
           </p>
+        </motion.div>
+
+        {/* Image strip */}
+        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.05 }} className="relative h-[280px] rounded-[20px] overflow-hidden mb-14">
+          <Image src="/images/rachel-martin-yHOhVzVRFMc-unsplash.jpg" alt="South African city street" fill className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-navy/60 to-transparent" />
+          <div className="absolute bottom-6 left-8 z-[1]">
+            <p className="text-white text-lg font-bold">Real conversations. Real outcomes.</p>
+            <p className="text-white/60 text-sm">No jargon. No judgment. No surprises.</p>
+          </div>
         </motion.div>
 
         {/* Steps */}

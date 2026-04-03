@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 
 const missionStats = [
@@ -19,8 +20,10 @@ const maturityBenefits = [
 
 export function BiggerMission() {
   return (
-    <section className="py-24 bg-navy-mid">
-      <Container>
+    <section className="relative overflow-hidden py-24 bg-navy-mid">
+      <Image src="/images/ninthgrid--f8T1PHM0L4-unsplash.jpg" alt="" fill className="object-cover opacity-[0.06]" />
+      <div className="absolute inset-0 bg-navy/90 z-[1]" />
+      <Container className="relative z-[2]">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}

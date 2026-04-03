@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Mail, ExternalLink } from "lucide-react";
 
 export function JoinCta() {
@@ -17,9 +18,9 @@ export function JoinCta() {
         transition={{ duration: 0.6, ease: "easeOut" as const }}
         className="relative z-[1] max-w-[900px] mx-auto text-center px-[clamp(1.25rem,4vw,3rem)]"
       >
-        {/* Founder photo placeholder */}
-        <div className="w-[88px] h-[88px] rounded-full border-[3px] border-lime bg-[#1a2f50] mx-auto mb-6 flex items-center justify-center text-[32px] overflow-hidden">
-          <span>👤</span>
+        {/* Founder photo */}
+        <div className="relative aspect-square w-full max-w-[280px] rounded-[20px] overflow-hidden mx-auto">
+          <Image src="/images/ali-mkumbwa-uk3ey_vhDKA-unsplash.jpg" alt="Mpapi Tsomele, Curator of Lehumo" fill className="object-cover" />
         </div>
 
         <p className="text-xs font-bold text-teal tracking-[1.2px] uppercase mb-2">

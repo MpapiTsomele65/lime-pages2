@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Users, Globe, Briefcase, ArrowRight } from "lucide-react";
@@ -23,9 +24,11 @@ export default function ConnectPage() {
     <div className="pt-[70px]">
       {/* Hero */}
       <section className="bg-navy py-24 relative overflow-hidden">
-        <div className="absolute top-[10%] right-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.15),transparent_70%)] blur-[70px] pointer-events-none" />
+        <Image src="/images/ninthgrid-5tteWzfhMaA-unsplash.jpg" alt="Two women chatting — connection" fill className="object-cover" />
+        <div className="absolute inset-0 bg-navy/75 z-[1]" />
+        <div className="absolute top-[10%] right-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.15),transparent_70%)] blur-[70px] pointer-events-none z-[2]" />
 
-        <Container className="relative z-[1] text-center">
+        <Container className="relative z-[3] text-center">
           <motion.div {...fadeUp}>
             <div className="inline-flex items-center gap-2 bg-teal/12 border border-teal/35 rounded-full px-[18px] py-[7px] mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-teal" />
@@ -66,6 +69,15 @@ export default function ConnectPage() {
             ))}
           </div>
         </Container>
+      </section>
+
+      {/* Image Strip */}
+      <section className="relative h-[300px] overflow-hidden">
+        <Image src="/images/ninthgrid-IUuEsUAtnJk-unsplash.jpg" alt="Professionals connecting" fill className="object-cover" />
+        <div className="absolute inset-0 bg-navy/60 z-[1]" />
+        <div className="relative z-[2] h-full flex items-center justify-center">
+          <p className="text-white/80 text-lg font-semibold tracking-wide">Your network is your net worth.</p>
+        </div>
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
@@ -14,19 +15,22 @@ const fadeUp = {
 
 export default function HomeHero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background with dark overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(rgba(11,25,51,0.80), rgba(11,25,51,0.92)), #0F2040",
-        }}
+    <section className="bg-navy relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background image */}
+      <Image
+        src="/images/tobias-reich-1GgWbP74phY-unsplash.jpg"
+        alt="Cape Town aerial view"
+        fill
+        className="object-cover"
+        priority
       />
+
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-navy/70 z-[1]" />
 
       {/* Grid pattern overlay */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 z-[2] pointer-events-none"
         style={{
           backgroundImage: `
             linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
@@ -38,7 +42,7 @@ export default function HomeHero() {
 
       {/* Glow orbs */}
       <div
-        className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none"
+        className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none z-[2]"
         style={{
           background:
             "radial-gradient(circle, rgba(70,205,207,0.25) 0%, transparent 70%)",
@@ -46,7 +50,7 @@ export default function HomeHero() {
         }}
       />
       <div
-        className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none"
+        className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none z-[2]"
         style={{
           background:
             "radial-gradient(circle, rgba(184,255,0,0.2) 0%, transparent 70%)",
@@ -55,7 +59,7 @@ export default function HomeHero() {
       />
 
       {/* Content */}
-      <Container className="relative z-10 text-center py-32">
+      <Container className="relative z-[3] text-center py-32">
         <motion.div {...fadeUp}>
           <Badge variant="teal" pulse className="mb-8">
             Advisory &amp; Fintech Solutions for Africa

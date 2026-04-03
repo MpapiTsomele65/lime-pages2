@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 
@@ -21,11 +22,15 @@ export function WhoWeAre() {
           {/* Photo slot */}
           <motion.div
             {...fadeUp}
-            className="aspect-[4/5] rounded-3xl bg-teal-light border border-teal/20 relative overflow-hidden"
+            className="relative aspect-[4/5] rounded-[20px] overflow-hidden"
           >
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_40%_30%,rgba(70,205,207,0.12),transparent_60%)]" />
-            <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-teal-light to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6 bg-white/85 border border-teal/30 rounded-xl px-4 py-3 backdrop-blur-xl">
+            <Image
+              src="/images/ninthgrid-WXBtff7bNRA-unsplash.jpg"
+              alt="Team of young professionals"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute bottom-6 left-6 right-6 bg-white/85 border border-teal/30 rounded-xl px-4 py-3 backdrop-blur-xl z-10">
               <small className="text-[11px] text-[#0a7a7b] block font-bold tracking-[1px] uppercase mb-0.5">
                 The People We Serve
               </small>

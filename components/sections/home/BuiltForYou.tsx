@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { ArrowRight } from "lucide-react";
@@ -19,17 +20,13 @@ export default function BuiltForYou() {
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
           {/* Left — photo placeholder */}
           <motion.div {...fadeUp} className="relative">
-            <div className="relative aspect-[4/3] rounded-3xl bg-teal-light overflow-hidden">
-              {/* Overlay gradient with text at bottom */}
-              <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-8">
-                <p className="text-xs font-bold tracking-[1.5px] uppercase text-teal mb-2">
-                  Everyday builders
-                </p>
-                <p className="text-lg font-semibold text-white leading-snug">
-                  Having the conversation the industry was not designed for
-                </p>
-              </div>
+            <div className="relative aspect-[4/5] rounded-[20px] overflow-hidden">
+              <Image
+                src="/images/fotografia-editorial-prl9DeDCKrM-unsplash.jpg"
+                alt="Young professional ready to build"
+                fill
+                className="object-cover"
+              />
             </div>
           </motion.div>
 

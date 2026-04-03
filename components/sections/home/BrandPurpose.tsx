@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { Rocket, Briefcase, Sprout, Handshake } from "lucide-react";
@@ -43,6 +44,12 @@ export function BrandPurpose() {
       <div className="absolute -bottom-[100px] -left-[100px] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(11,25,51,0.06),transparent_70%)] pointer-events-none" />
 
       <Container>
+        {/* Hero image */}
+        <motion.div {...fadeUp} className="relative h-[340px] rounded-[20px] overflow-hidden mb-16">
+          <Image src="/images/clodagh-da-paixao-xvJVDUoGpoU-unsplash.jpg" alt="Johannesburg skyline" fill className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
+        </motion.div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center relative z-[1]">
           {/* Left */}
           <motion.div {...fadeUp}>

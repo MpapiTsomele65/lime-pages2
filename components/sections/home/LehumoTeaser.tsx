@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Star, Save, Home, ShieldCheck } from "lucide-react";
@@ -94,13 +95,13 @@ export function LehumoTeaser() {
             transition={{ ...fadeUp.transition, delay: 0.2 }}
             className="flex flex-col gap-4"
           >
-            {/* Photo placeholder */}
-            <div className="relative rounded-[20px] overflow-hidden aspect-[16/7] bg-navy-mid mb-1">
-              <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-transparent to-transparent flex items-end p-5">
-                <p className="text-white/75 text-xs font-semibold tracking-wide">
-                  Our community. Our continent. Our future.
-                </p>
-              </div>
+            <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden">
+              <Image
+                src="/images/iwaria-inc-M7ALc3UuX_g-unsplash.jpg"
+                alt="Community members collaborating"
+                fill
+                className="object-cover"
+              />
             </div>
 
             {stats.map((s, i) => (

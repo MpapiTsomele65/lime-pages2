@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { TrendingUp, Users, ShieldCheck, ArrowRight } from "lucide-react";
@@ -23,10 +24,12 @@ export default function CapitalPage() {
     <div className="pt-[70px]">
       {/* Hero */}
       <section className="bg-navy py-24 relative overflow-hidden">
-        <div className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.15),transparent_70%)] blur-[70px] pointer-events-none" />
-        <div className="absolute bottom-[5%] right-[10%] w-[420px] h-[420px] rounded-full bg-[radial-gradient(circle,rgba(184,255,0,0.12),transparent_70%)] blur-[70px] pointer-events-none" />
+        <Image src="/images/ali-mkumbwa-VhYvF2XaRuI-unsplash.jpg" alt="Street food vendor representing entrepreneurship" fill className="object-cover" />
+        <div className="absolute inset-0 bg-navy/75 z-[1]" />
+        <div className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.15),transparent_70%)] blur-[70px] pointer-events-none z-[2]" />
+        <div className="absolute bottom-[5%] right-[10%] w-[420px] h-[420px] rounded-full bg-[radial-gradient(circle,rgba(184,255,0,0.12),transparent_70%)] blur-[70px] pointer-events-none z-[2]" />
 
-        <Container className="relative z-[1] text-center">
+        <Container className="relative z-[3] text-center">
           <motion.div {...fadeUp}>
             <div className="inline-flex items-center gap-2 bg-teal/12 border border-teal/35 rounded-full px-[18px] py-[7px] mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-teal" />
@@ -67,6 +70,15 @@ export default function CapitalPage() {
             ))}
           </div>
         </Container>
+      </section>
+
+      {/* Image Strip */}
+      <section className="relative h-[300px] overflow-hidden">
+        <Image src="/images/ali-mkumbwa-AEz70PS5eSU-unsplash.jpg" alt="Modern payment transaction" fill className="object-cover" />
+        <div className="absolute inset-0 bg-navy/60 z-[1]" />
+        <div className="relative z-[2] h-full flex items-center justify-center">
+          <p className="text-white/80 text-lg font-semibold tracking-wide">Capital that understands your hustle.</p>
+        </div>
       </section>
     </div>
   );

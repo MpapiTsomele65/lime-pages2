@@ -1,14 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 export function CommunityStrip() {
   return (
     <div className="relative overflow-hidden">
       <div className="grid grid-cols-1 md:grid-cols-2 min-h-[380px]">
-        {/* Photo placeholder */}
+        {/* Photo */}
         <div className="relative overflow-hidden min-h-[320px] bg-navy-mid">
+          <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden">
+            <Image src="/images/ali-mkumbwa-e_RUhF1cwvM-unsplash.jpg" alt="Community members together" fill className="object-cover" />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-navy-mid/95 hidden md:block" />
         </div>
         {/* Text */}
