@@ -15,7 +15,7 @@ export function PhotoQuote() {
   return (
     <section className="relative h-[480px] overflow-hidden flex items-center">
       <Image
-        src="/images/istockphoto-2217186640-612x612.webp"
+        src="/images/52982939648_9e27736587_o.jpg"
         alt="Mpapi Tsomele"
         fill
         className="object-cover"

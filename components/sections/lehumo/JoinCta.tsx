@@ -20,7 +20,7 @@ export function JoinCta() {
       >
         {/* Founder photo */}
         <div className="relative aspect-square w-full max-w-[280px] rounded-[20px] overflow-hidden mx-auto">
-          <Image src="/images/ali-mkumbwa-uk3ey_vhDKA-unsplash.jpg" alt="Mpapi Tsomele, Curator of Lehumo" fill className="object-cover" />
+          <Image src="/images/52982939648_9e27736587_o.jpg" alt="Mpapi Tsomele, Curator of Lehumo" fill className="object-cover" />
         </div>
 
         <p className="text-xs font-bold text-teal tracking-[1.2px] uppercase mb-2">

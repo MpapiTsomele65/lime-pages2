@@ -25,8 +25,8 @@ export function WhoWeAre() {
             className="relative aspect-[4/5] rounded-[20px] overflow-hidden"
           >
             <Image
-              src="/images/ninthgrid-WXBtff7bNRA-unsplash.jpg"
-              alt="Team of young professionals"
+              src="/images/IMG_8486.jpg"
+              alt="Mpapi Tsomele speaking at a conference"
               fill
               className="object-cover"
             />
