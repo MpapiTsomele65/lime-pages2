@@ -87,7 +87,7 @@ export function AdvisoryChatbot() {
   }, [started, goToNode]);
 
   return (
-    <div className="w-full max-w-[540px] mx-auto">
+    <div className="w-full max-w-[580px] mx-auto lg:max-w-none">
       <div className="bg-white rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12),0_0_0_1px_rgba(70,205,207,0.15)] flex flex-col h-[680px] max-h-[80vh] overflow-hidden relative z-[1]">
         {/* Header */}
         <div className="bg-[#0B1933] px-5 py-4 flex items-center gap-3.5 shrink-0">
