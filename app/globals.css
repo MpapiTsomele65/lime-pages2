@@ -85,3 +85,45 @@ html {
   from { height: 0; }
   to { height: var(--bar-h); }
 }
+
+/* ── Advisory Chatbot content styles ── */
+.advisory-chat-content .info-card {
+  background: #E6FAF9;
+  border-left: 3px solid #46cdcf;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #0B0B0B;
+}
+.advisory-chat-content .info-card h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #0a7a7b;
+  margin-bottom: 8px;
+}
+.advisory-chat-content .info-card ul {
+  padding-left: 16px;
+  list-style: disc;
+}
+.advisory-chat-content .info-card ul li {
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+.advisory-chat-content .contact-block {
+  background: #fff8e1;
+  border-left: 3px solid #f59e0b;
+  border-radius: 10px;
+  padding: 11px 14px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.55;
+}
+.advisory-chat-content .contact-block strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
