@@ -46,7 +46,7 @@ export function AdvisoryChatbotSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-[1] max-w-[1320px] mx-auto px-[clamp(1.25rem,4vw,3rem)] py-10 lg:py-12">
+      <div className="relative z-[1] max-w-[1320px] mx-auto px-[clamp(1.25rem,4vw,3rem)] pt-14 pb-10 lg:pt-20 lg:pb-14">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
           {/* ─── LEFT COLUMN ─── */}
           <motion.div
