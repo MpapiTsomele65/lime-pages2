@@ -55,7 +55,7 @@ export function LehumoHero() {
         </div>
 
         {/* Headline */}
-        <h1 className="text-[clamp(2.4rem,7vw,5.2rem)] font-extrabold text-white leading-[1.07] tracking-tight mb-6">
+        <h1 className="text-[clamp(1.9rem,4.5vw,3.4rem)] font-extrabold text-white leading-[1.12] tracking-tight mb-6">
           Do you want to join a community
           <br />
           building an <span className="text-lime">Investment Trust</span>
