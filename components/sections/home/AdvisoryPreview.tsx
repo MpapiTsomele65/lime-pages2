@@ -25,14 +25,14 @@ const pathways = [
     iconBg: "bg-teal-light",
     tagBg: "bg-teal-light",
     tagColor: "text-[#0a7a7b]",
-    who: "Founders & Early-Stage Teams",
-    title: "\u201cI have an idea \u2014 but no plan.\u201d",
-    problem: "You know what you want to build, but the business side is unclear \u2014 positioning, model, go-to-market, or how to actually structure the thing so it works.",
+    who: "SMMEs & Small Business Owners",
+    title: "\u201cI\u2019m doing everything myself \u2014 and it\u2019s not scaling.\u201d",
+    problem: "You\u2019re good at what you do, but the business runs through you. No systems, no processes, no capacity to grow. You need to stop being the bottleneck and start building a business that works without you in every seat.",
     outcomes: [
-      "A clear business model that makes sense",
-      "Market positioning you can actually defend",
-      "An operational roadmap for the next 90 days",
-      "Honest feedback \u2014 not cheerleading",
+      "Operational systems that create real capacity",
+      "Processes that let you delegate and grow",
+      "A digitisation plan \u2014 invoicing, workflow, tools",
+      "A clear roadmap from sole operator to scalable business",
     ],
     price: "R1,500",
   },
@@ -57,9 +57,9 @@ const pathways = [
     iconBg: "bg-teal-light",
     tagBg: "bg-teal-light",
     tagColor: "text-[#0a7a7b]",
-    who: "Builders & Product Teams",
+    who: "Tech Founders",
     title: "\u201cI have a product \u2014 but it\u2019s not working.\u201d",
-    problem: "You\u2019re shipping features but nothing\u2019s moving the needle. You need someone to help you figure out what to build, what to cut, and how to get from idea to something people actually use.",
+    problem: "You\u2019re shipping features but nothing\u2019s moving the needle. You need someone to help you figure out what to build, what to cut, and how to get from MVP to something people actually pay for.",
     outcomes: [
       "A prioritised roadmap that drives real outcomes",
       "Framework for deciding what to build next",
@@ -80,14 +80,15 @@ export function AdvisoryPreview() {
             Lime Advisory
           </span>
           <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold text-ink leading-[1.1] tracking-tight mb-5">
-            From idea to business.
+            Build it properly.
             <br />
-            That&apos;s the work.
+            Then build it bigger.
           </h2>
           <p className="text-muted text-[17px] leading-[1.8]">
-            Strategy, fundraising, and product — the three things that
-            determine whether your startup makes it or doesn&apos;t. I help
-            founders get each one right.
+            Most South African businesses don&apos;t fail because the founder
+            isn&apos;t talented — they fail because the systems aren&apos;t there.
+            I help SMMEs build operations that scale, tech founders ship
+            products that work, and first-time fundraisers raise real capital.
           </p>
         </motion.div>
 
