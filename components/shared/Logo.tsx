@@ -1,16 +1,15 @@
 "use client";
 
 interface LogoProps {
-  variant?: "white" | "color";
+  variant?: "white" | "color" | "teal";
   className?: string;
   height?: number;
 }
 
 export default function Logo({ variant = "color", className, height = 36 }: LogoProps) {
-  const isWhite = variant === "white";
-  const iconColor = isWhite ? "#fff" : "#46cdcf";
-  const textColor = isWhite ? "#fff" : "#111111";
-  const barColor = isWhite ? "#fff" : "#46cdcf";
+  const iconColor = variant === "white" ? "#fff" : "#46cdcf";
+  const textColor = variant === "white" ? "#fff" : variant === "teal" ? "#46cdcf" : "#111111";
+  const barColor = variant === "white" ? "#fff" : "#46cdcf";
 
   const aspectRatio = 3169.2705368530624 / 1159.503177443476;
   const width = height * aspectRatio;
