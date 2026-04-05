@@ -11,7 +11,7 @@ export function CommunityStrip() {
         {/* Photo */}
         <div className="relative overflow-hidden min-h-[320px] bg-navy-mid">
           <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden">
-            <Image src="/images/ali-mkumbwa-e_RUhF1cwvM-unsplash.jpg" alt="Community members together" fill className="object-cover" />
+            <Image src="/images/towfiqu-barbhuiya-0ITvgXAU5Oo-unsplash.jpg" alt="Savings jar with coins" fill className="object-cover" />
           </div>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-navy-mid/95 hidden md:block" />
         </div>

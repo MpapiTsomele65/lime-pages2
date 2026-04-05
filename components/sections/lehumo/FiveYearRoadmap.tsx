@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 
 const steps = [
@@ -55,11 +56,24 @@ export function FiveYearRoadmap() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" as const }}
-          className="mt-10 bg-teal/[0.07] border border-teal/20 rounded-2xl px-8 py-7"
+          className="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-5"
         >
-          <p className="text-[15px] text-white/65 leading-[1.8]">
-            <strong className="text-white">The bigger mission:</strong> At maturity with 90 members, Lehumo targets an asset portfolio of over <strong className="text-lime">R5 Million</strong>, generating passive income distributed to every member through dividend payments.
-          </p>
+          {/* Image accent */}
+          <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[200px]">
+            <Image
+              src="/images/benny-hassum-eJvf528gelw-unsplash.jpg"
+              alt="Aspirational lifestyle"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-navy/60 to-transparent" />
+          </div>
+          {/* Message */}
+          <div className="lg:col-span-3 bg-teal/[0.07] border border-teal/20 rounded-2xl px-8 py-7 flex items-center">
+            <p className="text-[15px] text-white/65 leading-[1.8]">
+              <strong className="text-white">The bigger mission:</strong> At maturity with 90 members, Lehumo targets an asset portfolio of over <strong className="text-lime">R5 Million</strong>, generating passive income distributed to every member through dividend payments.
+            </p>
+          </div>
         </motion.div>
       </Container>
     </section>
