@@ -19,15 +19,6 @@ export function JoinCta() {
         transition={{ duration: 0.6, ease: "easeOut" as const }}
         className="relative z-[1] max-w-[900px] mx-auto text-center px-[clamp(1.25rem,4vw,3rem)]"
       >
-        {/* Founder photo */}
-        <div className="relative aspect-square w-full max-w-[280px] rounded-[20px] overflow-hidden mx-auto">
-          <Image src="/images/52982939648_9e27736587_o.jpg" alt="Mpapi Tsomele, Curator of Lehumo" fill className="object-cover" />
-        </div>
-
-        <p className="text-xs font-bold text-teal tracking-[1.2px] uppercase mb-2">
-          Mpapi Tsomele · Curator of Lehumo
-        </p>
-
         <h2 className="text-[clamp(2.2rem,5vw,3.8rem)] font-extrabold text-white tracking-tight leading-[1.05] mb-[18px]">
           Your future
           <br />
