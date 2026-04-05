@@ -13,22 +13,22 @@ export function WealthPhotoBlock() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.7, ease: "easeOut" as const }}
-          className="relative rounded-2xl overflow-hidden h-[260px] sm:h-[300px]"
+          className="relative rounded-2xl overflow-hidden h-[380px] sm:h-[440px] lg:h-[500px]"
         >
-          {/* Image — left side */}
+          {/* Image — full chart visible */}
           <Image
             src="/images/morgan-housel-PcDGGex9-jA-unsplash.jpg"
             alt="Wealth growing over time"
             fill
-            className="object-cover object-left"
+            className="object-contain object-left"
             sizes="100vw"
           />
 
           {/* Gradient fade from image into navy on the right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-navy/60 to-navy" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-navy/50 to-navy" />
 
           {/* Text content — right aligned */}
-          <div className="absolute inset-0 flex items-center justify-end px-8 sm:px-14">
+          <div className="absolute inset-0 flex items-end sm:items-center justify-end px-8 sm:px-14 pb-8 sm:pb-0">
             <div className="max-w-[340px] text-right">
               <p className="text-[11px] font-bold tracking-[1.4px] uppercase text-lime mb-3">
                 The Long Game
