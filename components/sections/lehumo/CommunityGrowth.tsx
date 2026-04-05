@@ -69,7 +69,7 @@ export function CommunityGrowth() {
               src="/images/microsoft-copilot-txZv4HQJRpE-unsplash.jpg"
               alt="Planning financial future"
               fill
-              className="object-cover object-[center_25%]"
+              className="object-cover object-[center_45%]"
               sizes="100vw"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/90 via-navy-mid/70 to-navy-mid/50" />

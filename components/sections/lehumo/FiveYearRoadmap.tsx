@@ -61,8 +61,8 @@ export function FiveYearRoadmap() {
           {/* Image accent */}
           <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[200px]">
             <Image
-              src="/images/benny-hassum-eJvf528gelw-unsplash.jpg"
-              alt="Aspirational lifestyle"
+              src="/images/sincerely-media-aVbHFu-Doo4-unsplash.jpg"
+              alt="South African Rands — building wealth"
               fill
               className="object-cover"
             />
