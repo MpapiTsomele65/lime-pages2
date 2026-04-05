@@ -7,10 +7,32 @@ import { AnimatePresence, motion } from "framer-motion";
 import { NAV_LINKS } from "@/lib/constants";
 import Logo from "@/components/shared/Logo";
 
+/*
+ * Unpinned nav styles per page group:
+ *  "white" → Home: white text + white logo (on dark hero)
+ *  "teal"  → Lehumo, Capital, Connect: teal text + teal logo (on dark heroes)
+ *  "dark"  → Advisory, About: dark text + colored logo (on light heroes)
+ */
+type NavTheme = "white" | "teal" | "dark";
+
+function getNavTheme(pathname: string): NavTheme {
+  if (pathname === "/") return "white";
+  if (
+    pathname === "/lehumo" ||
+    pathname.startsWith("/lehumo/") ||
+    pathname === "/capital" ||
+    pathname === "/connect"
+  )
+    return "teal";
+  return "dark";
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const [pinned, setPinned] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const theme = getNavTheme(pathname);
 
   const handleScroll = useCallback(() => {
     setPinned(window.scrollY > 50);
@@ -35,6 +57,47 @@ export default function Navbar() {
     setDrawerOpen(false);
   }, [pathname]);
 
+  /* --- Unpinned colour helpers --- */
+  const logoVariant = pinned ? "color" : theme === "white" ? "white" : theme === "teal" ? "teal" : "color";
+
+  const linkClass = (isActive: boolean) => {
+    if (pinned) {
+      return isActive ? "text-navy font-bold" : "text-muted hover:text-ink";
+    }
+    switch (theme) {
+      case "white":
+        return isActive
+          ? "text-white font-bold"
+          : "text-white/75 hover:text-white";
+      case "teal":
+        return isActive
+          ? "text-teal font-bold"
+          : "text-teal/70 hover:text-teal";
+      case "dark":
+      default:
+        return isActive
+          ? "text-navy font-bold"
+          : "text-muted hover:text-ink";
+    }
+  };
+
+  const ctaClass = pinned
+    ? "bg-teal text-white hover:bg-teal/90"
+    : theme === "white"
+      ? "bg-white/15 text-white hover:bg-white/25"
+      : theme === "teal"
+        ? "border-2 border-teal text-teal hover:bg-teal hover:text-white"
+        : "bg-teal text-white hover:bg-teal/90";
+
+  const hamburgerColor =
+    pinned
+      ? "#0B0B0B"
+      : theme === "white"
+        ? "#fff"
+        : theme === "teal"
+          ? "#46cdcf"
+          : "#0B0B0B";
+
   return (
     <>
       <nav
@@ -47,7 +110,7 @@ export default function Navbar() {
         <div className="max-w-[1200px] mx-auto px-[clamp(1.25rem,4vw,3.5rem)] h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/" aria-label="Home">
-            <Logo variant={pinned ? "color" : "teal"} />
+            <Logo variant={logoVariant} />
           </Link>
 
           {/* Desktop nav links */}
@@ -58,15 +121,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-semibold transition-colors duration-200 ${
-                    pinned
-                      ? isActive
-                        ? "text-navy font-bold"
-                        : "text-muted hover:text-ink"
-                      : isActive
-                        ? "text-teal font-bold"
-                        : "text-teal/70 hover:text-teal"
-                  }`}
+                  className={`text-sm font-semibold transition-colors duration-200 ${linkClass(isActive)}`}
                 >
                   {link.label}
                 </Link>
@@ -76,11 +131,7 @@ export default function Navbar() {
             {/* Book Now CTA */}
             <Link
               href="/connect"
-              className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
-                pinned
-                  ? "bg-teal text-white hover:bg-teal/90"
-                  : "border-2 border-teal text-teal hover:bg-teal hover:text-white"
-              }`}
+              className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${ctaClass}`}
             >
               Book Now
             </Link>
@@ -95,8 +146,8 @@ export default function Navbar() {
             <motion.span
               animate={
                 drawerOpen
-                  ? { rotate: 45, y: 4, backgroundColor: pinned ? "#0B0B0B" : "#46cdcf" }
-                  : { rotate: 0, y: 0, backgroundColor: pinned ? "#0B0B0B" : "#46cdcf" }
+                  ? { rotate: 45, y: 4, backgroundColor: hamburgerColor }
+                  : { rotate: 0, y: 0, backgroundColor: hamburgerColor }
               }
               transition={{ duration: 0.25 }}
               className="block w-6 h-[2px] rounded-full origin-center"
@@ -104,8 +155,8 @@ export default function Navbar() {
             <motion.span
               animate={
                 drawerOpen
-                  ? { rotate: -45, y: -4, backgroundColor: pinned ? "#0B0B0B" : "#46cdcf" }
-                  : { rotate: 0, y: 0, backgroundColor: pinned ? "#0B0B0B" : "#46cdcf" }
+                  ? { rotate: -45, y: -4, backgroundColor: hamburgerColor }
+                  : { rotate: 0, y: 0, backgroundColor: hamburgerColor }
               }
               transition={{ duration: 0.25 }}
               className="block w-6 h-[2px] rounded-full origin-center"
