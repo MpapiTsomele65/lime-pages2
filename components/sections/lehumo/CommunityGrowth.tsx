@@ -64,16 +64,15 @@ export function CommunityGrowth() {
           transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" as const }}
           className="mt-10 relative rounded-2xl overflow-hidden"
         >
-          <div className="relative min-h-[180px]">
+          <div className="relative min-h-[240px] sm:min-h-[280px]">
             <Image
-              src="/images/microsoft-copilot-txZv4HQJRpE-unsplash.jpg"
-              alt="Planning financial future"
+              src="/images/grant-durr-jNYZ_M7NUA4-unsplash.jpg"
+              alt="Clifton Beach, Cape Town — aspirational lifestyle"
               fill
-              className="object-cover object-[center_45%]"
+              className="object-cover object-[center_60%]"
               sizes="100vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/90 via-navy-mid/70 to-navy-mid/50" />
-            <div className="absolute inset-0 backdrop-blur-[2px]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/85 via-navy-mid/50 to-transparent" />
 
             <div className="relative z-[1] flex items-center px-8 py-8 min-h-[180px]">
               <p className="text-[15px] text-white/80 leading-[1.7] max-w-[480px]">
