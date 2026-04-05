@@ -10,20 +10,14 @@ import Logo from "@/components/shared/Logo";
 /*
  * Unpinned nav styles per page group:
  *  "white" → Home: white text + white logo (on dark hero)
- *  "teal"  → Lehumo, Capital, Connect: teal text + teal logo (on dark heroes)
- *  "dark"  → Advisory, About: dark text + colored logo (on light heroes)
+ *  "teal"  → Lehumo: teal text + teal logo (on dark hero)
+ *  "dark"  → Everything else: dark text + colored logo
  */
 type NavTheme = "white" | "teal" | "dark";
 
 function getNavTheme(pathname: string): NavTheme {
   if (pathname === "/") return "white";
-  if (
-    pathname === "/lehumo" ||
-    pathname.startsWith("/lehumo/") ||
-    pathname === "/capital" ||
-    pathname === "/connect"
-  )
-    return "teal";
+  if (pathname === "/lehumo" || pathname.startsWith("/lehumo/")) return "teal";
   return "dark";
 }
 
