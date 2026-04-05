@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { TrendingUp, Users, Shield, ArrowRight } from "lucide-react";
+import { Building2, Wallet, Sparkles, ArrowRight } from "lucide-react";
 
 const stagger = {
   whileInView: { transition: { staggerChildren: 0.1 } },
@@ -26,36 +26,36 @@ const fadeUp = {
 
 const services = [
   {
-    icon: TrendingUp,
+    icon: Building2,
     iconBg: "bg-teal-light",
     iconColor: "text-teal",
     barColor: "bg-teal",
-    tag: "Entrepreneurs",
-    title: "Business Funding Advisory",
+    tag: "SMMEs & Business Owners",
+    title: "Grow Beyond Yourself",
     description:
-      "We help entrepreneurs find the right growth capital, prepare investor-ready materials, and navigate funding options from grants to equity.",
+      "You built it from nothing — but it still runs through you. We help small business owners build systems, processes, and capacity so your business can scale without you in every seat.",
     hoverBorder: "hover:border-teal/40",
   },
   {
-    icon: Users,
+    icon: Wallet,
     iconBg: "bg-navy/[0.07]",
     iconColor: "text-navy",
     barColor: "bg-navy",
-    tag: "All Stages",
-    title: "Mentoring & Coaching",
+    tag: "Young Professionals",
+    title: "Turn Income Into Wealth",
     description:
-      "Hands-on guidance for entrepreneurs and young professionals at every stage, from idea validation to scaling and personal financial growth.",
+      "You\u2019re earning well but your money isn\u2019t working for you yet. We help employed professionals use their income strategically — from budgeting to investing — so every rand has a job.",
     hoverBorder: "hover:border-navy/30",
   },
   {
-    icon: Shield,
+    icon: Sparkles,
     iconBg: "bg-teal-light",
     iconColor: "text-teal",
     barColor: "bg-teal",
-    tag: "Young Professionals",
-    title: "Long-term Financial Planning",
+    tag: "Creators & Influencers",
+    title: "Make Your Payouts Count",
     description:
-      "Alternative strategies that go beyond traditional retirement funds. We help you build a portfolio designed for your actual goals and timeline.",
+      "Campaign money hits different when it\u2019s gone in a month. We help creators and side-hustlers manage lumpsum payouts, plan for irregular income, and build long-term wealth from short-term wins.",
     hoverBorder: "hover:border-teal/40",
   },
 ];

@@ -5,6 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { TrendingUp, Users, ShieldCheck, ArrowRight } from "lucide-react";
+import MarketSnapshot from "@/components/sections/capital/MarketSnapshot";
+import VCInsights from "@/components/sections/capital/VCInsights";
+import SectorBreakdown from "@/components/sections/capital/SectorBreakdown";
+import FundingJourney from "@/components/sections/capital/FundingJourney";
+import FounderToolkit from "@/components/sections/capital/FounderToolkit";
+import FounderGuide from "@/components/sections/capital/FounderGuide";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -26,24 +32,29 @@ export default function CapitalPage() {
       <section className="bg-navy py-24 relative overflow-hidden">
         <Image src="/images/ali-mkumbwa-VhYvF2XaRuI-unsplash.jpg" alt="Street food vendor representing entrepreneurship" fill className="object-cover" />
         <div className="absolute inset-0 bg-navy/75 z-[1]" />
-        <div className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.15),transparent_70%)] blur-[70px] pointer-events-none z-[2]" />
-        <div className="absolute bottom-[5%] right-[10%] w-[420px] h-[420px] rounded-full bg-[radial-gradient(circle,rgba(184,255,0,0.12),transparent_70%)] blur-[70px] pointer-events-none z-[2]" />
+        <div className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(193,255,114,0.15),transparent_70%)] blur-[70px] pointer-events-none z-[2]" />
+        <div className="absolute bottom-[5%] right-[10%] w-[420px] h-[420px] rounded-full bg-[radial-gradient(circle,rgba(193,255,114,0.1),transparent_70%)] blur-[70px] pointer-events-none z-[2]" />
 
         <Container className="relative z-[3] text-center">
           <motion.div {...fadeUp}>
-            <div className="inline-flex items-center gap-2 bg-teal/12 border border-teal/35 rounded-full px-[18px] py-[7px] mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal" />
-              <span className="text-[11px] font-semibold text-teal tracking-[1.2px] uppercase">Coming Soon</span>
+            <div className="inline-flex items-center gap-2 bg-capital/15 border border-capital/35 rounded-full px-[18px] py-[7px] mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-capital" />
+              <span className="text-[11px] font-semibold text-capital tracking-[1.2px] uppercase">Capital &amp; Insights</span>
             </div>
             <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-extrabold text-white leading-[1.07] tracking-tight mb-6">
-              Lime <span className="bg-gradient-to-br from-teal to-lime bg-clip-text text-transparent">Capital</span>
+              Lime <span className="text-capital">Capital</span>
             </h1>
-            <p className="text-lg text-white/55 leading-[1.8] max-w-[560px] mx-auto mb-10">
-              Capital access for Africa&apos;s entrepreneurs. Growth funding backed by community, managed by regulated partners.
+            <p className="text-lg text-white/55 leading-[1.8] max-w-[600px] mx-auto mb-10">
+              Free insights on SA&apos;s private capital and venture capital landscape. Data-driven resources for founders looking to raise funding or grow.
             </p>
-            <Link href="/lehumo#join" className="inline-flex items-center gap-2 bg-lime text-navy px-9 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all">
-              Join the Waitlist <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link href="#insights" className="inline-flex items-center gap-2 bg-capital text-navy px-9 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(193,255,114,0.3)] transition-all">
+                Explore Insights <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link href="/lehumo#join" className="inline-flex items-center gap-2 text-white px-9 py-4 rounded-full font-semibold text-sm border-2 border-white/20 hover:bg-white/[0.07] hover:border-capital/40 transition-all">
+                Join the Waitlist
+              </Link>
+            </div>
           </motion.div>
         </Container>
       </section>
@@ -59,10 +70,10 @@ export default function CapitalPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.1 * i, ease: "easeOut" as const }}
-                className="bg-white rounded-[20px] border border-border shadow-sm p-9 hover:-translate-y-1 hover:shadow-md transition-all"
+                className="bg-white rounded-[20px] border border-border shadow-sm p-9 hover:-translate-y-1 hover:shadow-md hover:border-capital/40 transition-all"
               >
-                <div className="w-12 h-12 rounded-[14px] bg-teal-light flex items-center justify-center mb-5">
-                  <f.icon className="w-6 h-6 text-teal" />
+                <div className="w-12 h-12 rounded-[14px] bg-capital/15 flex items-center justify-center mb-5">
+                  <f.icon className="w-6 h-6 text-navy" />
                 </div>
                 <h3 className="text-lg font-bold text-ink mb-3">{f.title}</h3>
                 <p className="text-sm text-muted leading-[1.75]">{f.desc}</p>
@@ -72,12 +83,25 @@ export default function CapitalPage() {
         </Container>
       </section>
 
+      {/* — Insights Sections — */}
+      <div id="insights">
+        <MarketSnapshot />
+        <VCInsights />
+        <FundingJourney />
+        <FounderToolkit />
+        <SectorBreakdown />
+        <FounderGuide />
+      </div>
+
       {/* Image Strip */}
       <section className="relative h-[300px] overflow-hidden">
         <Image src="/images/ali-mkumbwa-AEz70PS5eSU-unsplash.jpg" alt="Modern payment transaction" fill className="object-cover" />
         <div className="absolute inset-0 bg-navy/60 z-[1]" />
-        <div className="relative z-[2] h-full flex items-center justify-center">
-          <p className="text-white/80 text-lg font-semibold tracking-wide">Capital that understands your hustle.</p>
+        <div className="relative z-[2] h-full flex items-center justify-center text-center px-6">
+          <div>
+            <p className="text-white text-lg font-semibold tracking-wide mb-2">Capital that understands your hustle.</p>
+            <p className="text-white/50 text-sm">Waitlist opening soon for growth funding.</p>
+          </div>
         </div>
       </section>
     </div>

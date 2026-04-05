@@ -7,6 +7,9 @@
   --color-navy-border: rgba(255, 255, 255, 0.08);
   --color-lime: #B8FF00;
   --color-lime-dim: rgba(184, 255, 0, 0.1);
+  --color-capital: #c1ff72;
+  --color-capital-dim: rgba(193, 255, 114, 0.12);
+  --color-capital-light: #f0ffe0;
   --color-teal: #46cdcf;
   --color-teal-dim: rgba(70, 205, 207, 0.1);
   --color-teal-light: #E6FAF9;
@@ -24,6 +27,15 @@
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.09), 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Scrollbar hide utility ── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* ── Base ── */

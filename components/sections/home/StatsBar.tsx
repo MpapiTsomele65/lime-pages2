@@ -15,7 +15,7 @@ const stats = [
   { value: "R2M", label: "Lehumo Capital Target" },
   { value: "30", label: "Lehumo Member Target" },
   { value: "24hr", label: "Refund Guarantee" },
-  { value: "5", label: "Advisory Services" },
+  { value: "3", label: "Advisory Pathways" },
 ];
 
 export default function StatsBar() {

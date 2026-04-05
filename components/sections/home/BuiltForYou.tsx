@@ -54,9 +54,10 @@ export default function BuiltForYou() {
               transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.2 }}
               className="text-muted leading-relaxed mb-4"
             >
-              Traditional financial services were designed for a different era and a
-              different audience. We saw the gap between what the industry offers and
-              what everyday builders actually need.
+              The SMME owner doing everything alone. The young professional whose salary
+              disappears every month. The creator who lands a big campaign payout and
+              doesn&apos;t know what to do with it. Traditional financial services weren&apos;t
+              built for any of them.
             </motion.p>
 
             <motion.p
@@ -64,8 +65,8 @@ export default function BuiltForYou() {
               transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.25 }}
               className="text-muted leading-relaxed mb-8"
             >
-              Lime Pages exists to close that gap with honest advice, practical tools,
-              and a community-first approach to wealth building across Africa.
+              Lime Pages exists to close that gap — with honest advice, practical tools,
+              and a community-first approach to building wealth that actually fits your life.
             </motion.p>
 
             <motion.div

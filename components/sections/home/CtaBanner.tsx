@@ -32,7 +32,7 @@ export function CtaBanner() {
             <span className="text-lime">real wealth?</span>
           </h2>
           <p className="text-white/55 text-base">
-            Book a session or let&apos;s have a coffee and talk through your goals.
+            Whether you&apos;re scaling a business, growing your salary, or managing campaign payouts — let&apos;s talk.
           </p>
         </div>
         <div className="flex gap-3.5 flex-wrap">
