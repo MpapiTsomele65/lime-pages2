@@ -45,16 +45,16 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0B0B0B] text-white">
+    <footer className="bg-[#c1ff72] text-navy">
       <div className="max-w-[1200px] mx-auto px-[clamp(1.25rem,4vw,3.5rem)] py-16 md:py-20">
         {/* Columns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="h-8 mb-5">
-              <Logo variant="white" height={32} />
+              <Logo variant="color" height={32} />
             </div>
-            <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-xs">
+            <p className="text-navy/60 text-sm leading-relaxed mb-6 max-w-xs">
               Empowering communities through collective investment, financial
               advisory, and business funding solutions across South Africa.
             </p>
@@ -66,7 +66,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="text-white/30 hover:text-teal transition-colors duration-200"
+                  className="text-navy/40 hover:text-navy transition-colors duration-200"
                 >
                   <social.icon />
                 </a>
@@ -76,7 +76,7 @@ export default function Footer() {
 
           {/* Navigate */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-5">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-navy/50 mb-5">
               Navigate
             </h4>
             <ul className="space-y-3">
@@ -84,7 +84,7 @@ export default function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200"
+                    className="text-sm text-navy/40 hover:text-navy transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -95,7 +95,7 @@ export default function Footer() {
 
           {/* Services */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-5">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-navy/50 mb-5">
               Services
             </h4>
             <ul className="space-y-3">
@@ -103,7 +103,7 @@ export default function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200"
+                    className="text-sm text-navy/40 hover:text-navy transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -114,7 +114,7 @@ export default function Footer() {
 
           {/* Community */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-5">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-navy/50 mb-5">
               Community
             </h4>
             <ul className="space-y-3">
@@ -122,7 +122,7 @@ export default function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200"
+                    className="text-sm text-navy/40 hover:text-navy transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -133,7 +133,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-14 pt-6 border-t border-[#2A2A2A] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/30">
+        <div className="mt-14 pt-6 border-t border-navy/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-navy/40">
           <span>&copy; 2026 Lime Pages &middot; All rights reserved</span>
           <span>#ThisIsNotFinancialAdvice</span>
         </div>
