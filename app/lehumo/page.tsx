@@ -11,6 +11,7 @@ import { Cost } from "@/components/sections/lehumo/Cost";
 import { BiggerMission } from "@/components/sections/lehumo/BiggerMission";
 import { JoinCta } from "@/components/sections/lehumo/JoinCta";
 import { PhotoBreak } from "@/components/sections/lehumo/PhotoBreak";
+import { WealthPhotoBlock } from "@/components/sections/lehumo/WealthPhotoBlock";
 
 export default function LehumoPage() {
   return (
@@ -22,6 +23,7 @@ export default function LehumoPage() {
         src="/images/matt-aylward-Nmh-pEBRt2Y-unsplash.jpg"
         alt="Golf at sunset"
         overlay="navy"
+        objectPosition="top"
       />
       <StokvelComparison />
       <InvestmentStrategy />
@@ -30,16 +32,12 @@ export default function LehumoPage() {
         src="/images/microsoft-copilot-txZv4HQJRpE-unsplash.jpg"
         alt="Planning financial future"
         overlay="navy-mid"
+        objectPosition="top"
       />
       <CommunityGrowth />
       <FiveYearRoadmap />
       <Cost />
-      <PhotoBreak
-        src="/images/morgan-housel-PcDGGex9-jA-unsplash.jpg"
-        alt="Wealth growing over time"
-        overlay="navy"
-        overlayOpacity={0.4}
-      />
+      <WealthPhotoBlock />
       <BiggerMission />
       <CommunityStrip />
       <JoinCta />

@@ -9,6 +9,7 @@ interface PhotoBreakProps {
   height?: string;
   overlay?: "navy" | "navy-mid" | "none";
   overlayOpacity?: number;
+  objectPosition?: string;
 }
 
 export function PhotoBreak({
@@ -17,6 +18,7 @@ export function PhotoBreak({
   height = "h-[220px] sm:h-[280px]",
   overlay = "navy",
   overlayOpacity = 0.55,
+  objectPosition = "center",
 }: PhotoBreakProps) {
   const bgFrom =
     overlay === "navy-mid" ? "from-navy-mid" : "from-navy";
@@ -36,6 +38,7 @@ export function PhotoBreak({
         alt={alt}
         fill
         className="object-cover"
+        style={{ objectPosition }}
         sizes="100vw"
       />
       {overlay !== "none" && (
