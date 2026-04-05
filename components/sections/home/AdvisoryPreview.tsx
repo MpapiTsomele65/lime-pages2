@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { Lightbulb, Wrench, TrendingUp, Check } from "lucide-react";
+import { Compass, Rocket, Box, Check, ShieldCheck } from "lucide-react";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 } as const,
@@ -14,59 +14,59 @@ const fadeUp = {
 };
 
 const steps = [
-  { num: "Step 01", title: "Start a conversation", body: "Book a free 15-minute intro call. Tell me what\u2019s going on \u2014 your business, your money, your goals. No prep required." },
-  { num: "Step 02", title: "We scope it together", body: "Based on what you share, I\u2019ll suggest what type of session actually fits \u2014 or let you know honestly if I\u2019m not the right fit for what you need." },
+  { num: "Step 01", title: "Start a conversation", body: "Book a free 15-minute intro call. Tell me what\u2019s going on \u2014 your business, your product, your goals. No prep required." },
+  { num: "Step 02", title: "We scope it together", body: "Based on what you share, I\u2019ll suggest which session actually fits \u2014 or tell you honestly if I\u2019m not the right person for what you need." },
   { num: "Step 03", title: "You decide what\u2019s next", body: "No upsell. No follow-up pressure. If a paid session makes sense, great. If not, you still leave the intro call with something useful." },
 ];
 
 const pathways = [
   {
-    icon: Lightbulb,
+    icon: Compass,
     iconBg: "bg-teal-light",
     tagBg: "bg-teal-light",
     tagColor: "text-[#0a7a7b]",
-    who: "Individuals & Young Professionals",
-    title: "\u201cI need to get my money right.\u201d",
-    problem: "Your finances feel messy, unclear, or like you\u2019re making it up as you go. You want a trusted sounding board \u2014 someone who\u2019ll give you a straight answer, not a sales pitch.",
+    who: "Founders & Early-Stage Teams",
+    title: "\u201cI have an idea \u2014 but no plan.\u201d",
+    problem: "You know what you want to build, but the business side is unclear \u2014 positioning, model, go-to-market, or how to actually structure the thing so it works.",
     outcomes: [
-      "A clear picture of where you actually stand",
-      "A realistic starting point \u2014 not a fantasy plan",
-      "Practical next steps you can act on this week",
-      "No jargon. No judgment. No surprises.",
+      "A clear business model that makes sense",
+      "Market positioning you can actually defend",
+      "An operational roadmap for the next 90 days",
+      "Honest feedback \u2014 not cheerleading",
     ],
-    price: "R500",
+    price: "R1,500",
   },
   {
-    icon: Wrench,
+    icon: Rocket,
     iconBg: "bg-navy/[0.07]",
     tagBg: "bg-navy/[0.07]",
     tagColor: "text-navy",
-    who: "Entrepreneurs & SMMEs",
-    title: "\u201cI\u2019m building something real.\u201d",
-    problem: "You\u2019ve got a business or an idea \u2014 but the financial side is either confusing, underprepared, or blocking your next move. Funding, investor-readiness, or integrating financial discipline into how you operate.",
+    who: "First-Time Fundraisers",
+    title: "\u201cI need capital \u2014 but I don\u2019t know where to start.\u201d",
+    problem: "You\u2019re ready to raise but the process feels opaque \u2014 what investors actually want, how to structure a deck, what your numbers need to say, and how to tell a story that lands.",
     outcomes: [
-      "Clarity on how to structure or fund your growth",
-      "A credible narrative for investors or partners",
-      "Financial systems that actually fit your business",
-      "Strategic guidance from someone who\u2019s been there",
+      "An investor-ready pitch deck and narrative",
+      "A financial model that holds up to scrutiny",
+      "Clarity on how much to raise and on what terms",
+      "Practical fundraising strategy \u2014 not theory",
     ],
-    price: "R699",
+    price: "R2,500",
   },
   {
-    icon: TrendingUp,
+    icon: Box,
     iconBg: "bg-teal-light",
     tagBg: "bg-teal-light",
     tagColor: "text-[#0a7a7b]",
-    who: "Professionals Ready to Invest",
-    title: "\u201cI want to build lasting wealth.\u201d",
-    problem: "You\u2019re past the basics. You\u2019ve got some stability and you want to build something long-term \u2014 an investment strategy, a wealth plan, or the kind of financial foundation that actually lasts.",
+    who: "Builders & Product Teams",
+    title: "\u201cI have a product \u2014 but it\u2019s not working.\u201d",
+    problem: "You\u2019re shipping features but nothing\u2019s moving the needle. You need someone to help you figure out what to build, what to cut, and how to get from idea to something people actually use.",
     outcomes: [
-      "A long-term wealth strategy tailored to your life",
-      "Alternatives the mainstream rarely talks about",
-      "Protection and growth working at the same time",
-      "A plan you own and understand \u2014 not just follow",
+      "A prioritised roadmap that drives real outcomes",
+      "Framework for deciding what to build next",
+      "User-focused thinking, not feature bloat",
+      "Actionable plan you can execute this quarter",
     ],
-    price: "R790",
+    price: "R1,800",
   },
 ];
 
@@ -80,14 +80,14 @@ export function AdvisoryPreview() {
             Lime Advisory
           </span>
           <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold text-ink leading-[1.1] tracking-tight mb-5">
-            Every conversation
+            From idea to business.
             <br />
-            starts the same way.
+            That&apos;s the work.
           </h2>
           <p className="text-muted text-[17px] leading-[1.8]">
-            You talk. I listen. No agenda, no product pitch, no pressure. Just
-            honest, practical thinking about your specific situation — and then we
-            figure out together what, if anything, makes sense next.
+            Strategy, fundraising, and product \u2014 the three things that
+            determine whether your startup makes it or doesn&apos;t. I help
+            founders get each one right.
           </p>
         </motion.div>
 
@@ -168,16 +168,37 @@ export function AdvisoryPreview() {
                     {p.price}
                   </div>
                 </div>
-                <Link
-                  href="/advisory"
+                <a
+                  href="mailto:hello@limepages.co.za?subject=Advisory Session Request"
                   className="inline-flex items-center gap-1.5 px-[22px] py-[11px] rounded-full text-[13px] font-bold border-[1.5px] border-navy text-navy hover:bg-navy hover:text-lime transition-colors whitespace-nowrap"
                 >
-                  Let&apos;s talk →
-                </Link>
+                  Let&apos;s talk &rarr;
+                </a>
               </div>
             </motion.div>
           ))}
         </div>
+
+        {/* Refund guarantee banner */}
+        <motion.div
+          {...fadeUp}
+          transition={{ ...fadeUp.transition, delay: 0.15 }}
+          className="bg-navy/[0.04] border border-navy/[0.1] rounded-[20px] p-7 flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-8"
+        >
+          <div className="w-12 h-12 rounded-full bg-teal-light flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-6 h-6 text-[#0a7a7b]" />
+          </div>
+          <div>
+            <h4 className="text-[15px] font-extrabold text-ink mb-1">
+              24-hour money-back guarantee
+            </h4>
+            <p className="text-sm text-muted leading-relaxed">
+              If you don&apos;t find the session useful, request a refund within
+              24 hours and get your money back. No questions asked. No forms.
+              No friction.
+            </p>
+          </div>
+        </motion.div>
 
         {/* Free intro CTA */}
         <motion.div
@@ -190,22 +211,22 @@ export function AdvisoryPreview() {
               Not sure which fits? Start here — it&apos;s free.
             </h3>
             <p className="text-sm text-muted leading-relaxed max-w-[480px]">
-              Book a 15-minute intro call. No commitment, no agenda. Just a real
-              conversation to figure out if and how I can actually help you. If I
-              can&apos;t, I&apos;ll tell you that too.
+              Book a 15-minute intro call. No commitment, no agenda. Just a
+              real conversation to figure out if and how I can actually help
+              you. If I can&apos;t, I&apos;ll tell you that too.
             </p>
           </div>
           <a
             href="mailto:hello@limepages.co.za?subject=Intro Call Request"
             className="bg-teal text-white px-8 py-3.5 rounded-full font-bold text-sm whitespace-nowrap hover:opacity-90 hover:-translate-y-0.5 transition-all"
           >
-            Book a free intro call →
+            Book a free intro call &rarr;
           </a>
         </motion.div>
 
         <p className="text-center mt-5 text-xs text-subtle leading-relaxed">
-          All sessions are fully online · 24-hour refund guarantee, no questions
-          asked · <strong>#ThisIsNotFinancialAdvice</strong>
+          All sessions are fully online &middot; 24-hour money-back guarantee,
+          no questions asked
         </p>
       </Container>
     </section>
