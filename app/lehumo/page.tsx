@@ -17,8 +17,8 @@ export default function LehumoPage() {
     <div className="bg-navy text-white">
       <LehumoHero />
       <LehumoMarquee />
-      <CommunityGrowth />
       <WhatIsLehumo />
+      <CommunityGrowth />
       <Benefits />
       <InvestmentStrategy />
       <FiveYearRoadmap />
