@@ -66,13 +66,13 @@ export function CommunityGrowth() {
         >
           <div className="relative min-h-[240px] sm:min-h-[280px]">
             <Image
-              src="/images/grant-durr-jNYZ_M7NUA4-unsplash.jpg"
-              alt="Clifton Beach, Cape Town — aspirational lifestyle"
+              src="/images/stephan-louis-EsrDaUN-Cyk-unsplash.jpg"
+              alt="Camps Bay, Cape Town — aspirational lifestyle"
               fill
               className="object-cover object-[center_60%]"
               sizes="100vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/85 via-navy-mid/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/95 via-navy-mid/75 to-navy-mid/20" />
 
             <div className="relative z-[1] flex items-center px-8 py-8 min-h-[180px]">
               <p className="text-[15px] text-white/80 leading-[1.7] max-w-[480px]">
