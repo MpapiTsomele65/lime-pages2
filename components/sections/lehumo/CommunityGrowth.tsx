@@ -64,18 +64,19 @@ export function CommunityGrowth() {
           transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" as const }}
           className="mt-10 relative rounded-2xl overflow-hidden"
         >
-          <div className="relative min-h-[240px] sm:min-h-[280px]">
+          <div className="relative min-h-[360px] sm:min-h-[420px] lg:min-h-[480px]">
             <Image
               src="/images/stephan-louis-EsrDaUN-Cyk-unsplash.jpg"
               alt="Camps Bay, Cape Town — aspirational lifestyle"
               fill
-              className="object-cover object-[center_60%]"
+              className="object-cover object-top"
               sizes="100vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/95 via-navy-mid/75 to-navy-mid/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-navy-mid/90 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/80 via-transparent to-transparent" />
 
-            <div className="relative z-[1] flex items-center px-8 py-8 min-h-[180px]">
-              <p className="text-[15px] text-white/80 leading-[1.7] max-w-[480px]">
+            <div className="relative z-[1] flex items-end px-8 py-8 min-h-[360px] sm:min-h-[420px] lg:min-h-[480px]">
+              <p className="text-[15px] text-white/90 leading-[1.7] max-w-[480px]">
                 The community grows through trust, not advertising. <strong className="text-lime">Founding 30 → 90 connected members</strong> at full maturity. Each member is personally connected — building wealth with people they know and trust.
               </p>
             </div>
