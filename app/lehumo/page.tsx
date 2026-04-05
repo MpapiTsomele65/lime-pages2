@@ -10,7 +10,6 @@ import { FiveYearRoadmap } from "@/components/sections/lehumo/FiveYearRoadmap";
 import { Cost } from "@/components/sections/lehumo/Cost";
 import { BiggerMission } from "@/components/sections/lehumo/BiggerMission";
 import { JoinCta } from "@/components/sections/lehumo/JoinCta";
-import { PhotoBreak } from "@/components/sections/lehumo/PhotoBreak";
 import { WealthPhotoBlock } from "@/components/sections/lehumo/WealthPhotoBlock";
 
 export default function LehumoPage() {
@@ -19,21 +18,9 @@ export default function LehumoPage() {
       <LehumoHero />
       <LehumoMarquee />
       <WhatIsLehumo />
-      <PhotoBreak
-        src="/images/matt-aylward-Nmh-pEBRt2Y-unsplash.jpg"
-        alt="Golf at sunset"
-        overlay="navy"
-        objectPosition="top"
-      />
       <StokvelComparison />
       <InvestmentStrategy />
       <Benefits />
-      <PhotoBreak
-        src="/images/microsoft-copilot-txZv4HQJRpE-unsplash.jpg"
-        alt="Planning financial future"
-        overlay="navy-mid"
-        objectPosition="top"
-      />
       <CommunityGrowth />
       <FiveYearRoadmap />
       <Cost />

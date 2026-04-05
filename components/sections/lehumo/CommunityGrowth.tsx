@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 
 const nodes = [
@@ -61,12 +62,24 @@ export function CommunityGrowth() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" as const }}
-          className="text-center mt-12"
+          className="mt-10 relative rounded-2xl overflow-hidden"
         >
-          <div className="inline-block bg-lime/[0.07] border border-lime/20 rounded-[14px] px-8 py-5">
-            <p className="text-[15px] text-white/60 leading-[1.7]">
-              The community grows through trust, not advertising. <strong className="text-lime">Founding 30 → 90 connected members</strong> at full maturity.
-            </p>
+          <div className="relative min-h-[180px]">
+            <Image
+              src="/images/microsoft-copilot-txZv4HQJRpE-unsplash.jpg"
+              alt="Planning financial future"
+              fill
+              className="object-cover object-[center_25%]"
+              sizes="100vw"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/90 via-navy-mid/70 to-navy-mid/50" />
+            <div className="absolute inset-0 backdrop-blur-[2px]" />
+
+            <div className="relative z-[1] flex items-center px-8 py-8 min-h-[180px]">
+              <p className="text-[15px] text-white/80 leading-[1.7] max-w-[480px]">
+                The community grows through trust, not advertising. <strong className="text-lime">Founding 30 → 90 connected members</strong> at full maturity. Each member is personally connected — building wealth with people they know and trust.
+              </p>
+            </div>
           </div>
         </motion.div>
       </Container>

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { Save, Home, ShieldCheck } from "lucide-react";
 
@@ -52,26 +53,48 @@ export function StokvelComparison() {
           </motion.div>
         </div>
 
-        <motion.p {...fadeUp} className="text-base text-white/60 leading-[1.8] max-w-[700px] mb-12">
-          <strong className="text-teal">LEHUMO</strong> curates communities of like-minded individuals, supporting them towards a shared objective. Responding to years of systemic economic exclusion and marginalisation through collective action.
-        </motion.p>
+        {/* Image-backed panel with Save Buy Protect */}
+        <motion.div
+          {...fadeUp}
+          className="relative rounded-2xl overflow-hidden mt-2"
+        >
+          <div className="relative min-h-[280px] sm:min-h-[260px]">
+            <Image
+              src="/images/matt-aylward-Nmh-pEBRt2Y-unsplash.jpg"
+              alt="Golf at sunset"
+              fill
+              className="object-cover object-[center_30%]"
+              sizes="100vw"
+            />
+            {/* Gradient: transparent left → navy-mid right */}
+            <div className="absolute inset-0 bg-gradient-to-r from-navy-mid/80 via-navy-mid/60 to-navy-mid/90" />
+            <div className="absolute inset-0 backdrop-blur-[1px]" />
 
-        {/* Save Buy Protect pillars */}
-        <motion.div {...fadeUp} className="flex flex-col sm:flex-row gap-4 max-w-[480px]">
-          {[
-            { icon: Save, label: "SAVE" },
-            { icon: Home, label: "BUY" },
-            { icon: ShieldCheck, label: "PROTECT" },
-          ].map((p) => (
-            <div key={p.label} className="flex-1 text-center py-5 px-3 rounded-2xl border-[1.5px] border-lime/25 bg-lime-dim">
-              <p.icon className="w-[22px] h-[22px] text-lime mx-auto mb-2" />
-              <div className="text-base font-extrabold text-lime tracking-[1px]">{p.label}</div>
+            {/* Content overlay */}
+            <div className="relative z-[1] flex flex-col md:flex-row items-start md:items-center gap-8 px-8 py-10">
+              <div className="flex-1 max-w-[420px]">
+                <p className="text-base text-white/80 leading-[1.8] mb-1">
+                  <strong className="text-teal">LEHUMO</strong> curates communities of like-minded individuals, supporting them towards a shared objective. Responding to years of systemic economic exclusion and marginalisation through collective action.
+                </p>
+                <p className="text-sm text-white/40 leading-[1.7]">
+                  Save up → Buy Cash Generating Assets → Protect for Future Generations.
+                </p>
+              </div>
+              <div className="flex gap-3 shrink-0">
+                {[
+                  { icon: Save, label: "SAVE" },
+                  { icon: Home, label: "BUY" },
+                  { icon: ShieldCheck, label: "PROTECT" },
+                ].map((p) => (
+                  <div key={p.label} className="text-center py-4 px-5 rounded-2xl border-[1.5px] border-lime/30 bg-navy/60 backdrop-blur-sm">
+                    <p.icon className="w-[22px] h-[22px] text-lime mx-auto mb-2" />
+                    <div className="text-sm font-extrabold text-lime tracking-[1px]">{p.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          </div>
         </motion.div>
-        <p className="text-sm text-white/40 mt-5 max-w-[480px] leading-[1.7]">
-          Save up → Buy Cash Generating Assets → Protect the Assets for Future Generations.
-        </p>
       </Container>
     </section>
   );
