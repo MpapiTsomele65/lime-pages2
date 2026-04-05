@@ -71,12 +71,12 @@ const tiers = [
 
 export function Cost() {
   return (
-    <section id="cost" className="py-24 bg-navy">
+    <section id="cost" className="py-16 bg-navy">
       <Container>
         {/* ── Header ── */}
         <motion.div
           {...fadeUp}
-          className="text-center max-w-[700px] mx-auto mb-14"
+          className="text-center max-w-[700px] mx-auto mb-10"
         >
           <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-lime mb-3.5 block">
             Cost
@@ -97,7 +97,7 @@ export function Cost() {
         </motion.div>
 
         {/* ── The 3 Tiers ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
           {tiers.map((tier, i) => (
             <motion.div
               key={tier.title}

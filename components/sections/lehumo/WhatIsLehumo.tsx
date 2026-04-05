@@ -20,7 +20,7 @@ const bars = [
 
 export function WhatIsLehumo() {
   return (
-    <section id="what" className="py-24 bg-navy">
+    <section id="what" className="py-16 bg-navy">
       <Container>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           {/* Text */}

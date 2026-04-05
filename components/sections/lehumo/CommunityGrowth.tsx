@@ -11,7 +11,7 @@ const nodes = [
 
 export function CommunityGrowth() {
   return (
-    <section className="py-24 bg-navy-mid">
+    <section className="py-16 bg-navy-mid">
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -26,7 +26,7 @@ export function CommunityGrowth() {
             <br />
             <span className="text-lime">community grow?</span>
           </h2>
-          <p className="text-white/55 text-[15px] max-w-[500px] mx-auto mb-14">
+          <p className="text-white/55 text-[15px] max-w-[500px] mx-auto mb-10">
             Organic growth through trusted peer referrals — the way community is built.
           </p>
         </motion.div>

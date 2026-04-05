@@ -98,7 +98,7 @@ const sum1Returns = [
 
 export function InvestmentStrategy() {
   return (
-    <section id="strategy" className="py-24 bg-navy-mid">
+    <section id="strategy" className="py-16 bg-navy-mid">
       <Container>
         {/* ── Header ── */}
         <motion.div {...fadeUp}>
@@ -110,7 +110,7 @@ export function InvestmentStrategy() {
             <br />
             <span className="text-teal">Strategy</span>
           </h2>
-          <p className="text-base text-white/60 leading-[1.8] mb-14 max-w-[680px]">
+          <p className="text-base text-white/60 leading-[1.8] mb-10 max-w-[680px]">
             Each R1,000 monthly contribution is strategically allocated across
             four diversified investment vehicles. This balanced approach ensures
             growth, liquidity, stability, and exposure to alternative assets.
@@ -205,7 +205,7 @@ export function InvestmentStrategy() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: "easeOut" as const }}
-          className="bg-lime/[0.06] border border-lime/20 rounded-2xl p-8 mb-14"
+          className="bg-lime/[0.06] border border-lime/20 rounded-2xl p-8 mb-10"
         >
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left — Partner info */}
@@ -290,7 +290,7 @@ export function InvestmentStrategy() {
         </motion.div>
 
         {/* ── Allocation Detail Cards ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {allocations.map((a, i) => (
             <motion.div
               key={a.title}

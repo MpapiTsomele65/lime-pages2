@@ -20,7 +20,7 @@ const maturityBenefits = [
 
 export function BiggerMission() {
   return (
-    <section className="relative overflow-hidden py-24 bg-navy-mid">
+    <section className="relative overflow-hidden py-16 bg-navy-mid">
       <Image src="/images/ninthgrid--f8T1PHM0L4-unsplash.jpg" alt="" fill className="object-cover opacity-[0.06]" />
       <div className="absolute inset-0 bg-navy/90 z-[1]" />
       <Container className="relative z-[2]">
@@ -31,7 +31,7 @@ export function BiggerMission() {
           transition={{ duration: 0.6, ease: "easeOut" as const }}
         >
           <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal mb-3.5 block">Is That It?</span>
-          <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold text-white leading-[1.08] tracking-tight mb-12">
+          <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold text-white leading-[1.08] tracking-tight mb-8">
             What is the <span className="text-lime">bigger mission</span>
             <br />
             for this initiative?

@@ -17,7 +17,6 @@ export default function LehumoPage() {
       <LehumoHero />
       <LehumoMarquee />
       <WhatIsLehumo />
-      <CommunityStrip />
       <StokvelComparison />
       <InvestmentStrategy />
       <Benefits />
@@ -25,6 +24,7 @@ export default function LehumoPage() {
       <FiveYearRoadmap />
       <Cost />
       <BiggerMission />
+      <CommunityStrip />
       <JoinCta />
     </div>
   );

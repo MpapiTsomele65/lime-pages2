@@ -37,7 +37,7 @@ const benefits = [
 
 export function Benefits() {
   return (
-    <section id="benefits" className="py-24 bg-navy">
+    <section id="benefits" className="py-16 bg-navy">
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -46,7 +46,7 @@ export function Benefits() {
           transition={{ duration: 0.6, ease: "easeOut" as const }}
         >
           <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-lime mb-3.5 block">Benefits?</span>
-          <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold text-white leading-[1.08] tracking-tight mb-12">
+          <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold text-white leading-[1.08] tracking-tight mb-8">
             What do members
             <br />
             <span className="text-teal">actually get?</span>

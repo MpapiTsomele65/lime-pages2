@@ -11,7 +11,7 @@ const steps = [
 
 export function FiveYearRoadmap() {
   return (
-    <section id="plan" className="py-24 bg-navy">
+    <section id="plan" className="py-16 bg-navy">
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 24 }}

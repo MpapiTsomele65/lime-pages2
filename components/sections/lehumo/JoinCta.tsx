@@ -7,7 +7,7 @@ import { Mail, ExternalLink, ArrowRight } from "lucide-react";
 
 export function JoinCta() {
   return (
-    <section id="join" className="py-24 bg-navy relative overflow-hidden">
+    <section id="join" className="py-16 bg-navy relative overflow-hidden">
       {/* Glows */}
       <div className="absolute -top-[30%] -left-[10%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(184,255,0,0.07),transparent_70%)] blur-[80px] pointer-events-none" />
       <div className="absolute -bottom-[30%] -right-[10%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.07),transparent_70%)] blur-[80px] pointer-events-none" />

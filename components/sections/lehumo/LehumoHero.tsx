@@ -19,7 +19,7 @@ const heroStats = [
 
 export function LehumoHero() {
   return (
-    <section className="min-h-screen bg-navy flex flex-col items-center justify-center text-center px-[clamp(1.5rem,5vw,5rem)] py-[120px] relative overflow-hidden">
+    <section className="min-h-[85vh] bg-navy flex flex-col items-center justify-center text-center px-[clamp(1.5rem,5vw,5rem)] py-[100px] relative overflow-hidden">
       {/* Grid */}
       <div
         className="absolute inset-0 opacity-[0.035]"

@@ -13,7 +13,7 @@ const fadeUp = {
 
 export function StokvelComparison() {
   return (
-    <section className="py-24 bg-navy-mid">
+    <section className="py-16 bg-navy-mid">
       <Container>
         <motion.div {...fadeUp}>
           <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal mb-3.5 block">
