@@ -20,16 +20,16 @@ export function WealthPhotoBlock() {
             src="/images/morgan-housel-PcDGGex9-jA-unsplash.jpg"
             alt="Wealth growing over time"
             fill
-            className="object-contain object-left"
+            className="object-cover"
             sizes="100vw"
           />
 
-          {/* Gradient fade from image into navy on the right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-navy/50 to-navy" />
+          {/* Gradient: dark top-left corner fading out to transparent */}
+          <div className="absolute inset-0 bg-gradient-to-br from-navy/90 via-navy/40 to-transparent" />
 
-          {/* Text content — right aligned */}
-          <div className="absolute inset-0 flex items-end sm:items-center justify-end px-8 sm:px-14 pb-8 sm:pb-0">
-            <div className="max-w-[340px] text-right">
+          {/* Text content — top left */}
+          <div className="absolute inset-0 flex items-start justify-start px-8 sm:px-10 pt-8 sm:pt-10">
+            <div className="max-w-[320px]">
               <p className="text-[11px] font-bold tracking-[1.4px] uppercase text-lime mb-3">
                 The Long Game
               </p>
@@ -38,7 +38,7 @@ export function WealthPhotoBlock() {
                 <br />
                 over <span className="text-teal">time.</span>
               </h3>
-              <p className="text-sm text-white/55 leading-relaxed">
+              <p className="text-sm text-white/70 leading-relaxed">
                 Consistent contributions, compounding returns, and patient
                 discipline — that&apos;s how generational wealth is created.
               </p>
