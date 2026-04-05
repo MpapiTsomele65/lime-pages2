@@ -85,7 +85,7 @@ export function AdvisoryPreview() {
             That&apos;s the work.
           </h2>
           <p className="text-muted text-[17px] leading-[1.8]">
-            Strategy, fundraising, and product \u2014 the three things that
+            Strategy, fundraising, and product — the three things that
             determine whether your startup makes it or doesn&apos;t. I help
             founders get each one right.
           </p>
