@@ -12,7 +12,7 @@ const missionStats = [
 ];
 
 const maturityBenefits = [
-  { label: "Funeral Benefit Cover", color: "text-lime", bg: "bg-lime/[0.08]", border: "border-lime/20" },
+  { label: "Funeral Benefit Cover (Coming Soon)", color: "text-lime", bg: "bg-lime/[0.08]", border: "border-lime/20" },
   { label: "Free Interest-Free Loans", color: "text-teal", bg: "bg-teal/[0.08]", border: "border-teal/20" },
   { label: "Customised Investment Solutions", color: "text-lime", bg: "bg-lime/[0.08]", border: "border-lime/20" },
   { label: "LimePages Business Profile", color: "text-teal", bg: "bg-teal/[0.08]", border: "border-teal/20" },

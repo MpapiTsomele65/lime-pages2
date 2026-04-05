@@ -22,8 +22,8 @@ const benefits = [
   {
     icon: Heart, iconBg: "bg-lime-dim border-lime/25",
     title: "Funeral Benefit Cover",
-    desc: "The community protects its members. Funeral benefits are included as part of the full Lehumo membership package at maturity.",
-    highlight: "Community-backed Coverage",
+    desc: "Coming soon. We are currently pricing this benefit to ensure it is sustainable and meaningful for every member.",
+    highlight: "Coming Soon",
     highlightStyle: "bg-lime-dim border-lime/25 text-lime",
   },
   {
