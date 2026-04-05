@@ -19,8 +19,8 @@ export default function LehumoPage() {
       <LehumoMarquee />
       <CommunityGrowth />
       <WhatIsLehumo />
-      <InvestmentStrategy />
       <Benefits />
+      <InvestmentStrategy />
       <FiveYearRoadmap />
       <Cost />
       <WealthPhotoBlock />
