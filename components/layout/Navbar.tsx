@@ -7,10 +7,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { NAV_LINKS } from "@/lib/constants";
 import Logo from "@/components/shared/Logo";
 
+/* Pages with dark hero backgrounds where white text works when unpinned */
+const DARK_HERO_PAGES = ["/", "/lehumo", "/capital", "/connect"];
+
 export default function Navbar() {
   const pathname = usePathname();
   const [pinned, setPinned] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  /* Does the current page have a dark hero section? */
+  const hasDarkHero =
+    DARK_HERO_PAGES.includes(pathname) ||
+    pathname.startsWith("/lehumo/");
 
   const handleScroll = useCallback(() => {
     setPinned(window.scrollY > 50);
@@ -47,7 +55,7 @@ export default function Navbar() {
         <div className="max-w-[1200px] mx-auto px-[clamp(1.25rem,4vw,3.5rem)] h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/" aria-label="Home">
-            <Logo variant={pinned ? "color" : "white"} />
+            <Logo variant={pinned || !hasDarkHero ? "color" : "white"} />
           </Link>
 
           {/* Desktop nav links */}
@@ -58,14 +66,18 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm transition-colors duration-200 ${
+                  className={`text-sm font-semibold transition-colors duration-200 ${
                     pinned
                       ? isActive
-                        ? "text-navy font-semibold"
+                        ? "text-navy font-bold"
                         : "text-muted hover:text-ink"
-                      : isActive
-                        ? "text-white font-semibold"
-                        : "text-[rgba(255,255,255,0.75)] hover:text-white"
+                      : hasDarkHero
+                        ? isActive
+                          ? "text-white font-bold"
+                          : "text-[rgba(255,255,255,0.75)] hover:text-white"
+                        : isActive
+                          ? "text-navy font-bold"
+                          : "text-navy/60 hover:text-navy"
                   }`}
                 >
                   {link.label}
@@ -76,10 +88,12 @@ export default function Navbar() {
             {/* Book Now CTA */}
             <Link
               href="/connect"
-              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+              className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
                 pinned
                   ? "bg-teal text-white hover:bg-teal/90"
-                  : "bg-white/15 text-white hover:bg-white/25"
+                  : hasDarkHero
+                    ? "bg-white/15 text-white hover:bg-white/25"
+                    : "bg-teal text-white hover:bg-teal/90"
               }`}
             >
               Book Now
@@ -95,8 +109,8 @@ export default function Navbar() {
             <motion.span
               animate={
                 drawerOpen
-                  ? { rotate: 45, y: 4, backgroundColor: pinned ? "#0B0B0B" : "#fff" }
-                  : { rotate: 0, y: 0, backgroundColor: pinned ? "#0B0B0B" : "#fff" }
+                  ? { rotate: 45, y: 4, backgroundColor: pinned || !hasDarkHero ? "#0B0B0B" : "#fff" }
+                  : { rotate: 0, y: 0, backgroundColor: pinned || !hasDarkHero ? "#0B0B0B" : "#fff" }
               }
               transition={{ duration: 0.25 }}
               className="block w-6 h-[2px] rounded-full origin-center"
@@ -104,8 +118,8 @@ export default function Navbar() {
             <motion.span
               animate={
                 drawerOpen
-                  ? { rotate: -45, y: -4, backgroundColor: pinned ? "#0B0B0B" : "#fff" }
-                  : { rotate: 0, y: 0, backgroundColor: pinned ? "#0B0B0B" : "#fff" }
+                  ? { rotate: -45, y: -4, backgroundColor: pinned || !hasDarkHero ? "#0B0B0B" : "#fff" }
+                  : { rotate: 0, y: 0, backgroundColor: pinned || !hasDarkHero ? "#0B0B0B" : "#fff" }
               }
               transition={{ duration: 0.25 }}
               className="block w-6 h-[2px] rounded-full origin-center"
