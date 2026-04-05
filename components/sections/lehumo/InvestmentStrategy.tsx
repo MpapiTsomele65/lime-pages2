@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { TrendingUp, Shield, Landmark, Sprout } from "lucide-react";
 
@@ -116,67 +117,86 @@ export function InvestmentStrategy() {
           </p>
         </motion.div>
 
-        {/* ── Pie Chart + Legend ── */}
+        {/* ── Pie Chart with Integrated Labels ── */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.7, ease: "easeOut" as const }}
-          className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16 mb-16"
+          className="mb-16"
         >
-          {/* Pie chart */}
-          <div className="relative shrink-0">
-            <div
-              className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] rounded-full shadow-[0_0_60px_rgba(184,255,0,0.08)]"
-              style={{
-                background: `conic-gradient(
-                  #B8FF00 0deg 144deg,
-                  #46cdcf 144deg 288deg,
-                  #6366f1 288deg 324deg,
-                  #a855f7 324deg 360deg
-                )`,
-              }}
-            />
-            {/* Centre label */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] rounded-full bg-navy-mid flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-wide">
-                  Portfolio
-                </p>
-                <p className="text-xl font-extrabold text-white">100%</p>
+          <h3 className="text-xl font-extrabold text-white mb-8 text-center">
+            Portfolio Allocation
+          </h3>
+
+          <div className="relative w-full max-w-[600px] mx-auto">
+            {/* Pie chart — centred */}
+            <div className="relative mx-auto w-[260px] h-[260px] sm:w-[320px] sm:h-[320px]">
+              <div
+                className="w-full h-full rounded-full shadow-[0_0_60px_rgba(184,255,0,0.08)]"
+                style={{
+                  background: `conic-gradient(
+                    #B8FF00 0deg 144deg,
+                    #46cdcf 144deg 288deg,
+                    #6366f1 288deg 324deg,
+                    #a855f7 324deg 360deg
+                  )`,
+                }}
+              />
+              {/* Centre donut hole */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-[100px] h-[100px] sm:w-[130px] sm:h-[130px] rounded-full bg-navy-mid" />
               </div>
+            </div>
+
+            {/* Labels positioned around the chart */}
+            {/* Sum1 Investments — top-right (lime segment) */}
+            <div className="absolute top-[5%] right-[-10px] sm:right-[-40px] text-right">
+              <p className="text-[15px] sm:text-lg font-extrabold text-white leading-tight">
+                Sum1 Investments
+              </p>
+              <p className="text-[13px] sm:text-[15px] font-extrabold text-[#B8FF00]">
+                40%
+              </p>
+            </div>
+
+            {/* Cash — bottom-left (teal segment) */}
+            <div className="absolute bottom-[8%] left-[-10px] sm:left-[-30px]">
+              <p className="text-[15px] sm:text-lg font-extrabold text-white leading-tight">
+                Cash
+              </p>
+              <p className="text-[13px] sm:text-[15px] font-extrabold text-teal">
+                40%
+              </p>
+            </div>
+
+            {/* Bonds — left (indigo segment) */}
+            <div className="absolute top-[30%] left-[-10px] sm:left-[-50px]">
+              <p className="text-[13px] sm:text-[15px] font-bold text-white leading-tight">
+                Bonds
+              </p>
+              <p className="text-[12px] sm:text-[13px] font-extrabold text-indigo-400">
+                10%
+              </p>
+            </div>
+
+            {/* Alternative Investments — top-left (purple segment) */}
+            <div className="absolute top-[-5px] left-[10px] sm:left-[-20px] max-w-[140px]">
+              <p className="text-[13px] sm:text-[15px] font-bold text-white leading-tight">
+                Alternative
+                <br />
+                investments*
+              </p>
+              <p className="text-[12px] sm:text-[13px] font-extrabold text-purple-400">
+                10%
+              </p>
             </div>
           </div>
 
-          {/* Legend + subtitle */}
-          <div className="flex-1">
-            <h3 className="text-xl font-extrabold text-white mb-6">
-              Portfolio Allocation
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {segments.map((seg) => (
-                <div
-                  key={seg.label}
-                  className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3.5"
-                >
-                  <div
-                    className="w-4 h-4 rounded-full shrink-0 mt-0.5"
-                    style={{ backgroundColor: seg.color }}
-                  />
-                  <div>
-                    <p className="text-[15px] font-bold text-white leading-tight">
-                      {seg.pct}%
-                    </p>
-                    <p className="text-xs text-white/55">{seg.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-[11px] text-white/30 mt-4">
-              *Alternative investments include cattle farming, solar energy, and
-              other high-growth asset classes.
-            </p>
-          </div>
+          <p className="text-[11px] text-white/30 mt-6 text-center">
+            *Alternative investments include cattle farming, solar energy, and
+            other high-growth asset classes.
+          </p>
         </motion.div>
 
         {/* ── Sum1 Partner Spotlight ── */}
@@ -190,18 +210,20 @@ export function InvestmentStrategy() {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left — Partner info */}
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-lime/15 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-lime" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-lime/60 uppercase tracking-wide">
-                    Asset Manager Partner
-                  </p>
-                  <h4 className="text-lg font-bold text-white">
-                    Sum1 Investments
-                  </h4>
-                </div>
+              <div className="flex items-center gap-4 mb-5">
+                <Image
+                  src="/images/sum1-logo-white.png"
+                  alt="Sum1 Investments"
+                  width={120}
+                  height={48}
+                  className="object-contain"
+                />
+                <div className="h-8 w-px bg-white/15" />
+                <p className="text-[10px] font-bold text-lime/60 uppercase tracking-wide leading-tight">
+                  Asset Manager
+                  <br />
+                  Partner
+                </p>
               </div>
               <p className="text-sm text-white/60 leading-[1.8] mb-5">
                 Sum1 Investments is a community-based investment platform that
