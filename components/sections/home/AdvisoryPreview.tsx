@@ -11,8 +11,7 @@ import {
   Landmark,
   FileCheck,
   TrendingUp,
-  Rocket,
-  Banknote,
+  GraduationCap,
   BarChart3,
   ArrowRight,
   Check,
@@ -212,7 +211,7 @@ export function AdvisoryPreview() {
             </div>
           </motion.div>
 
-          {/* Lemonade Station Teaser */}
+          {/* Lime Capital Teaser */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -224,67 +223,88 @@ export function AdvisoryPreview() {
             }}
             className="bg-navy rounded-[20px] border border-navy/20 shadow-sm overflow-hidden relative"
           >
-            <div className="absolute top-[-15%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(255,230,0,0.12),transparent_70%)] blur-[60px] pointer-events-none" />
+            <div className="absolute top-[-15%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(193,255,114,0.12),transparent_70%)] blur-[60px] pointer-events-none" />
 
             {/* Track header */}
             <div className="px-7 py-5 border-b border-white/[0.08] relative z-[1]">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-[12px] bg-[#FFE600]/15 flex items-center justify-center">
-                  <Rocket className="w-5 h-5 text-[#FFE600]" />
+                <div className="w-10 h-10 rounded-[12px] bg-capital/15 flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-capital" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold tracking-[1.2px] uppercase text-[#FFE600] block">
-                    For SMMEs &amp; Founders
+                  <span className="text-[10px] font-bold tracking-[1.2px] uppercase text-capital block">
+                    Investing 101
                   </span>
                   <h3 className="text-lg font-extrabold text-white leading-tight">
-                    Lemonade Station
+                    Lime Capital
                   </h3>
                 </div>
               </div>
               <p className="text-sm text-white/55 leading-[1.7] mt-2">
-                Fundraising playbooks, pitch deck templates, deal structuring
-                guides, and SA venture data &mdash; everything you need to raise
-                capital and build a fundable business.
+                Learn how capital markets work. Compare SA&apos;s top unit trusts,
+                understand ETFs, and see what R10,000 invested 10 years ago would
+                be worth today.
               </p>
             </div>
 
-            {/* Quick highlights */}
-            <div className="p-7 flex flex-col gap-4 relative z-[1]">
-              {[
-                { icon: Banknote, text: "Fundraising playbook &mdash; from grants to venture capital" },
-                { icon: Rocket, text: "Investor-ready pitch decks &amp; term sheet templates" },
-                { icon: BarChart3, text: "2024 SA venture data &amp; sector intelligence" },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -12 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.4,
-                    delay: 0.08 * i,
-                    ease: "easeOut" as const,
-                  }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[#FFE600]/10 flex items-center justify-center shrink-0">
-                    <item.icon className="w-4 h-4 text-[#FFE600]" />
-                  </div>
-                  <p
-                    className="text-sm text-white/70 leading-snug"
-                    dangerouslySetInnerHTML={{ __html: item.text }}
-                  />
-                </motion.div>
-              ))}
+            {/* Mini fund returns */}
+            <div className="px-7 py-5 relative z-[1]">
+              <p className="text-[10px] font-bold tracking-[1px] uppercase text-white/30 mb-3">
+                R10K invested 10 years ago
+              </p>
+              <div className="space-y-2.5">
+                {[
+                  { name: "AG Money Mkt", value: "R18.2K", pct: "+82%", color: "text-[#FBBF24]", barW: "w-[34%]", barBg: "bg-[#FBBF24]" },
+                  { name: "JSE Top 40", value: "R22.6K", pct: "+126%", color: "text-[#A1A1AA]", barW: "w-[42%]", barBg: "bg-[#A1A1AA]" },
+                  { name: "Coronation Balanced Plus", value: "R23.2K", pct: "+132%", color: "text-teal", barW: "w-[43%]", barBg: "bg-teal" },
+                  { name: "Allan Gray Balanced", value: "R24.1K", pct: "+141%", color: "text-white", barW: "w-[45%]", barBg: "bg-white/70" },
+                  { name: "S&P 500 (ZAR)", value: "R54.0K", pct: "+440%", color: "text-capital", barW: "w-full", barBg: "bg-capital" },
+                ].map((fund, i) => (
+                  <motion.div
+                    key={fund.name}
+                    initial={{ opacity: 0, x: -8 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: 0.06 * i }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-semibold text-white/60 truncate mr-2">
+                        {fund.name}
+                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[12px] font-extrabold ${fund.color}`}>
+                          {fund.value}
+                        </span>
+                        <span className="text-[10px] font-bold text-white/30">
+                          {fund.pct}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full rounded-full ${fund.barBg}`}
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "100%" }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.2 + 0.1 * i, ease: "easeOut" }}
+                        style={{ maxWidth: fund.barW === "w-full" ? "100%" : `${parseInt(fund.barW.match(/\d+/)?.[0] || "50")}%` }}
+                      />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <p className="text-[9px] text-white/20 mt-3">
+                Illustrative &middot; Past performance ≠ future results
+              </p>
             </div>
 
             {/* CTA Footer */}
             <div className="px-7 py-5 border-t border-white/[0.08] relative z-[1]">
               <Link
-                href="/lemonade-station"
-                className="inline-flex items-center gap-2 bg-[#FFE600] text-navy px-7 py-3 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(255,230,0,0.25)] transition-all"
+                href="/capital"
+                className="inline-flex items-center gap-2 bg-capital text-navy px-7 py-3 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(193,255,114,0.25)] transition-all"
               >
-                Explore Lemonade Station <ArrowRight className="w-4 h-4" />
+                Explore Lime Capital <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </motion.div>
