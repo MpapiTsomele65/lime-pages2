@@ -13,6 +13,7 @@ import {
   BarChart3,
   Scale,
   Lightbulb,
+  FileText,
 } from "lucide-react";
 import FundComparison from "@/components/sections/capital/FundComparison";
 import InvestingGuide from "@/components/sections/capital/InvestingGuide";
@@ -20,6 +21,7 @@ import DealStructuring from "@/components/sections/capital/DealStructuring";
 import AngelSyndicate from "@/components/sections/capital/AngelSyndicate";
 import LehumoTeaser from "@/components/sections/capital/LehumoTeaser";
 import InvestorsLikeYou from "@/components/sections/capital/InvestorsLikeYou";
+import WillsEstates from "@/components/sections/capital/WillsEstates";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -55,6 +57,15 @@ const tracks = [
     color: "navy",
     iconBg: "bg-navy/[0.08]",
     hoverBorder: "hover:border-navy/30",
+  },
+  {
+    icon: FileText,
+    title: "Wills & Estates",
+    desc: "Protect your legacy with a professionally drafted Will \u2014 and ensure your assets go where you intend them to.",
+    href: "#wills-estates",
+    color: "teal",
+    iconBg: "bg-teal/15",
+    hoverBorder: "hover:border-teal/40",
   },
 ];
 
@@ -116,10 +127,10 @@ export default function CapitalPage() {
             <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-extrabold text-white leading-[1.07] tracking-tight mb-6">
               Lime <span className="text-capital">Capital</span>
             </h1>
-            <p className="text-lg text-white/55 leading-[1.8] max-w-[620px] mx-auto mb-10">
+            <p className="text-lg text-white/55 leading-[1.8] max-w-[640px] mx-auto mb-10">
               Learn how capital markets work. Understand unit trusts, compare
-              fund performance, and learn how to structure deals &mdash; from
-              your first ETF to angel investments and private capital.
+              fund performance, structure deals, and protect your legacy
+              &mdash; from your first ETF to estate planning.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
@@ -148,10 +159,10 @@ export default function CapitalPage() {
             </span>
             <h2 className="text-[clamp(1.6rem,3.5vw,2.4rem)] font-extrabold text-ink leading-[1.1] tracking-tight">
               From first investment to{" "}
-              <span className="text-navy">deal structuring.</span>
+              <span className="text-navy">legacy protection.</span>
             </h2>
           </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {tracks.map((t, i) => (
               <motion.a
                 key={t.title}
@@ -228,6 +239,15 @@ export default function CapitalPage() {
 
       {/* Lehumo as structured vehicle example */}
       <LehumoTeaser />
+
+      {/* ═══ WILLS & ESTATE PLANNING ═══ */}
+      <SectionDivider
+        label="Wills &amp; Estate Planning"
+        id="wills-estates"
+        icon={FileText}
+      />
+
+      <WillsEstates />
 
       {/* ═══ CTA ═══ */}
       <section className="py-16 sm:py-20 bg-white">
