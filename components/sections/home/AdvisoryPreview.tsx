@@ -318,7 +318,7 @@ export function AdvisoryPreview() {
         >
           <div className="text-center mb-8">
             <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal mb-3 block">
-              Your Financial Wellness Jedi
+              Your Financial Inclusion Jedi
             </span>
             <h3 className="text-[clamp(1.4rem,3vw,2rem)] font-extrabold text-ink leading-tight mb-3">
               Free AI-powered guidance
