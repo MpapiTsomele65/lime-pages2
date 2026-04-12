@@ -32,7 +32,7 @@ const marqueeItems = [
 
 export function AdvisoryChatbotSection() {
   return (
-    <section className="relative bg-[#0B1933] overflow-hidden">
+    <section id="chatbot" className="relative bg-[#0B1933] overflow-hidden">
       {/* Glow orbs */}
       <div className="absolute -top-[30%] -left-[10%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.08),transparent_70%)] blur-[80px] pointer-events-none" />
       <div className="absolute -bottom-[30%] -right-[10%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(184,255,0,0.05),transparent_70%)] blur-[80px] pointer-events-none" />

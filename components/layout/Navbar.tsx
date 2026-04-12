@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { NAV_LINKS } from "@/lib/constants";
+import { NAV_LINKS, NAV_MORE_LINKS } from "@/lib/constants";
+import { ChevronDown } from "lucide-react";
 import Logo from "@/components/shared/Logo";
 
 /*
@@ -21,10 +22,18 @@ function getNavTheme(pathname: string): NavTheme {
   return "dark";
 }
 
+/* Check if current route matches any "More" dropdown link */
+function isMoreActive(pathname: string): boolean {
+  return NAV_MORE_LINKS.some((l) => pathname === l.href);
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const [pinned, setPinned] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   const theme = getNavTheme(pathname);
 
@@ -46,13 +55,31 @@ export default function Navbar() {
     };
   }, [drawerOpen]);
 
-  // Close drawer on route change
+  // Close drawer + dropdown on route change
   useEffect(() => {
     setDrawerOpen(false);
+    setMoreOpen(false);
   }, [pathname]);
+
+  /* --- "More" dropdown hover handlers with delay --- */
+  const openMore = () => {
+    if (moreTimeout.current) clearTimeout(moreTimeout.current);
+    setMoreOpen(true);
+  };
+  const closeMore = () => {
+    moreTimeout.current = setTimeout(() => setMoreOpen(false), 200);
+  };
 
   /* --- Unpinned colour helpers --- */
   const logoVariant = pinned ? "color" : theme === "white" ? "white" : theme === "teal" ? "teal" : "color";
+
+  const underlineColor = pinned
+    ? "#0B1933"
+    : theme === "white"
+      ? "#ffffff"
+      : theme === "teal"
+        ? "#46CDCF"
+        : "#0B1933";
 
   const linkClass = (isActive: boolean) => {
     if (pinned) {
@@ -92,6 +119,8 @@ export default function Navbar() {
           ? "#46cdcf"
           : "#0B0B0B";
 
+  const moreActive = isMoreActive(pathname);
+
   return (
     <>
       <nav
@@ -108,23 +137,99 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav links */}
-          <div className="hidden min-[900px]:flex items-center gap-8">
+          <div className="hidden min-[900px]:flex items-center gap-5 lg:gap-7">
             {NAV_LINKS.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-semibold transition-colors duration-200 ${linkClass(isActive)}`}
+                  className={`relative text-sm font-semibold transition-colors duration-200 py-1 ${linkClass(isActive)}`}
                 >
                   {link.label}
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-underline"
+                      className="absolute left-0 right-0 -bottom-1 h-[2px] rounded-full"
+                      style={{ backgroundColor: underlineColor }}
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
                 </Link>
               );
             })}
 
+            {/* More dropdown */}
+            <div
+              ref={moreRef}
+              className="relative"
+              onMouseEnter={openMore}
+              onMouseLeave={closeMore}
+            >
+              <button
+                onClick={() => setMoreOpen((v) => !v)}
+                className={`relative flex items-center gap-1 text-sm font-semibold transition-colors duration-200 py-1 ${linkClass(moreActive)}`}
+              >
+                More
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    moreOpen ? "rotate-180" : ""
+                  }`}
+                />
+                {moreActive && (
+                  <motion.span
+                    layoutId="nav-underline"
+                    className="absolute left-0 right-0 -bottom-1 h-[2px] rounded-full"
+                    style={{ backgroundColor: underlineColor }}
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {moreOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="absolute right-0 top-full mt-3 w-[260px] bg-white rounded-2xl border border-border shadow-[0_8px_30px_rgba(0,0,0,0.1)] overflow-hidden"
+                  >
+                    <div className="py-2">
+                      {NAV_MORE_LINKS.map((link) => {
+                        const isActive = pathname === link.href;
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex flex-col gap-0.5 px-5 py-3.5 transition-colors duration-150 ${
+                              isActive
+                                ? "bg-snow"
+                                : "hover:bg-snow"
+                            }`}
+                          >
+                            <span
+                              className={`text-sm font-bold ${
+                                isActive ? "text-navy" : "text-ink"
+                              }`}
+                            >
+                              {link.label}
+                            </span>
+                            <span className="text-xs text-muted leading-snug">
+                              {link.desc}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Book Now CTA */}
             <Link
-              href="/connect"
+              href="/advisory"
               className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${ctaClass}`}
             >
               Book Now
@@ -167,21 +272,60 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="fixed inset-0 top-[70px] z-40 bg-white/95 backdrop-blur-lg min-[900px]:hidden"
+            className="fixed inset-0 top-[70px] z-40 bg-white backdrop-blur-lg min-[900px]:hidden"
           >
             <div className="flex flex-col h-full px-6 pt-6 pb-8 overflow-y-auto">
               <div className="flex flex-col flex-1">
+                {/* Primary links */}
                 {NAV_LINKS.map((link) => {
                   const isActive = pathname === link.href;
                   return (
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`py-4 text-[20px] font-semibold border-b border-border transition-colors duration-200 ${
-                        isActive ? "text-navy" : "text-ink hover:text-teal"
+                      className={`relative py-4 text-[20px] font-semibold border-b border-border transition-colors duration-200 ${
+                        isActive
+                          ? "text-navy pl-4"
+                          : "text-ink hover:text-teal"
                       }`}
                     >
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-teal" />
+                      )}
                       {link.label}
+                    </Link>
+                  );
+                })}
+
+                {/* More section divider */}
+                <span className="text-[10px] font-bold tracking-[1.5px] uppercase text-muted mt-6 mb-1 px-1">
+                  More
+                </span>
+
+                {/* Secondary links */}
+                {NAV_MORE_LINKS.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`relative py-4 border-b border-border transition-colors duration-200 ${
+                        isActive ? "pl-4" : ""
+                      }`}
+                    >
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-teal" />
+                      )}
+                      <span
+                        className={`block text-[20px] font-semibold ${
+                          isActive ? "text-navy" : "text-ink hover:text-teal"
+                        }`}
+                      >
+                        {link.label}
+                      </span>
+                      <span className="block text-xs text-muted mt-0.5">
+                        {link.desc}
+                      </span>
                     </Link>
                   );
                 })}
@@ -189,7 +333,7 @@ export default function Navbar() {
 
               {/* Book Now button */}
               <Link
-                href="/connect"
+                href="/advisory"
                 className="mt-auto w-full py-4 bg-teal text-white text-center text-lg font-semibold rounded-xl transition-colors duration-200 hover:bg-teal/90"
               >
                 Book Now

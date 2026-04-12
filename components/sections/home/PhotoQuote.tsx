@@ -24,8 +24,9 @@ export function PhotoQuote() {
       <Container className="relative z-[1] text-center">
         <motion.div {...fadeUp}>
           <blockquote className="text-[clamp(1.4rem,3vw,2rem)] font-bold text-white leading-[1.5] max-w-[720px] mx-auto italic mb-6">
-            &ldquo;The people walking these streets deserve the same financial
-            knowledge that has been hoarded in boardrooms for decades.&rdquo;
+            &ldquo;We all deserve a chance at bumping into the right person,
+            having the right network, taking a chance that works out to change
+            the rest of our lives.&rdquo;
           </blockquote>
           <p className="text-sm text-white/60 font-semibold tracking-wide uppercase">
             Mpapi Tsomele, Founder, Lime Pages

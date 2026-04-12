@@ -4,6 +4,11 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PageTransition from "@/components/animations/PageTransition";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import CookieConsent from "@/components/layout/CookieConsent";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
+import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/shared/JsonLd";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -12,7 +17,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://lime-pages.vercel.app"),
+  metadataBase: new URL("https://www.limepages.co.za"),
   title: "Lime Pages — Building Wealth Together",
   description:
     "Advisory & Fintech solutions to fuel Africa's entrepreneurial revolution. Equipping entrepreneurs and young professionals with tools to build thriving businesses and generational wealth.",
@@ -34,7 +39,7 @@ export const metadata: Metadata = {
     description:
       "Advisory & Fintech solutions to fuel Africa's entrepreneurial revolution.",
     siteName: "Lime Pages",
-    url: "https://lime-pages.vercel.app",
+    url: "https://www.limepages.co.za",
     type: "website",
     locale: "en_ZA",
   },
@@ -56,12 +61,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${plusJakarta.variable} antialiased`}>
+      <head>
+        <OrganizationJsonLd />
+        <WebSiteJsonLd />
+      </head>
       <body className="min-h-screen flex flex-col font-sans bg-white text-ink">
+        <a href="#main-content" className="skip-to-content">
+          Skip to content
+        </a>
         <Navbar />
-        <main className="flex-1">
-          <PageTransition>{children}</PageTransition>
+        <main id="main-content" className="flex-1">
+          <ErrorBoundary>
+            <PageTransition>{children}</PageTransition>
+          </ErrorBoundary>
         </main>
         <Footer />
+        <Analytics />
+        <SpeedInsights />
+        <CookieConsent />
       </body>
     </html>
   );

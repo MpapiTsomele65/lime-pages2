@@ -4,7 +4,19 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { Compass, Rocket, Box, Check, ShieldCheck } from "lucide-react";
+import { AdvisoryChatbot } from "@/components/advisory/AdvisoryChatbot";
+import {
+  ShieldCheck,
+  Scale,
+  Landmark,
+  FileCheck,
+  TrendingUp,
+  Rocket,
+  Banknote,
+  BarChart3,
+  ArrowRight,
+  Check,
+} from "lucide-react";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 } as const,
@@ -14,65 +26,67 @@ const fadeUp = {
 };
 
 const steps = [
-  { num: "Step 01", title: "Start a conversation", body: "Book a free 15-minute intro call. Tell me what\u2019s going on \u2014 your business, your product, your goals. No prep required." },
-  { num: "Step 02", title: "We scope it together", body: "Based on what you share, I\u2019ll suggest which session actually fits \u2014 or tell you honestly if I\u2019m not the right person for what you need." },
-  { num: "Step 03", title: "You decide what\u2019s next", body: "No upsell. No follow-up pressure. If a paid session makes sense, great. If not, you still leave the intro call with something useful." },
+  {
+    num: "Step 01",
+    title: "Start a conversation",
+    body: "Book a free 15-minute intro call. Tell me what\u2019s going on \u2014 your business, your product, your goals. No prep required.",
+  },
+  {
+    num: "Step 02",
+    title: "We scope it together",
+    body: "Based on what you share, I\u2019ll suggest which session actually fits \u2014 or tell you honestly if I\u2019m not the right person for what you need.",
+  },
+  {
+    num: "Step 03",
+    title: "You decide what\u2019s next",
+    body: "No upsell. No follow-up pressure. If a paid session makes sense, great. If not, you still leave the intro call with something useful.",
+  },
 ];
 
-const pathways = [
+const professionalOutcomes = [
   {
-    icon: Compass,
-    iconBg: "bg-teal-light",
-    tagBg: "bg-teal-light",
-    tagColor: "text-[#0a7a7b]",
-    who: "SMMEs & Small Business Owners",
-    title: "\u201cI\u2019m doing everything myself \u2014 and it\u2019s not scaling.\u201d",
-    problem: "You\u2019re good at what you do, but the business runs through you. No systems, no processes, no capacity to grow. You need to stop being the bottleneck and start building a business that works without you in every seat.",
-    outcomes: [
-      "Operational systems that create real capacity",
-      "Processes that let you delegate and grow",
-      "A digitisation plan \u2014 invoicing, workflow, tools",
-      "A clear roadmap from sole operator to scalable business",
-    ],
-    price: "R1,500",
+    icon: Scale,
+    title: "Know Your Credit Rights",
+    desc: "Understand the National Credit Act \u2014 what lenders can and can\u2019t do, and what to do when you\u2019re refused credit.",
+  },
+  {
+    icon: FileCheck,
+    title: "Navigate Debt Relief",
+    desc: "Practical guidance on debt review, debt counselling, and how to get back on track without losing everything.",
+  },
+  {
+    icon: Landmark,
+    title: "Consumer Protection",
+    desc: "Your rights under the Consumer Protection Act \u2014 from unfair contracts to defective goods and services.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Build Wealth With Confidence",
+    desc: "Investing basics, retirement planning, and the Two-Pot system explained in plain language.",
+  },
+];
+
+const smmeOutcomes = [
+  {
+    icon: Banknote,
+    title: "Access Funding",
+    desc: "Navigate grants, loans, angel investment, and venture capital \u2014 know which option fits your stage.",
   },
   {
     icon: Rocket,
-    iconBg: "bg-navy/[0.07]",
-    tagBg: "bg-navy/[0.07]",
-    tagColor: "text-navy",
-    who: "First-Time Fundraisers",
-    title: "\u201cI need capital \u2014 but I don\u2019t know where to start.\u201d",
-    problem: "You\u2019re ready to raise but the process feels opaque \u2014 what investors actually want, how to structure a deck, what your numbers need to say, and how to tell a story that lands.",
-    outcomes: [
-      "An investor-ready pitch deck and narrative",
-      "A financial model that holds up to scrutiny",
-      "Clarity on how much to raise and on what terms",
-      "Practical fundraising strategy \u2014 not theory",
-    ],
-    price: "R2,500",
+    title: "Fundraising Strategy",
+    desc: "Build an investor-ready pitch, understand term sheets, and learn how to tell a story that lands.",
   },
   {
-    icon: Box,
-    iconBg: "bg-teal-light",
-    tagBg: "bg-teal-light",
-    tagColor: "text-[#0a7a7b]",
-    who: "Tech Founders",
-    title: "\u201cI have a product \u2014 but it\u2019s not working.\u201d",
-    problem: "You\u2019re shipping features but nothing\u2019s moving the needle. You need someone to help you figure out what to build, what to cut, and how to get from MVP to something people actually pay for.",
-    outcomes: [
-      "A prioritised roadmap that drives real outcomes",
-      "Framework for deciding what to build next",
-      "User-focused thinking, not feature bloat",
-      "Actionable plan you can execute this quarter",
-    ],
-    price: "R1,800",
+    icon: BarChart3,
+    title: "Scale Operations",
+    desc: "Systems, processes, and digitisation plans that take you from sole operator to scalable business.",
   },
 ];
 
 export function AdvisoryPreview() {
   return (
-    <section className="py-[100px] px-[clamp(1.25rem,4vw,3.5rem)] bg-snow">
+    <section className="py-16 sm:py-[100px] px-[clamp(1.25rem,4vw,3.5rem)] bg-snow">
       <Container>
         {/* Header */}
         <motion.div {...fadeUp} className="max-w-[680px] mb-16">
@@ -85,20 +99,32 @@ export function AdvisoryPreview() {
             Then build it bigger.
           </h2>
           <p className="text-muted text-[17px] leading-[1.8]">
-            Most South African businesses don&apos;t fail because the founder
-            isn&apos;t talented — they fail because the systems aren&apos;t there.
-            I help SMMEs build operations that scale, tech founders ship
-            products that work, and first-time fundraisers raise real capital.
+            Whether you&apos;re an individual navigating your financial rights or
+            a business owner building something real &mdash; we give you the
+            knowledge, tools, and access to move forward with confidence.
           </p>
         </motion.div>
 
         {/* Image strip */}
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.05 }} className="relative h-[280px] rounded-[20px] overflow-hidden mb-14">
-          <Image src="/images/rachel-martin-yHOhVzVRFMc-unsplash.jpg" alt="South African city street" fill className="object-cover" />
+        <motion.div
+          {...fadeUp}
+          transition={{ ...fadeUp.transition, delay: 0.05 }}
+          className="relative h-[200px] sm:h-[280px] rounded-[20px] overflow-hidden mb-14"
+        >
+          <Image
+            src="/images/rachel-martin-yHOhVzVRFMc-unsplash.jpg"
+            alt="South African city street"
+            fill
+            className="object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-navy/60 to-transparent" />
-          <div className="absolute bottom-6 left-8 z-[1]">
-            <p className="text-white text-lg font-bold">Real conversations. Real outcomes.</p>
-            <p className="text-white/60 text-sm">No jargon. No judgment. No surprises.</p>
+          <div className="absolute bottom-6 left-5 sm:left-8 z-[1]">
+            <p className="text-white text-lg font-bold">
+              Real conversations. Real outcomes.
+            </p>
+            <p className="text-white/60 text-sm">
+              No jargon. No judgment. No surprises.
+            </p>
           </div>
         </motion.div>
 
@@ -106,12 +132,16 @@ export function AdvisoryPreview() {
         <motion.div
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 bg-white rounded-[20px] border border-border overflow-hidden mb-14"
+          className="grid grid-cols-1 md:grid-cols-3 bg-white rounded-[20px] border border-border overflow-hidden mb-16"
         >
           {steps.map((s, i) => (
             <div
               key={s.num}
-              className={`p-7 ${i < steps.length - 1 ? "md:border-r border-b md:border-b-0 border-border" : ""}`}
+              className={`p-7 ${
+                i < steps.length - 1
+                  ? "md:border-r border-b md:border-b-0 border-border"
+                  : ""
+              }`}
             >
               <div className="text-[11px] font-extrabold tracking-[2px] uppercase text-navy mb-4">
                 {s.num}
@@ -124,61 +154,179 @@ export function AdvisoryPreview() {
           ))}
         </motion.div>
 
-        {/* Pathway Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-          {pathways.map((p, i) => (
-            <motion.div
-              key={p.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 0.5, delay: 0.1 * i }}
-              className="bg-white rounded-[20px] border border-border shadow-sm flex flex-col overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all"
-            >
-              <div className="p-7 pb-0">
-                <div className={`w-12 h-12 rounded-[14px] ${p.iconBg} flex items-center justify-center mb-5`}>
-                  <p.icon className="w-[22px] h-[22px] text-inherit" />
+        {/* ═══ TWO-TRACK LAYOUT ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-16">
+          {/* For Professionals / Individuals */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.6, ease: "easeOut" as const }}
+            className="bg-white rounded-[20px] border border-border shadow-sm overflow-hidden"
+          >
+            {/* Track header */}
+            <div className="bg-teal-light px-7 py-5 border-b border-teal/15">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-[12px] bg-teal/15 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-teal" />
                 </div>
-                <span className={`inline-block text-[11px] font-bold tracking-[1px] uppercase px-3 py-1 rounded-full mb-3.5 ${p.tagBg} ${p.tagColor}`}>
-                  {p.who}
-                </span>
-                <h3 className="text-xl font-extrabold text-ink leading-tight mb-3">
-                  {p.title}
-                </h3>
-                <p className="text-sm text-muted leading-[1.75]">{p.problem}</p>
-              </div>
-
-              <div className="px-7 py-5 flex-1">
-                <ul className="flex flex-col gap-2.5">
-                  {p.outcomes.map((o, j) => (
-                    <li
-                      key={j}
-                      className="text-[13px] text-ink flex items-start gap-2.5 leading-snug"
-                    >
-                      <Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-navy" strokeWidth={3} />
-                      {o}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="px-7 py-5 border-t border-border flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-xs text-subtle">Sessions from</div>
-                  <div className="text-[22px] font-extrabold text-navy leading-none">
-                    {p.price}
-                  </div>
+                  <span className="text-[10px] font-bold tracking-[1.2px] uppercase text-teal block">
+                    For Professionals &amp; Individuals
+                  </span>
+                  <h3 className="text-lg font-extrabold text-ink leading-tight">
+                    NCR &amp; Consumer Protection
+                  </h3>
                 </div>
-                <a
-                  href="mailto:hello@limepages.co.za?subject=Advisory Session Request"
-                  className="inline-flex items-center gap-1.5 px-[22px] py-[11px] rounded-full text-[13px] font-bold border-[1.5px] border-navy text-navy hover:bg-navy hover:text-lime transition-colors whitespace-nowrap"
-                >
-                  Let&apos;s talk &rarr;
-                </a>
               </div>
-            </motion.div>
-          ))}
+              <p className="text-sm text-muted leading-[1.7] mt-2">
+                Understand your rights under the National Credit Act, Consumer
+                Protection Act, and FAIS &mdash; and get practical guidance on
+                what to actually do when things go wrong.
+              </p>
+            </div>
+
+            {/* Outcomes */}
+            <div className="p-7 flex flex-col gap-5">
+              {professionalOutcomes.map((item, i) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{
+                    duration: 0.4,
+                    delay: 0.08 * i,
+                    ease: "easeOut" as const,
+                  }}
+                  className="flex gap-4"
+                >
+                  <div className="w-9 h-9 rounded-[10px] bg-teal-light flex items-center justify-center shrink-0 mt-0.5">
+                    <item.icon className="w-[18px] h-[18px] text-teal" />
+                  </div>
+                  <div>
+                    <h4 className="text-[15px] font-bold text-ink mb-1">
+                      {item.title}
+                    </h4>
+                    <p className="text-sm text-muted leading-[1.65]">
+                      {item.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="px-7 py-5 border-t border-border bg-snow/50 flex items-center gap-2">
+              <Check
+                className="w-3.5 h-3.5 text-teal shrink-0"
+                strokeWidth={3}
+              />
+              <span className="text-xs text-muted font-medium">
+                Free guidance via our AI advisor &middot; Paid sessions available
+                for deeper support
+              </span>
+            </div>
+          </motion.div>
+
+          {/* For SMMEs */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{
+              duration: 0.6,
+              delay: 0.1,
+              ease: "easeOut" as const,
+            }}
+            className="bg-white rounded-[20px] border border-border shadow-sm overflow-hidden"
+          >
+            {/* Track header */}
+            <div className="bg-navy/[0.04] px-7 py-5 border-b border-navy/[0.08]">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-[12px] bg-navy/[0.08] flex items-center justify-center">
+                  <Rocket className="w-5 h-5 text-navy" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold tracking-[1.2px] uppercase text-navy block">
+                    For SMMEs &amp; Founders
+                  </span>
+                  <h3 className="text-lg font-extrabold text-ink leading-tight">
+                    Funding &amp; Growth
+                  </h3>
+                </div>
+              </div>
+              <p className="text-sm text-muted leading-[1.7] mt-2">
+                From your first grant application to an investor-ready pitch deck
+                &mdash; practical support to help you access capital and build a
+                business that scales.
+              </p>
+            </div>
+
+            {/* Outcomes */}
+            <div className="p-7 flex flex-col gap-5">
+              {smmeOutcomes.map((item, i) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{
+                    duration: 0.4,
+                    delay: 0.08 * i,
+                    ease: "easeOut" as const,
+                  }}
+                  className="flex gap-4"
+                >
+                  <div className="w-9 h-9 rounded-[10px] bg-navy/[0.06] flex items-center justify-center shrink-0 mt-0.5">
+                    <item.icon className="w-[18px] h-[18px] text-navy" />
+                  </div>
+                  <div>
+                    <h4 className="text-[15px] font-bold text-ink mb-1">
+                      {item.title}
+                    </h4>
+                    <p className="text-sm text-muted leading-[1.65]">
+                      {item.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="px-7 py-5 border-t border-border bg-snow/50 flex items-center gap-2">
+              <Check
+                className="w-3.5 h-3.5 text-navy shrink-0"
+                strokeWidth={3}
+              />
+              <span className="text-xs text-muted font-medium">
+                1-on-1 advisory sessions &middot; Pitch deck reviews &middot;
+                Fundraising strategy
+              </span>
+            </div>
+          </motion.div>
         </div>
+
+        {/* ═══ CHATBOT ═══ */}
+        <motion.div
+          {...fadeUp}
+          transition={{ ...fadeUp.transition, delay: 0.1 }}
+          className="mb-16"
+        >
+          <div className="text-center mb-8">
+            <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal mb-3 block">
+              Try It Now
+            </span>
+            <h3 className="text-[clamp(1.4rem,3vw,2rem)] font-extrabold text-ink leading-tight mb-3">
+              Free AI-powered guidance
+            </h3>
+            <p className="text-sm text-muted leading-[1.7] max-w-[520px] mx-auto">
+              Get instant answers on consumer rights, debt relief, investing
+              basics, SMME funding, and more. No sign-up needed.
+            </p>
+          </div>
+          <AdvisoryChatbot />
+        </motion.div>
 
         {/* Refund guarantee banner */}
         <motion.div
@@ -195,8 +343,8 @@ export function AdvisoryPreview() {
             </h4>
             <p className="text-sm text-muted leading-relaxed">
               If you don&apos;t find the session useful, request a refund within
-              24 hours and get your money back. No questions asked. No forms.
-              No friction.
+              24 hours and get your money back. No questions asked. No forms. No
+              friction.
             </p>
           </div>
         </motion.div>
@@ -205,29 +353,38 @@ export function AdvisoryPreview() {
         <motion.div
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.2 }}
-          className="bg-white border border-border rounded-[20px] p-9 flex flex-col md:flex-row items-start md:items-center justify-between gap-8"
+          className="bg-white border border-border rounded-[20px] p-6 sm:p-9 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 sm:gap-8"
         >
           <div>
             <h3 className="text-[22px] font-extrabold text-ink mb-1.5 leading-tight">
-              Not sure which fits? Start here — it&apos;s free.
+              Need more than the chatbot? Let&apos;s talk.
             </h3>
             <p className="text-sm text-muted leading-relaxed max-w-[480px]">
-              Book a 15-minute intro call. No commitment, no agenda. Just a
-              real conversation to figure out if and how I can actually help
-              you. If I can&apos;t, I&apos;ll tell you that too.
+              Book a 15-minute intro call. No commitment, no agenda. Just a real
+              conversation to figure out if and how I can actually help you. If I
+              can&apos;t, I&apos;ll tell you that too.
             </p>
           </div>
-          <a
-            href="mailto:hello@limepages.co.za?subject=Intro Call Request"
-            className="bg-teal text-white px-8 py-3.5 rounded-full font-bold text-sm whitespace-nowrap hover:opacity-90 hover:-translate-y-0.5 transition-all"
-          >
-            Book a free intro call &rarr;
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="mailto:hello@limepages.co.za?subject=Intro Call Request"
+              className="bg-teal text-white px-8 py-3.5 rounded-full font-bold text-sm whitespace-nowrap hover:opacity-90 hover:-translate-y-0.5 transition-all"
+            >
+              Book a free intro call &rarr;
+            </a>
+            <Link
+              href="/advisory"
+              className="border-[1.5px] border-navy text-navy px-7 py-3.5 rounded-full font-bold text-sm whitespace-nowrap hover:bg-navy hover:text-lime transition-colors inline-flex items-center gap-2"
+            >
+              View all services
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </motion.div>
 
         <p className="text-center mt-5 text-xs text-subtle leading-relaxed">
-          All sessions are fully online &middot; 24-hour money-back guarantee,
-          no questions asked
+          #ThisIsNotFinancialAdvice &middot; All sessions are fully online
+          &middot; 24-hour money-back guarantee, no questions asked
         </p>
       </Container>
     </section>

@@ -11,11 +11,11 @@ const fadeUp = {
 };
 
 const bars = [
-  { label: "Year 1", value: "360", height: 40, color: "bg-teal/40", delay: 0.1 },
-  { label: "Year 2", value: "720", height: 80, color: "bg-teal/60", delay: 0.2 },
-  { label: "Year 3", value: "1,080", height: 118, color: "bg-teal/80", delay: 0.3 },
-  { label: "Year 4", value: "1,400", height: 154, color: "bg-teal", delay: 0.4 },
-  { label: "Year 5", value: "1,800", height: 200, color: "bg-lime", delay: 0.5, highlight: true },
+  { label: "Year 1", value: "R360k", height: 40, color: "bg-teal/40", delay: 0.1 },
+  { label: "Year 2", value: "R720k", height: 80, color: "bg-teal/60", delay: 0.2 },
+  { label: "Year 3", value: "R1.08M", height: 118, color: "bg-teal/80", delay: 0.3 },
+  { label: "Year 4", value: "R1.4M", height: 154, color: "bg-teal", delay: 0.4 },
+  { label: "Year 5", value: "R1.8M", height: 200, color: "bg-lime", delay: 0.5, highlight: true },
 ];
 
 export function WhatIsLehumo() {
@@ -53,7 +53,7 @@ export function WhatIsLehumo() {
             className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-9"
           >
             <p className="text-xs font-bold text-white/32 tracking-[1px] uppercase mb-8">
-              Cumulative Pool Growth · R&apos;000
+              Cumulative Pool Growth
             </p>
             <div className="flex items-end gap-3 h-[200px]">
               {bars.map((b) => (

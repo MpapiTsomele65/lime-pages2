@@ -2,9 +2,13 @@ export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Lehumo", href: "/lehumo" },
   { label: "Lime Capital", href: "/capital" },
-  { label: "About", href: "/about" },
   { label: "Lime Connect", href: "/connect" },
   { label: "Lime Advisory", href: "/advisory" },
+] as const;
+
+export const NAV_MORE_LINKS = [
+  { label: "Lemonade Station", href: "/lemonade-station", desc: "For founders & SMMEs" },
+  { label: "Behind the Pages", href: "/about", desc: "Our story & mission" },
 ] as const;
 
 export const FOOTER_NAV = {
@@ -12,16 +16,17 @@ export const FOOTER_NAV = {
     { label: "Home", href: "/" },
     { label: "Lehumo", href: "/lehumo" },
     { label: "Lime Capital", href: "/capital" },
-    { label: "About", href: "/about" },
+    { label: "Lemonade Station", href: "/lemonade-station" },
     { label: "Lime Connect", href: "/connect" },
     { label: "Lime Advisory", href: "/advisory" },
+    { label: "Behind the Pages", href: "/about" },
   ],
   services: [
-    { label: "Wealth Planning", href: "/advisory" },
+    { label: "Growth Strategy", href: "/advisory" },
     { label: "Investor Readiness", href: "/advisory" },
     { label: "SMME Advisory", href: "/advisory" },
-    { label: "Business Funding", href: "/advisory" },
-    { label: "Financial Planning", href: "/advisory" },
+    { label: "Tech Implementation", href: "/advisory" },
+    { label: "Business Scaling", href: "/advisory" },
   ],
   community: [
     { label: "Lehumo Trust", href: "/lehumo" },
@@ -32,9 +37,9 @@ export const FOOTER_NAV = {
 } as const;
 
 export const MARQUEE_HOME = [
-  "Business Funding", "Investor Readiness", "Wealth Planning",
-  "SMME Advisory", "Lime Capital", "Lehumo Trust",
-  "Mentoring", "Fintech Solutions",
+  "Growth Strategy", "Business Scaling", "Tech Implementation",
+  "SMME Advisory", "Investor Readiness", "Lehumo Trust",
+  "Digital Transformation", "Lime Capital",
 ];
 
 export const MARQUEE_LEHUMO = [

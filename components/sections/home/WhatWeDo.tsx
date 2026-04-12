@@ -30,10 +30,10 @@ const services = [
     iconBg: "bg-teal-light",
     iconColor: "text-teal",
     barColor: "bg-teal",
-    tag: "SMMEs & Business Owners",
-    title: "Grow Beyond Yourself",
+    tag: "SMMEs & Founders",
+    title: "Grow your business.",
     description:
-      "You built it from nothing — but it still runs through you. We help small business owners build systems, processes, and capacity so your business can scale without you in every seat.",
+      "From operational systems to fundraising strategy — we help you stop being the bottleneck and start building something that scales.",
     hoverBorder: "hover:border-teal/40",
   },
   {
@@ -41,10 +41,10 @@ const services = [
     iconBg: "bg-navy/[0.07]",
     iconColor: "text-navy",
     barColor: "bg-navy",
-    tag: "Young Professionals",
-    title: "Turn Income Into Wealth",
+    tag: "Young Professionals & Savers",
+    title: "Make your money work.",
     description:
-      "You\u2019re earning well but your money isn\u2019t working for you yet. We help employed professionals use their income strategically — from budgeting to investing — so every rand has a job.",
+      "Budgeting, investing, retirement planning, and financial rights — everything you need to turn a salary into real, compounding wealth.",
     hoverBorder: "hover:border-navy/30",
   },
   {
@@ -52,10 +52,10 @@ const services = [
     iconBg: "bg-teal-light",
     iconColor: "text-teal",
     barColor: "bg-teal",
-    tag: "Creators & Influencers",
-    title: "Make Your Payouts Count",
+    tag: "Creators & Side Hustlers",
+    title: "Turn income into assets.",
     description:
-      "Campaign money hits different when it\u2019s gone in a month. We help creators and side-hustlers manage lumpsum payouts, plan for irregular income, and build long-term wealth from short-term wins.",
+      "Manage irregular income, plan for lumpsum payouts, and build long-term wealth from short-term wins. Your hustle deserves a financial strategy.",
     hoverBorder: "hover:border-teal/40",
   },
 ];

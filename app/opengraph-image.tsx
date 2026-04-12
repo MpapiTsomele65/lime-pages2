@@ -1,10 +1,20 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export const alt = "Lime Pages — Building Wealth Together";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
+  // Read the hero background image from public/images
+  const heroImagePath = join(
+    process.cwd(),
+    "public/images/tobias-reich-1GgWbP74phY-unsplash.jpg"
+  );
+  const heroImageData = await readFile(heroImagePath);
+  const heroBase64 = `data:image/jpeg;base64,${heroImageData.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -15,93 +25,146 @@ export default async function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#0B1933",
+          position: "relative",
           fontFamily: "sans-serif",
         }}
       >
-        {/* Decorative gradient orb */}
+        {/* Hero background image */}
+        <img
+          src={heroBase64}
+          alt=""
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+
+        {/* Dark overlay for text readability */}
         <div
           style={{
             position: "absolute",
-            bottom: "-20%",
-            right: "-10%",
-            width: 500,
-            height: 500,
-            borderRadius: "50%",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
             background:
-              "radial-gradient(circle, rgba(70,205,207,0.2), transparent 70%)",
+              "linear-gradient(180deg, rgba(11,25,51,0.75) 0%, rgba(11,25,51,0.6) 50%, rgba(11,25,51,0.8) 100%)",
           }}
         />
-        <div
-          style={{
-            position: "absolute",
-            top: "-15%",
-            left: "-5%",
-            width: 400,
-            height: 400,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(184,255,0,0.15), transparent 70%)",
-          }}
-        />
-        {/* Logo text */}
+
+        {/* Content */}
         <div
           style={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: 16,
-            marginBottom: 32,
+            justifyContent: "center",
+            position: "relative",
+            zIndex: 1,
+            padding: "40px 60px",
           }}
         >
+          {/* Badge */}
           <div
             style={{
-              fontSize: 48,
+              display: "flex",
+              alignItems: "center",
+              border: "1.5px solid rgba(70,205,207,0.4)",
+              borderRadius: 999,
+              padding: "8px 24px",
+              marginBottom: 32,
+            }}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: "#46CDCF",
+                marginRight: 10,
+              }}
+            />
+            <span
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#46CDCF",
+                letterSpacing: "2px",
+                textTransform: "uppercase" as const,
+              }}
+            >
+              Wealth & Business Growth Solutions for Africa
+            </span>
+          </div>
+
+          {/* Main heading */}
+          <div
+            style={{
+              fontSize: 72,
               fontWeight: 800,
               color: "white",
-              letterSpacing: "-1px",
+              textAlign: "center",
+              lineHeight: 1.1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <span>Building Wealth</span>
+            <span style={{ color: "#46CDCF" }}>Together</span>
+          </div>
+
+          {/* Subtitle */}
+          <div
+            style={{
+              fontSize: 22,
+              color: "rgba(255,255,255,0.6)",
+              marginTop: 24,
+              textAlign: "center",
+              maxWidth: 700,
+              lineHeight: 1.5,
+            }}
+          >
+            Equipping entrepreneurs and young professionals with the strategies
+            and solutions to build thriving businesses and generational wealth.
+          </div>
+        </div>
+
+        {/* Logo bottom-left */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 36,
+            left: 50,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: "white",
+              letterSpacing: "1px",
             }}
           >
             LIME PAGES
-          </div>
+          </span>
         </div>
-        {/* Tagline */}
-        <div
-          style={{
-            fontSize: 64,
-            fontWeight: 800,
-            color: "white",
-            textAlign: "center",
-            lineHeight: 1.1,
-            maxWidth: 800,
-            display: "flex",
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          Building Wealth{" "}
-          <span style={{ color: "#B8FF00" }}>Together</span>
-        </div>
-        {/* Subtitle */}
-        <div
-          style={{
-            fontSize: 24,
-            color: "rgba(255,255,255,0.5)",
-            marginTop: 24,
-            textAlign: "center",
-            maxWidth: 600,
-          }}
-        >
-          Advisory & Fintech Solutions for Africa
-        </div>
-        {/* Website */}
+
+        {/* URL bottom-right */}
         <div
           style={{
             position: "absolute",
-            bottom: 40,
+            bottom: 36,
             right: 50,
             fontSize: 18,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.4)",
           }}
         >
           limepages.co.za

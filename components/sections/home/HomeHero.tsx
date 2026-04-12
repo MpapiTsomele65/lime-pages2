@@ -62,7 +62,7 @@ export default function HomeHero() {
       <Container className="relative z-[3] text-center py-32">
         <motion.div {...fadeUp}>
           <Badge variant="teal" pulse className="mb-8">
-            Advisory &amp; Fintech Solutions for Africa
+            Wealth &amp; Business Growth Solutions for Africa
           </Badge>
         </motion.div>
 
@@ -82,9 +82,8 @@ export default function HomeHero() {
           transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.2 }}
           className="max-w-[640px] mx-auto text-[clamp(1rem,1.8vw,1.2rem)] leading-relaxed text-white/70 mb-10"
         >
-          Equipping Africa&apos;s entrepreneurs and young professionals with the
-          advisory, capital access, and fintech tools to build thriving
-          businesses and generational wealth.
+          Equipping entrepreneurs and young professionals with the strategies
+          and solutions to build thriving businesses and generational wealth.
         </motion.p>
 
         <motion.div
@@ -99,12 +98,12 @@ export default function HomeHero() {
             Explore Services
             <span aria-hidden="true">&rarr;</span>
           </Link>
-          <Link
-            href="#book"
+          <a
+            href="mailto:hello@limepages.co.za?subject=Let's Have Coffee ☕"
             className="inline-flex items-center gap-2 rounded-full border border-white/25 px-8 py-3.5 text-sm font-bold text-white transition-colors hover:border-white/50 hover:bg-white/5"
           >
             Let&apos;s Have Coffee
-          </Link>
+          </a>
         </motion.div>
 
         {/* Scroll hint */}

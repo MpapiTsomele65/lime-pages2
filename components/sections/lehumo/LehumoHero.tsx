@@ -34,14 +34,6 @@ export function LehumoHero() {
       <div className="absolute bottom-0 right-[15%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.12),transparent_70%)] blur-[80px] pointer-events-none" />
 
       <motion.div {...fadeUp} className="relative z-[1] max-w-[900px]">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-lime-dim border border-lime/25 rounded-full px-[18px] py-[7px] mb-8">
-          <span className="w-[7px] h-[7px] rounded-full bg-lime animate-[pulse_2s_ease_infinite]" />
-          <span className="text-[11px] font-bold text-lime tracking-[1.4px] uppercase">
-            Collective Investment Trust · South Africa
-          </span>
-        </div>
-
         {/* Lehumo brand */}
         <div className="flex items-center gap-3.5 justify-center mb-7">
           <svg viewBox="0 0 60 60" fill="none" className="w-[52px] h-[52px]">

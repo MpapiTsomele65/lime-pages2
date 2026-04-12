@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Lime Capital — Growth Funding for Entrepreneurs | Lime Pages",
+  title: "Lime Capital — Learn to Invest & Structure Deals | Lime Pages",
   description:
-    "Capital access for Africa's entrepreneurs. Growth funding backed by community, managed by regulated partners.",
+    "Capital markets education for South African investors. Compare top unit trusts, understand ETFs, and learn how startup deals are structured.",
   openGraph: {
-    title: "Lime Capital — Growth Funding for Entrepreneurs",
+    title: "Lime Capital — Learn to Invest & Structure Deals",
     description:
-      "Capital access for Africa's entrepreneurs. Growth funding backed by community, managed by regulated partners.",
+      "Capital markets education for South African investors. Compare top unit trusts, understand ETFs, and learn how startup deals are structured.",
   },
 };
 

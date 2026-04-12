@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "limepages.co.za" }],
+      "destination": "https://www.limepages.co.za/:path",
+      "permanent": true
+    }
+  ]
+}

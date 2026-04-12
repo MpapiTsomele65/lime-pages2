@@ -27,12 +27,12 @@ export function CtaBanner() {
       >
         <div>
           <h2 className="text-[clamp(1.8rem,4vw,3rem)] font-extrabold text-white leading-[1.05] tracking-tight mb-3">
-            Ready to build
+            The table has room.
             <br />
-            <span className="text-lime">real wealth?</span>
+            <span className="text-lime">Pull up a chair.</span>
           </h2>
           <p className="text-white/55 text-base">
-            Whether you&apos;re scaling a business, growing your salary, or managing campaign payouts — let&apos;s talk.
+            Whether you&apos;re investing your first R1,000, scaling a side hustle, or raising capital for a startup — we built this for you.
           </p>
         </div>
         <div className="flex gap-3.5 flex-wrap">
@@ -43,10 +43,10 @@ export function CtaBanner() {
             Book Now →
           </Link>
           <Link
-            href="/connect"
+            href="/about"
             className="text-white px-8 py-3.5 rounded-full font-semibold text-sm border-2 border-white/20 hover:bg-white/[0.07] hover:border-lime/40 transition-all"
           >
-            Let&apos;s Connect
+            Behind the Pages
           </Link>
         </div>
       </motion.div>

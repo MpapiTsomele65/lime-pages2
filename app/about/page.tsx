@@ -4,8 +4,9 @@ import { WhoWeAre } from "@/components/sections/home/WhoWeAre";
 import { PhotoQuote } from "@/components/sections/home/PhotoQuote";
 
 export const metadata: Metadata = {
-  title: "About — Our Story | Lime Pages",
-  description: "Lime Pages exists because the financial system was not designed to serve most South Africans. 7+ years in financial services. Building wealth together.",
+  title: "Behind the Pages — Our Story | Lime Pages",
+  description:
+    "Lime Pages exists to close the gap between South Africa's two economies. Democratising information, capital, and networks for ambitious first-generation builders.",
 };
 
 export default function AboutPage() {

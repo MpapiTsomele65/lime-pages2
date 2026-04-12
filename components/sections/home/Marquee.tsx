@@ -1,9 +1,9 @@
 "use client";
 
 const ITEMS = [
-  "Business Funding", "Investor Readiness", "Wealth Planning",
-  "SMME Advisory", "Lime Capital", "Lehumo Trust",
-  "Mentoring", "Fintech Solutions",
+  "Growth Strategy", "Business Scaling", "Tech Implementation",
+  "SMME Advisory", "Investor Readiness", "Lehumo Trust",
+  "Digital Transformation", "Lime Capital",
 ];
 
 export function Marquee() {

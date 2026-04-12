@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Container } from "@/components/ui/Container";
-import { TrendingUp, Shield, Landmark, Sprout } from "lucide-react";
+import { TrendingUp, Shield, Landmark, Sprout, ArrowRight } from "lucide-react";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -350,6 +350,267 @@ export function InvestmentStrategy() {
           ))}
         </div>
 
+        {/* ── Where Your Capital Goes — Carousel ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: "easeOut" as const }}
+          className="mb-10"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-lime/70">
+              Where 50% of Your Capital Goes
+            </span>
+          </div>
+          <h3 className="text-xl font-extrabold text-white mb-2">
+            Real Assets. Real Impact.
+          </h3>
+          <p className="text-sm text-white/50 leading-relaxed mb-6 max-w-[600px]">
+            Half of the Lehumo portfolio flows directly into South Africa&apos;s
+            real economy — funding local SMMEs through Sum1 Investments and
+            backing grassroots alternative assets through SV Capital.
+          </p>
+        </motion.div>
+      </Container>
+
+      {/* Horizontal scroll carousel — breaks out of Container for edge-to-edge scroll */}
+      <div className="overflow-x-auto scrollbar-hide pb-4">
+        <div className="flex gap-5 px-[clamp(1.25rem,4vw,3.5rem)] lg:px-[max(calc((100vw-1200px)/2+1.25rem),1.25rem)] min-w-max">
+          {/* Card 1 — Sum1 Investments (40%) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0, ease: "easeOut" as const }}
+            className="group w-[340px] shrink-0 rounded-[20px] overflow-hidden border border-lime/20 relative flex flex-col"
+          >
+            <div className="relative h-[220px] shrink-0">
+              <Image
+                src="/images/ali-mkumbwa-uk3ey_vhDKA-unsplash.jpg"
+                alt="SMME business owner at food stall"
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy-mid via-navy-mid/40 to-transparent" />
+              <div className="absolute top-4 left-4">
+                <div className="inline-flex items-center gap-1.5 bg-lime/20 backdrop-blur-sm border border-lime/30 rounded-full px-3 py-1">
+                  <div className="w-2 h-2 rounded-full bg-[#B8FF00]" />
+                  <span className="text-[10px] font-bold text-lime tracking-wide uppercase">
+                    40% · Sum1 Investments
+                  </span>
+                </div>
+              </div>
+              <div className="absolute bottom-4 left-4 right-4">
+                <p className="text-[11px] text-white/70 font-medium">
+                  R400 of every R1,000 invested monthly
+                </p>
+              </div>
+            </div>
+            <div className="bg-white/[0.04] p-6 flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <Image
+                  src="/images/sum1-logo-white.png"
+                  alt="Sum1 Investments"
+                  width={80}
+                  height={32}
+                  className="object-contain"
+                />
+                <div className="h-5 w-px bg-white/15" />
+                <span className="text-[10px] font-bold text-lime/60 uppercase tracking-wide">
+                  FSP 53629 · NCRCP 21759
+                </span>
+              </div>
+              <h4 className="text-lg font-bold text-white mb-2">
+                SMME Asset Financing
+              </h4>
+              <p className="text-[13px] text-white/55 leading-relaxed mb-4">
+                Capital deployed to fund asset purchases for local businesses —
+                from the food vendor scaling his kitchen, to logistics fleets
+                and manufacturing equipment. Creating jobs and driving township
+                economic growth.
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {["Logistics", "Agriculture", "Food & Bev", "Manufacturing"].map((s) => (
+                  <span
+                    key={s}
+                    className="bg-lime/[0.08] border border-lime/15 rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-lime/70"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <div className="bg-lime/[0.06] border border-lime/15 rounded-xl px-4 py-3">
+                <div className="text-[10px] text-white/40 uppercase tracking-wide mb-0.5">
+                  5-Year Track Record
+                </div>
+                <div className="text-base font-extrabold text-lime">
+                  ~17.6% Average Annual Return
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Card 2 — SV Capital (10%) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" as const }}
+            className="group w-[340px] shrink-0 rounded-[20px] overflow-hidden border border-purple-500/25 relative flex flex-col"
+          >
+            <div className="relative h-[220px] shrink-0">
+              <Image
+                src="/images/Sustainable-methods-of-cattle-farming.jpg"
+                alt="Cattle farming — grassroots alternative investment"
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy-mid via-navy-mid/40 to-transparent" />
+              <div className="absolute top-4 left-4">
+                <div className="inline-flex items-center gap-1.5 bg-purple-500/20 backdrop-blur-sm border border-purple-400/30 rounded-full px-3 py-1">
+                  <div className="w-2 h-2 rounded-full bg-purple-400" />
+                  <span className="text-[10px] font-bold text-purple-300 tracking-wide uppercase">
+                    10% · SV Capital
+                  </span>
+                </div>
+              </div>
+              <div className="absolute bottom-4 left-4 right-4">
+                <p className="text-[11px] text-white/70 font-medium">
+                  R100 of every R1,000 invested monthly
+                </p>
+              </div>
+            </div>
+            <div className="bg-white/[0.04] p-6 flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <Image
+                  src="/images/sv-capital-logo-dark.png"
+                  alt="SV Capital — Venture Beyond the Ordinary"
+                  width={130}
+                  height={48}
+                  className="object-contain rounded-lg"
+                />
+                <div className="h-5 w-px bg-white/15" />
+                <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-wide">
+                  FSP 52449
+                </span>
+              </div>
+              <h4 className="text-lg font-bold text-white mb-2">
+                Grassroots Alternative Assets
+              </h4>
+              <p className="text-[13px] text-white/55 leading-relaxed mb-4">
+                Exposure to niche, high-return asset classes outside traditional
+                markets — including cattle farming and solar energy initiatives.
+                These grassroots investments support rural economic development
+                while delivering strong returns.
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {["Cattle Farming", "Solar Energy", "Agriculture"].map((s) => (
+                  <span
+                    key={s}
+                    className="bg-purple-500/[0.1] border border-purple-500/20 rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-purple-300/80"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <div className="bg-purple-500/[0.08] border border-purple-500/15 rounded-xl px-4 py-3">
+                <div className="text-[10px] text-white/40 uppercase tracking-wide mb-0.5">
+                  Avg Annual Return
+                </div>
+                <div className="text-base font-extrabold text-purple-400">
+                  ~14.8%
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Card 3 — Township Economy (50% combined) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" as const }}
+            className="group w-[340px] shrink-0 rounded-[20px] overflow-hidden border border-teal/25 relative flex flex-col"
+          >
+            <div className="relative h-[220px] shrink-0">
+              <Image
+                src="/images/small-business-owner.jpg"
+                alt="Small business owner — township economy"
+                fill
+                className="object-cover object-top"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy-mid via-navy-mid/40 to-transparent" />
+              <div className="absolute top-4 left-4">
+                <div className="inline-flex items-center gap-1.5 bg-teal/20 backdrop-blur-sm border border-teal/30 rounded-full px-3 py-1">
+                  <div className="w-2 h-2 rounded-full bg-teal" />
+                  <span className="text-[10px] font-bold text-teal tracking-wide uppercase">
+                    50% Combined Impact
+                  </span>
+                </div>
+              </div>
+              <div className="absolute bottom-4 left-4 right-4">
+                <p className="text-[11px] text-white/70 font-medium">
+                  R500 of every R1,000 flows into the real economy
+                </p>
+              </div>
+            </div>
+            <div className="bg-white/[0.04] p-6 flex-1">
+              <h4 className="text-lg font-bold text-white mb-2">
+                Township Economy Ecosystem
+              </h4>
+              <p className="text-[13px] text-white/55 leading-relaxed mb-4">
+                40% Sum1 + 10% SV Capital = 50% of your investment circulating
+                through local communities. From the store owner growing her
+                business to the farmer scaling production — every Rand works
+                twice: growing your wealth while growing the township.
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#B8FF00] shrink-0" />
+                  <div className="flex-1">
+                    <span className="text-sm font-bold text-white">R400</span>
+                    <span className="text-xs text-white/40 ml-1.5">Sum1 SMMEs</span>
+                  </div>
+                  <span className="text-xs font-semibold text-lime/60">40%</span>
+                </div>
+                <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0" />
+                  <div className="flex-1">
+                    <span className="text-sm font-bold text-white">R100</span>
+                    <span className="text-xs text-white/40 ml-1.5">SV Capital</span>
+                  </div>
+                  <span className="text-xs font-semibold text-purple-400/60">10%</span>
+                </div>
+                <div className="flex items-center gap-3 bg-teal/[0.08] border border-teal/20 rounded-xl px-4 py-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-teal shrink-0" />
+                  <div className="flex-1">
+                    <span className="text-sm font-bold text-teal">R500</span>
+                    <span className="text-xs text-white/40 ml-1.5">Total community impact</span>
+                  </div>
+                  <span className="text-xs font-bold text-teal">50%</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Scroll hint (mobile) */}
+      <motion.div
+        {...fadeUp}
+        className="flex items-center justify-center gap-2 mt-4 mb-10 text-white/40 lg:hidden"
+      >
+        <ArrowRight className="w-4 h-4" />
+        <span className="text-xs font-medium">
+          Scroll to see all impact areas
+        </span>
+      </motion.div>
+
+      {/* Desktop spacer */}
+      <div className="hidden lg:block mb-10" />
+
+      <Container>
         {/* ── Key Message ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
