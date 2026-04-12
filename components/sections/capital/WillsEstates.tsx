@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import {
@@ -49,7 +50,7 @@ const processSteps = [
   {
     num: "01",
     title: "Consultation",
-    desc: "A 30-minute session with Simelane Attorneys to understand your assets, dependants, and wishes. In-person or virtual.",
+    desc: "A 30-minute session with PSA Law to understand your assets, dependants, and wishes. In-person at their Bryanston offices or virtual.",
     color: "text-teal",
     barColor: "bg-teal",
   },
@@ -180,8 +181,9 @@ export default function WillsEstates() {
               <span className="text-navy">4 simple steps.</span>
             </h2>
             <p className="text-muted text-base leading-[1.8]">
-              Powered by our partnership with Simelane Attorneys &mdash;
-              professional, affordable, and fully compliant with South African law.
+              Powered by our partnership with Simelane Attorneys Inc (PSA Law)
+              &mdash; professional, affordable, and fully compliant with South
+              African law.
             </p>
           </motion.div>
 
@@ -234,9 +236,15 @@ export default function WillsEstates() {
                 your loved ones.
               </p>
               <div className="bg-teal-light border border-teal/15 rounded-[14px] px-5 py-4">
-                <p className="text-sm text-teal font-bold mb-1">
-                  With Simelane Attorneys
-                </p>
+                <div className="flex items-center gap-3 mb-2">
+                  <Image
+                    src="/images/logos/psa-law.png"
+                    alt="PSA Law — Simelane Attorneys Inc"
+                    width={80}
+                    height={32}
+                    className="object-contain"
+                  />
+                </div>
                 <p className="text-sm text-muted leading-[1.65]">
                   Professional estate administration handled end-to-end &mdash;
                   from reporting to final distribution. Your family won&apos;t
@@ -304,22 +312,28 @@ export default function WillsEstates() {
             <div className="relative z-[1] flex flex-col md:flex-row items-start md:items-center gap-8">
               {/* Left */}
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-[14px] bg-teal/15 flex items-center justify-center">
-                    <HeartHandshake className="w-5 h-5 text-teal" />
-                  </div>
+                <div className="flex items-center gap-4 mb-5">
+                  <Image
+                    src="/images/logos/psa-law-white.png"
+                    alt="PSA Law — Simelane Attorneys Inc"
+                    width={120}
+                    height={48}
+                    className="object-contain"
+                  />
+                  <div className="h-8 w-px bg-white/15" />
                   <div>
                     <span className="text-[10px] font-bold tracking-[1.2px] uppercase text-teal block">
                       Legal Partner
                     </span>
-                    <h3 className="text-lg font-extrabold text-white leading-tight">
-                      Simelane Attorneys
+                    <h3 className="text-base font-extrabold text-white leading-tight">
+                      Simelane Attorneys Inc
                     </h3>
                   </div>
                 </div>
                 <p className="text-white/55 text-sm leading-[1.75] mb-5 max-w-[480px]">
-                  We&apos;ve partnered with Simelane Attorneys to offer professional
-                  Will drafting and estate planning services. Qualified, experienced,
+                  A 100% black-owned boutique law firm based in Bryanston, Sandton.
+                  We&apos;ve partnered with PSA Law to offer professional Will
+                  drafting and estate planning services &mdash; qualified, experienced,
                   and committed to making this process accessible for every South African.
                 </p>
                 <ul className="space-y-2">
