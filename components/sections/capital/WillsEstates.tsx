@@ -215,6 +215,95 @@ export default function WillsEstates() {
         </Container>
       </section>
 
+      {/* ═══ PRICING ═══ */}
+      <section className="py-16 sm:py-20 bg-white">
+        <Container>
+          <motion.div {...fadeUp} className="max-w-[820px] mx-auto">
+            <div className="bg-white rounded-[24px] border-2 border-teal/25 shadow-md overflow-hidden">
+              {/* Header */}
+              <div className="bg-navy px-8 py-7 relative overflow-hidden">
+                <div className="absolute top-[-30%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.15),transparent_70%)] blur-[50px] pointer-events-none" />
+                <div className="relative z-[1] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <Image
+                        src="/images/logos/psa-law-white.png"
+                        alt="PSA Law"
+                        width={80}
+                        height={32}
+                        className="object-contain"
+                      />
+                      <div className="h-5 w-px bg-white/20" />
+                      <span className="text-[10px] font-bold tracking-[1.2px] uppercase text-teal">
+                        Exclusive Package
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-extrabold text-white leading-tight">
+                      Comprehensive Estate Planning
+                    </h3>
+                    <p className="text-white/50 text-sm mt-1">
+                      Will drafting + estate advisory &mdash; one package, one price
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[clamp(2rem,5vw,2.8rem)] font-extrabold text-teal leading-none">
+                      R2,500
+                    </span>
+                    <p className="text-white/40 text-xs mt-1">once-off &middot; incl. VAT</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* What's included */}
+              <div className="px-8 py-7">
+                <p className="text-[11px] font-bold tracking-[1.2px] uppercase text-navy mb-5">
+                  What&apos;s Included
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3.5">
+                  {[
+                    "30-minute estate planning consultation",
+                    "Professionally drafted Will by a qualified attorney",
+                    "Review of assets, dependants & beneficiaries",
+                    "Executor nomination & guidance",
+                    "Guardianship provisions for minor children",
+                    "Secure Will safekeeping with PSA Law",
+                    "One free annual Will update",
+                    "Digital copy for your records",
+                  ].map((item) => (
+                    <div key={item} className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-teal shrink-0 mt-0.5" strokeWidth={3} />
+                      <span className="text-sm text-[#3F3F46] leading-snug">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA footer */}
+              <div className="px-8 py-6 bg-snow/80 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <p className="text-sm text-muted leading-relaxed max-w-[380px]">
+                  Available in-person at PSA Law&apos;s Bryanston offices or
+                  virtually via video call. Sessions by appointment.
+                </p>
+                <div className="flex gap-3 shrink-0">
+                  <Link
+                    href="/advisory"
+                    className="inline-flex items-center gap-2 bg-teal text-navy px-7 py-3 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(70,205,207,0.25)] transition-all whitespace-nowrap"
+                  >
+                    Book Now <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <a
+                    href="mailto:hello@limepages.co.za?subject=Estate Planning Package — R2,500"
+                    className="inline-flex items-center gap-2 border-[1.5px] border-navy text-navy px-7 py-3 rounded-full font-bold text-sm hover:bg-navy hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    Enquire
+                  </a>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </Container>
+      </section>
+
       {/* ═══ ESTATE ADMINISTRATION ═══ */}
       <section className="py-16 sm:py-20 bg-white">
         <Container>
