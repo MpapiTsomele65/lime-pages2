@@ -389,10 +389,9 @@ export default function FundComparison() {
                   </p>
                   {funds.map((fund) => {
                     const beatsInflation = fund.growth > inflationGrowth;
-                    const realReturn = (
-                      ((fund.growth - inflationGrowth) / inflationGrowth) *
-                      100
-                    ).toFixed(0);
+                    const nominalReturn = ((fund.growth - 10000) / 10000) * 100;
+                    const inflationPct = ((inflationGrowth - 10000) / 10000) * 100;
+                    const realReturn = (nominalReturn - inflationPct).toFixed(0);
                     return (
                       <div
                         key={fund.shortName}
