@@ -275,12 +275,12 @@ export default function FundComparison() {
                   />
 
                   {/* Fund logo + name */}
-                  <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex flex-col items-center gap-1.5 min-h-[58px] justify-start">
                     <div className="w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden p-1 shadow-sm">
                       <Image src={fund.logo} alt={fund.brandName} width={18} height={18} className="object-contain" />
                     </div>
                     <span
-                      className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight ${fund.textColor}`}
+                      className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight max-w-[90px] ${fund.textColor}`}
                     >
                       {fund.shortName}
                     </span>
