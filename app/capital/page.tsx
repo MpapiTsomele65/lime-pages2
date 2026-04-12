@@ -21,6 +21,7 @@ import DealStructuring from "@/components/sections/capital/DealStructuring";
 import AngelSyndicate from "@/components/sections/capital/AngelSyndicate";
 import LehumoTeaser from "@/components/sections/capital/LehumoTeaser";
 import InvestorsLikeYou from "@/components/sections/capital/InvestorsLikeYou";
+import GettingStarted from "@/components/sections/capital/GettingStarted";
 import WillsEstates from "@/components/sections/capital/WillsEstates";
 
 const fadeUp = {
@@ -217,6 +218,9 @@ export default function CapitalPage() {
 
       {/* ═══ RETAIL INVESTOR BEHAVIOR ═══ */}
       <InvestorsLikeYou />
+
+      {/* ═══ GETTING STARTED ═══ */}
+      <GettingStarted />
 
       {/* ═══ PRIVATE CAPITAL & DEAL STRUCTURING ═══ */}
       <SectionDivider
