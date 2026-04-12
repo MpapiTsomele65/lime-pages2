@@ -8,16 +8,13 @@ import {
   TrendingUp,
   BookOpen,
   ArrowRight,
-  Briefcase,
   GraduationCap,
   BarChart3,
-  Scale,
   Lightbulb,
   FileText,
 } from "lucide-react";
 import FundComparison from "@/components/sections/capital/FundComparison";
 import InvestingGuide from "@/components/sections/capital/InvestingGuide";
-import DealStructuring from "@/components/sections/capital/DealStructuring";
 import AngelSyndicate from "@/components/sections/capital/AngelSyndicate";
 import LehumoTeaser from "@/components/sections/capital/LehumoTeaser";
 import InvestorsLikeYou from "@/components/sections/capital/InvestorsLikeYou";
@@ -48,15 +45,6 @@ const tracks = [
     href: "#fund-performance",
     color: "capital",
     iconBg: "bg-navy/[0.06]",
-    hoverBorder: "hover:border-navy/30",
-  },
-  {
-    icon: Scale,
-    title: "Structure Deals",
-    desc: "SAFE notes, convertible loans, equity rounds \u2014 learn how startup investments are structured before you sign anything.",
-    href: "#deal-structuring",
-    color: "navy",
-    iconBg: "bg-navy/[0.08]",
     hoverBorder: "hover:border-navy/30",
   },
   {
@@ -130,8 +118,8 @@ export default function CapitalPage() {
             </h1>
             <p className="text-lg text-white/55 leading-[1.8] max-w-[640px] mx-auto mb-10">
               Learn how capital markets work. Understand unit trusts, compare
-              fund performance, structure deals, and protect your legacy
-              &mdash; from your first ETF to estate planning.
+              fund performance, and protect your legacy &mdash; from your
+              first ETF to estate planning.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
@@ -163,7 +151,7 @@ export default function CapitalPage() {
               <span className="text-navy">legacy protection.</span>
             </h2>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {tracks.map((t, i) => (
               <motion.a
                 key={t.title}
@@ -222,15 +210,6 @@ export default function CapitalPage() {
       {/* ═══ GETTING STARTED ═══ */}
       <GettingStarted />
 
-      {/* ═══ PRIVATE CAPITAL & DEAL STRUCTURING ═══ */}
-      <SectionDivider
-        label="Private Capital &amp; Deal Structuring"
-        id="deal-structuring"
-        icon={Scale}
-      />
-
-      <DealStructuring />
-
       {/* ═══ ALTERNATIVE INVESTMENTS ═══ */}
       <SectionDivider
         label="Alternative Investments"
@@ -271,9 +250,9 @@ export default function CapitalPage() {
                 <span className="text-capital">investment.</span>
               </h2>
               <p className="text-white/50 text-base leading-[1.8] max-w-[520px] mx-auto mb-8">
-                Whether you&apos;re buying your first ETF or evaluating a term
-                sheet for a startup deal &mdash; we help you understand what
-                you&apos;re getting into before you commit your capital.
+                Whether you&apos;re buying your first ETF or planning your
+                estate &mdash; we help you understand what you&apos;re getting
+                into before you commit your capital.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
