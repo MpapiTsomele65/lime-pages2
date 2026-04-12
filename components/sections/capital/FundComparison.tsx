@@ -9,7 +9,7 @@ import { TrendingUp, ExternalLink, Info } from "lucide-react";
 const funds = [
   {
     name: "Allan Gray Balanced Fund",
-    shortName: "Allan Gray",
+    shortName: "Allan Gray Balanced",
     color: "bg-navy",
     barColor: "#0B1933",
     textColor: "text-navy",
@@ -32,7 +32,7 @@ const funds = [
   },
   {
     name: "Coronation Balanced Plus",
-    shortName: "Coronation",
+    shortName: "Coronation Balanced Plus",
     color: "bg-teal",
     barColor: "#46CDCF",
     textColor: "text-teal",
