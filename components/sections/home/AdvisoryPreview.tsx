@@ -318,14 +318,16 @@ export function AdvisoryPreview() {
         >
           <div className="text-center mb-8">
             <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal mb-3 block">
-              Try It Now
+              Your Financial Wellness Jedi
             </span>
             <h3 className="text-[clamp(1.4rem,3vw,2rem)] font-extrabold text-ink leading-tight mb-3">
               Free AI-powered guidance
             </h3>
-            <p className="text-sm text-muted leading-[1.7] max-w-[520px] mx-auto">
-              Get instant answers on consumer rights, debt relief, investing
-              basics, SMME funding, and more. No sign-up needed.
+            <p className="text-sm text-muted leading-[1.7] max-w-[580px] mx-auto">
+              Know your rights before you sign. Get free, instant guidance on
+              credit agreements, debt relief, investment fees, and consumer
+              protection &mdash; so no financial services company can take
+              advantage of what you don&apos;t know.
             </p>
           </div>
           <AdvisoryChatbot />
