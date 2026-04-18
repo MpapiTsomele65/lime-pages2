@@ -171,6 +171,7 @@ export const OnboardingFormSchema = z.object({
   phone: z.string().min(10, "Please enter a valid phone number"),
   source: z.enum(["Google", "Instagram", "Referral", "WhatsApp", "Direct"]),
   intent: z.string().optional(),
+  commitment: z.string().optional(),
   plan: z.enum(["basic", "standard", "vip"]).optional(),
   sourceOfFunds: z.string().optional(),
 });

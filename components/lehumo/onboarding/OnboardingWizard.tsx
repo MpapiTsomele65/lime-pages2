@@ -23,6 +23,7 @@ interface FormData {
   phone?: string;
   source?: string;
   intent?: string;
+  commitment?: string;
   plan?: string;
   sourceOfFunds?: string;
   memberId?: string;
@@ -65,6 +66,11 @@ export function OnboardingWizard() {
   const handleStep1Next = useCallback(
     (data: Partial<FormData>) => {
       if (data.fullName && data.email) {
+        const notes = data.commitment
+          ? `Commitment: ${data.commitment}${data.intent ? ` | Intent: ${data.intent}` : ""}`
+          : data.intent
+            ? `Intent: ${data.intent}`
+            : undefined;
         fetch("/api/lehumo/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -73,6 +79,7 @@ export function OnboardingWizard() {
             email: data.email,
             phone: data.phone,
             source: "Onboarding — Step 1",
+            notes,
           }),
         }).catch(() => {
           // Silent — leads capture is best-effort, not critical.
@@ -102,6 +109,7 @@ export function OnboardingWizard() {
             phone: updatedData.phone,
             source: updatedData.source,
             intent: updatedData.intent,
+            commitment: updatedData.commitment,
             plan: updatedData.plan,
             sourceOfFunds: data.sourceOfFunds,
           }),

@@ -9,6 +9,7 @@ interface PersonalInfoData {
   phone: string;
   source: string;
   intent: string;
+  commitment: string;
 }
 
 interface StepPersonalInfoProps {
@@ -16,13 +17,12 @@ interface StepPersonalInfoProps {
   defaultValues?: Partial<PersonalInfoData>;
 }
 
-const SOURCE_OPTIONS = [
-  { value: "", label: "Select an option..." },
-  { value: "Google", label: "Google" },
-  { value: "Instagram", label: "Instagram" },
-  { value: "Referral", label: "Referral" },
-  { value: "WhatsApp", label: "WhatsApp" },
-  { value: "Direct", label: "Direct" },
+const COMMITMENT_OPTIONS = [
+  { value: "", label: "Select your comfortable commitment..." },
+  { value: "Less than R500", label: "Less than R500" },
+  { value: "R1 000", label: "R1 000" },
+  { value: "More than R1 000", label: "More than R1 000" },
+  { value: "Up to R50 000", label: "Up to R50 000" },
 ];
 
 const INTENT_OPTIONS = [
@@ -42,8 +42,8 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
   const [fullName, setFullName] = useState(defaultValues?.fullName ?? "");
   const [email, setEmail] = useState(defaultValues?.email ?? "");
   const [phone, setPhone] = useState(defaultValues?.phone ?? "");
-  const [source, setSource] = useState(defaultValues?.source ?? "");
   const [intent, setIntent] = useState(defaultValues?.intent ?? "");
+  const [commitment, setCommitment] = useState(defaultValues?.commitment ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate(): boolean {
@@ -65,12 +65,12 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
       newErrors.phone = "Please enter a valid phone number";
     }
 
-    if (!source) {
-      newErrors.source = "Please select how you heard about us";
-    }
-
     if (!intent) {
       newErrors.intent = "Please let us know where you stand";
+    }
+
+    if (!commitment) {
+      newErrors.commitment = "Please tell us what you can realistically commit";
     }
 
     setErrors(newErrors);
@@ -80,7 +80,16 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (validate()) {
-      onNext({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim(), source, intent });
+      onNext({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        // Source is no longer asked in the UI — default kept so downstream
+        // (Airtable Source column, onboarding schema) stays untouched.
+        source: "Direct",
+        intent,
+        commitment,
+      });
     }
   }
 
@@ -153,25 +162,25 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
         )}
       </div>
 
-      {/* Source */}
+      {/* Commitment */}
       <div>
-        <label htmlFor="source" className={labelClasses}>
-          How did you hear about us?
+        <label htmlFor="commitment" className={labelClasses}>
+          How much can you realistically commit to a long-term savings initiative like this?
         </label>
         <select
-          id="source"
-          value={source}
-          onChange={(e) => setSource(e.target.value)}
-          className={`${inputClasses} ${!source ? "text-white/30" : ""} ${errors.source ? "border-red-500/50" : ""}`}
+          id="commitment"
+          value={commitment}
+          onChange={(e) => setCommitment(e.target.value)}
+          className={`${inputClasses} ${!commitment ? "text-white/30" : ""} ${errors.commitment ? "border-red-500/50" : ""}`}
         >
-          {SOURCE_OPTIONS.map((opt) => (
+          {COMMITMENT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value} className="bg-navy text-white">
               {opt.label}
             </option>
           ))}
         </select>
-        {errors.source && (
-          <p className="text-red-400 text-xs mt-1.5">{errors.source}</p>
+        {errors.commitment && (
+          <p className="text-red-400 text-xs mt-1.5">{errors.commitment}</p>
         )}
       </div>
 
