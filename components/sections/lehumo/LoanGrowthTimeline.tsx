@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Container } from "@/components/ui/Container";
 import { TrendingUp } from "lucide-react";
 
 const fadeUp = {
@@ -32,10 +31,13 @@ function formatRand(n: number) {
   return `R${n.toLocaleString("en-ZA")}`;
 }
 
+/**
+ * Emergency loan growth visual. Renders inline (no <section> wrapper)
+ * so it can be nested inside the Benefits collapsible block — keeps it
+ * grouped with the benefit it illustrates (Interest-Free Emergency Loans).
+ */
 export function LoanGrowthTimeline() {
   return (
-    <section className="py-16 bg-navy">
-      <Container>
     <motion.div
       {...fadeUp}
       className="bg-white/[0.03] border border-white/[0.08] rounded-[20px] px-7 py-7 max-w-[800px] mx-auto"
@@ -209,7 +211,5 @@ export function LoanGrowthTimeline() {
         </p>
       </div>
     </motion.div>
-      </Container>
-    </section>
   );
 }

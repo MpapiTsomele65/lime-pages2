@@ -5,7 +5,6 @@ import { CommunityStrip } from "@/components/sections/lehumo/CommunityStrip";
 import { StokvelComparison } from "@/components/sections/lehumo/StokvelComparison";
 import { InvestmentStrategy } from "@/components/sections/lehumo/InvestmentStrategy";
 import { Benefits } from "@/components/sections/lehumo/Benefits";
-import { LoanGrowthTimeline } from "@/components/sections/lehumo/LoanGrowthTimeline";
 import { CommunityGrowth } from "@/components/sections/lehumo/CommunityGrowth";
 import { FiveYearRoadmap } from "@/components/sections/lehumo/FiveYearRoadmap";
 import { Cost } from "@/components/sections/lehumo/Cost";
@@ -28,7 +27,6 @@ export default function LehumoPage() {
       <MemberPortalPreview />
       <FiveYearRoadmap />
       <Benefits />
-      <LoanGrowthTimeline />
       <WealthPhotoBlock />
       <BiggerMission />
       <StokvelComparison />

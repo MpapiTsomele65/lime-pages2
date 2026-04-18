@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { Banknote, TrendingUp, Heart, Globe } from "lucide-react";
 import { CollapsibleBlock } from "./CollapsibleBlock";
+import { LoanGrowthTimeline } from "./LoanGrowthTimeline";
 
 const benefits = [
   {
@@ -71,6 +72,13 @@ export function Benefits() {
                 </div>
               </motion.div>
             ))}
+          </div>
+
+          {/* Emergency loan growth visual — grouped with the benefit it
+              illustrates so visitors see the "20% of contributions" benefit
+              card and the loan-growth timeline together. */}
+          <div className="mt-10">
+            <LoanGrowthTimeline />
           </div>
         </CollapsibleBlock>
       </Container>
