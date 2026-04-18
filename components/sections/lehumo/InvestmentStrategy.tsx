@@ -164,8 +164,8 @@ export function InvestmentStrategy() {
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
               className="bg-indigo-500 flex flex-col items-center justify-center text-white px-1 overflow-hidden leading-none"
             >
-              <span className="text-xs font-extrabold whitespace-nowrap">R100</span>
-              <span className="text-[9px] font-bold uppercase tracking-wide mt-1">Bonds</span>
+              <span className="text-sm font-extrabold whitespace-nowrap">R100</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide mt-1">Bonds</span>
             </motion.div>
             <motion.div
               initial={{ width: 0 }}
@@ -174,8 +174,8 @@ export function InvestmentStrategy() {
               transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
               className="bg-purple-500 flex flex-col items-center justify-center text-white px-1 overflow-hidden leading-none"
             >
-              <span className="text-xs font-extrabold whitespace-nowrap">R100</span>
-              <span className="text-[9px] font-bold uppercase tracking-wide mt-1">SV Cap</span>
+              <span className="text-sm font-extrabold whitespace-nowrap">R100</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide mt-1">SV Cap</span>
             </motion.div>
           </div>
 
