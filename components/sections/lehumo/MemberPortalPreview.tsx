@@ -88,8 +88,8 @@ export function MemberPortalPreview() {
             </span>
           </div>
           <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold text-white leading-[1.08] tracking-tight mb-4">
-            Your investment,{" "}
-            <span className="text-teal">your dashboard.</span>
+            Manage &amp; keep track of{" "}
+            <span className="text-teal">your contributions</span>
           </h2>
           <p className="text-base text-white/50 leading-[1.8] max-w-[560px] mx-auto">
             Every Lehumo member gets a secure personal portal to track
