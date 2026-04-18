@@ -58,6 +58,31 @@ export function OnboardingWizard() {
     []
   );
 
+  // Fire-and-forget: capture the visitor as a lead the moment they finish
+  // Step 1. If they drop off before the KYC step creates a real member
+  // record, we still have their name/email in the Lehumo Leads table so
+  // Papi can follow up. Never awaited — must not block the wizard.
+  const handleStep1Next = useCallback(
+    (data: Partial<FormData>) => {
+      if (data.fullName && data.email) {
+        fetch("/api/lehumo/leads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName: data.fullName,
+            email: data.email,
+            phone: data.phone,
+            source: "Onboarding — Step 1",
+          }),
+        }).catch(() => {
+          // Silent — leads capture is best-effort, not critical.
+        });
+      }
+      handleNext(data);
+    },
+    [handleNext]
+  );
+
   // Create account after KYC (step 3) — before moving to Payment (step 4).
   // This ensures the member record exists even if they drop off at payment.
   const handleKycComplete = useCallback(
@@ -204,7 +229,7 @@ export function OnboardingWizard() {
           >
             {currentStep === 1 && (
               <StepPersonalInfo
-                onNext={(data) => handleNext(data)}
+                onNext={(data) => handleStep1Next(data)}
                 defaultValues={formData}
               />
             )}

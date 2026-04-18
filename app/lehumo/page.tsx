@@ -13,6 +13,7 @@ import { BiggerMission } from "@/components/sections/lehumo/BiggerMission";
 import { JoinCta } from "@/components/sections/lehumo/JoinCta";
 import { WealthPhotoBlock } from "@/components/sections/lehumo/WealthPhotoBlock";
 import { MemberPortalPreview } from "@/components/sections/lehumo/MemberPortalPreview";
+import { ReferralCta } from "@/components/sections/lehumo/ReferralCta";
 
 export default function LehumoPage() {
   return (
@@ -21,6 +22,7 @@ export default function LehumoPage() {
       <LehumoMarquee />
       <WhatIsLehumo />
       <CommunityGrowth />
+      <ReferralCta />
       <Cost />
       <InvestmentStrategy />
       <MemberPortalPreview />
