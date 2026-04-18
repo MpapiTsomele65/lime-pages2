@@ -89,7 +89,7 @@ export function PaymentMethods() {
   return (
     <motion.div
       {...fadeUp}
-      className="bg-white/[0.03] border border-white/[0.08] rounded-[20px] px-7 py-7 mb-14 max-w-[800px] mx-auto"
+      className="bg-white/[0.03] border border-white/[0.08] rounded-[20px] px-7 py-7 mb-14 max-w-[1040px] mx-auto"
     >
       {/* Header */}
       <div className="text-center mb-6">
@@ -101,66 +101,69 @@ export function PaymentMethods() {
         </p>
       </div>
 
-      {/* Card Networks */}
-      <div className="mb-5">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3">
-          Card Payments
-        </span>
-        <div className="flex flex-wrap items-center gap-3">
-          {cardMethods.map((m) => (
-            <div
-              key={m.name}
-              className="h-10 px-3 rounded-xl bg-white flex items-center justify-center shadow-sm"
-            >
-              <m.Component />
-            </div>
-          ))}
+      {/* 3 categories side-by-side */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+        {/* Card Networks */}
+        <div className="md:border-r md:border-white/[0.06] md:pr-5">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center md:text-left">
+            Card Payments
+          </span>
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+            {cardMethods.map((m) => (
+              <div
+                key={m.name}
+                className="h-10 px-3 rounded-xl bg-white flex items-center justify-center shadow-sm"
+              >
+                <m.Component />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Alternative Payments */}
-      <div className="mb-5">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3">
-          Instant Payments
-        </span>
-        <div className="flex flex-wrap items-center gap-3">
-          {altPayments.map((m) => (
-            <div
-              key={m.name}
-              className="h-10 px-4 rounded-xl bg-white flex items-center justify-center shadow-sm"
-            >
-              <Image
-                src={m.logo}
-                alt={m.name}
-                width={80}
-                height={24}
-                className="h-5 w-auto object-contain"
-              />
-            </div>
-          ))}
+        {/* Alternative Payments */}
+        <div className="md:border-r md:border-white/[0.06] md:pr-5">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center md:text-left">
+            Instant Payments
+          </span>
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+            {altPayments.map((m) => (
+              <div
+                key={m.name}
+                className="h-10 px-3 rounded-xl bg-white flex items-center justify-center shadow-sm"
+              >
+                <Image
+                  src={m.logo}
+                  alt={m.name}
+                  width={80}
+                  height={24}
+                  className="h-5 w-auto object-contain"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* EFT / Bank Transfers */}
-      <div className="mb-6">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3">
-          EFT / Bank Transfer
-        </span>
-        <div className="flex flex-wrap items-center gap-3">
-          {banks.map((b) => (
-            <div
-              key={b.name}
-              className="h-10 px-3 rounded-xl bg-white flex items-center justify-center shadow-sm"
-            >
-              <Image
-                src={b.logo}
-                alt={b.name}
-                width={80}
-                height={24}
-                className="h-5 w-auto object-contain"
-              />
-            </div>
-          ))}
+        {/* EFT / Bank Transfers */}
+        <div>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center md:text-left">
+            EFT / Bank Transfer
+          </span>
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+            {banks.map((b) => (
+              <div
+                key={b.name}
+                className="h-10 px-2.5 rounded-xl bg-white flex items-center justify-center shadow-sm"
+              >
+                <Image
+                  src={b.logo}
+                  alt={b.name}
+                  width={80}
+                  height={24}
+                  className="h-5 w-auto object-contain"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

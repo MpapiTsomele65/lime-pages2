@@ -17,7 +17,7 @@ const fadeUp = {
 const segments = [
   { label: "Sum1 Investments", pct: 40, color: "#B8FF00", startDeg: 0 },
   { label: "Cash", pct: 40, color: "#46cdcf", startDeg: 144 },
-  { label: "Bonds", pct: 10, color: "#6366f1", startDeg: 288 },
+  { label: "SA bonds/ MoneyMarket Funds", pct: 10, color: "#6366f1", startDeg: 288 },
   { label: "Alternative Investments*", pct: 10, color: "#a855f7", startDeg: 324 },
 ];
 
@@ -59,7 +59,7 @@ const allocations = [
     pctColor: "text-indigo-400",
     amount: "R100/month",
     icon: Landmark,
-    title: "SA Bonds",
+    title: "SA bonds/ MoneyMarket Funds",
     desc: "Stability and consistent income from government-backed securities. Provides portfolio stability and predictable returns.",
     statLabel: "Profile",
     statValue: "Low Risk",
@@ -162,18 +162,20 @@ export function InvestmentStrategy() {
               whileInView={{ width: "10%" }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-              className="bg-indigo-500 flex items-center justify-center text-white px-1 overflow-hidden"
+              className="bg-indigo-500 flex flex-col items-center justify-center text-white px-1 overflow-hidden leading-none"
             >
               <span className="text-xs font-extrabold whitespace-nowrap">R100</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide mt-1">Bonds</span>
             </motion.div>
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: "10%" }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="bg-purple-500 flex items-center justify-center text-white px-1 overflow-hidden"
+              className="bg-purple-500 flex flex-col items-center justify-center text-white px-1 overflow-hidden leading-none"
             >
               <span className="text-xs font-extrabold whitespace-nowrap">R100</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide mt-1">SV Cap</span>
             </motion.div>
           </div>
 
@@ -186,7 +188,7 @@ export function InvestmentStrategy() {
               <span className="w-2 h-2 rounded-full bg-teal" /> R400 · Cash Reserves
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" /> R100 · SA Bonds
+              <span className="w-2 h-2 rounded-full bg-indigo-500" /> R100 · SA bonds/ MoneyMarket Funds
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-purple-500" /> R100 · SV Capital*
