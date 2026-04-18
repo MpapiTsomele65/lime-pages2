@@ -166,8 +166,8 @@ export function PaymentMethods() {
 
       {/* Secured by Paystack */}
       <div className="flex items-center justify-center gap-2 pt-4 border-t border-white/[0.06]">
-        <Lock size={12} className="text-white/30" />
-        <span className="text-[11px] text-white/35 font-medium">
+        <Lock size={12} className="text-white" />
+        <span className="text-[11px] text-white font-medium">
           Secured by
         </span>
         <Image
@@ -175,7 +175,7 @@ export function PaymentMethods() {
           alt="Paystack"
           width={80}
           height={20}
-          className="h-4 w-auto object-contain opacity-60"
+          className="h-4 w-auto object-contain"
         />
       </div>
     </motion.div>
