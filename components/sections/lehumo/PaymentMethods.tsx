@@ -101,18 +101,18 @@ export function PaymentMethods() {
         </p>
       </div>
 
-      {/* 3 categories side-by-side */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+      {/* 3 categories side-by-side on desktop, stacked on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-4 mb-6">
         {/* Card Networks */}
-        <div className="md:border-r md:border-white/[0.06] md:pr-5">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center md:text-left">
+        <div className="flex-1 sm:pr-4 sm:border-r sm:border-white/[0.06]">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center sm:text-left">
             Card Payments
           </span>
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             {cardMethods.map((m) => (
               <div
                 key={m.name}
-                className="h-10 px-3 rounded-xl bg-white flex items-center justify-center shadow-sm"
+                className="h-9 px-2.5 rounded-lg bg-white flex items-center justify-center shadow-sm"
               >
                 <m.Component />
               </div>
@@ -121,22 +121,22 @@ export function PaymentMethods() {
         </div>
 
         {/* Alternative Payments */}
-        <div className="md:border-r md:border-white/[0.06] md:pr-5">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center md:text-left">
+        <div className="flex-1 sm:pr-4 sm:border-r sm:border-white/[0.06]">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center sm:text-left">
             Instant Payments
           </span>
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             {altPayments.map((m) => (
               <div
                 key={m.name}
-                className="h-10 px-3 rounded-xl bg-white flex items-center justify-center shadow-sm"
+                className="h-9 px-2.5 rounded-lg bg-white flex items-center justify-center shadow-sm"
               >
                 <Image
                   src={m.logo}
                   alt={m.name}
                   width={80}
                   height={24}
-                  className="h-5 w-auto object-contain"
+                  className="h-4 w-auto object-contain"
                 />
               </div>
             ))}
@@ -144,22 +144,22 @@ export function PaymentMethods() {
         </div>
 
         {/* EFT / Bank Transfers */}
-        <div>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center md:text-left">
+        <div className="flex-1">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 block mb-3 text-center sm:text-left">
             EFT / Bank Transfer
           </span>
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             {banks.map((b) => (
               <div
                 key={b.name}
-                className="h-10 px-2.5 rounded-xl bg-white flex items-center justify-center shadow-sm"
+                className="h-9 px-2 rounded-lg bg-white flex items-center justify-center shadow-sm"
               >
                 <Image
                   src={b.logo}
                   alt={b.name}
                   width={80}
                   height={24}
-                  className="h-5 w-auto object-contain"
+                  className="h-4 w-auto object-contain"
                 />
               </div>
             ))}
