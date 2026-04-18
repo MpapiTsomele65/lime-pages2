@@ -24,13 +24,13 @@ export default function LehumoPage() {
       <ReferralCta />
       <Cost />
       <InvestmentStrategy />
-      <MemberPortalPreview />
       <FiveYearRoadmap />
       <Benefits />
       <WealthPhotoBlock />
       <BiggerMission />
       <StokvelComparison />
       <CommunityStrip />
+      <MemberPortalPreview />
       <JoinCta />
     </div>
   );

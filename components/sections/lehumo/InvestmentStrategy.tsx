@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { TrendingUp, Shield, Landmark, Sprout, ArrowRight } from "lucide-react";
+import { CollapsibleBlock } from "./CollapsibleBlock";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -197,96 +198,6 @@ export function InvestmentStrategy() {
             *Alternative investments include cattle farming, solar energy, and
             other high-growth asset classes.
           </p>
-        </motion.div>
-
-        {/* ── Sum1 Partner Spotlight ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: "easeOut" as const }}
-          className="bg-lime/[0.06] border border-lime/20 rounded-2xl p-8 mb-10"
-        >
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left — Partner info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-5">
-                <Image
-                  src="/images/sum1-logo-white.png"
-                  alt="Sum1 Investments"
-                  width={120}
-                  height={48}
-                  className="object-contain"
-                />
-                <div className="h-8 w-px bg-white/15" />
-                <p className="text-[10px] font-bold text-lime/60 uppercase tracking-wide leading-tight">
-                  Asset Manager
-                  <br />
-                  Partner
-                </p>
-              </div>
-              <p className="text-sm text-white/60 leading-[1.8] mb-5">
-                Sum1 Investments is a community-based investment platform that
-                channels capital into local businesses through income-generating
-                assets. As Lehumo&apos;s primary asset manager, they deploy 40%
-                of the portfolio across four key sectors driving real economic
-                activity.
-              </p>
-
-              {/* Where they invest */}
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-wide mb-2.5">
-                Where They Invest
-              </p>
-              <div className="flex flex-wrap gap-2 mb-5">
-                {["Logistics", "Agriculture", "Food & Beverages", "Manufacturing"].map((s) => (
-                  <span
-                    key={s}
-                    className="bg-lime/[0.08] border border-lime/15 rounded-full px-3 py-1 text-[11px] font-semibold text-lime/80"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-white/40">
-                <span>FSP Licence: 53629</span>
-                <span>NCRCP: 21759</span>
-                <span>Regulated Financial Services Provider</span>
-              </div>
-            </div>
-
-            {/* Right — Track record */}
-            <div className="lg:w-[280px] shrink-0">
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-wide mb-3">
-                Returns After Fees
-              </p>
-              <div className="space-y-2">
-                {sum1Returns.map((r) => (
-                  <div
-                    key={r.year}
-                    className="flex items-center justify-between bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5"
-                  >
-                    <span className="text-sm font-semibold text-white/70">
-                      {r.year}
-                    </span>
-                    <span className="text-sm font-extrabold text-lime">
-                      {r.pct}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-lime/[0.1] border border-lime/20 rounded-lg px-4 py-2.5 mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white/50">
-                    5-Year Average
-                  </span>
-                  <span className="text-base font-extrabold text-lime">
-                    17.6%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </motion.div>
 
         {/* ── Allocation Detail Cards ── */}
@@ -611,6 +522,105 @@ export function InvestmentStrategy() {
       <div className="hidden lg:block mb-10" />
 
       <Container>
+        {/* ── Sum1 Partner Spotlight — collapsible ── */}
+        <div className="mb-10">
+          <CollapsibleBlock
+            eyebrow="Track Record"
+            eyebrowColor="lime"
+            title={
+              <>
+                How has Sum1 <span className="text-lime">actually performed?</span>
+              </>
+            }
+            teaser={
+              <>See year-by-year returns after fees from our primary asset manager — a regulated FSP.</>
+            }
+          >
+            <div className="bg-lime/[0.06] border border-lime/20 rounded-2xl p-8">
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Left — Partner info */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-4 mb-5">
+                    <Image
+                      src="/images/sum1-logo-white.png"
+                      alt="Sum1 Investments"
+                      width={120}
+                      height={48}
+                      className="object-contain"
+                    />
+                    <div className="h-8 w-px bg-white/15" />
+                    <p className="text-[10px] font-bold text-lime/60 uppercase tracking-wide leading-tight">
+                      Asset Manager
+                      <br />
+                      Partner
+                    </p>
+                  </div>
+                  <p className="text-sm text-white/60 leading-[1.8] mb-5">
+                    Sum1 Investments is a community-based investment platform
+                    that channels capital into local businesses through
+                    income-generating assets. As Lehumo&apos;s primary asset
+                    manager, they deploy 40% of the portfolio across four key
+                    sectors driving real economic activity.
+                  </p>
+
+                  {/* Where they invest */}
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wide mb-2.5">
+                    Where They Invest
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    {["Logistics", "Agriculture", "Food & Beverages", "Manufacturing"].map((s) => (
+                      <span
+                        key={s}
+                        className="bg-lime/[0.08] border border-lime/15 rounded-full px-3 py-1 text-[11px] font-semibold text-lime/80"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-white/40">
+                    <span>FSP Licence: 53629</span>
+                    <span>NCRCP: 21759</span>
+                    <span>Regulated Financial Services Provider</span>
+                  </div>
+                </div>
+
+                {/* Right — Track record */}
+                <div className="lg:w-[280px] shrink-0">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wide mb-3">
+                    Returns After Fees
+                  </p>
+                  <div className="space-y-2">
+                    {sum1Returns.map((r) => (
+                      <div
+                        key={r.year}
+                        className="flex items-center justify-between bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5"
+                      >
+                        <span className="text-sm font-semibold text-white/70">
+                          {r.year}
+                        </span>
+                        <span className="text-sm font-extrabold text-lime">
+                          {r.pct}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-lime/[0.1] border border-lime/20 rounded-lg px-4 py-2.5 mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white/50">
+                        5-Year Average
+                      </span>
+                      <span className="text-base font-extrabold text-lime">
+                        17.6%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CollapsibleBlock>
+        </div>
+
         {/* ── Key Message ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
