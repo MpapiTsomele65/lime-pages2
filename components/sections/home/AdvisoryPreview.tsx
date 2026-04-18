@@ -235,22 +235,25 @@ export function AdvisoryPreview() {
                   <span className="text-[10px] font-bold tracking-[1.2px] uppercase text-capital block">
                     Investing 101
                   </span>
-                  <h3 className="text-lg font-extrabold text-white leading-tight">
+                  <h3 className="text-sm font-bold text-white/80 leading-tight">
                     Lime Capital
                   </h3>
                 </div>
               </div>
               <p className="text-sm text-white/55 leading-[1.7] mt-2">
-                Learn how capital markets work. Compare SA&apos;s top unit trusts,
-                understand ETFs, and see what R10,000 invested 10 years ago would
-                be worth today.
+                Learn how capital markets work. Compare SA&apos;s top unit trusts
+                and understand ETFs &mdash; real data, real context.
               </p>
             </div>
 
             {/* Mini fund returns */}
             <div className="px-7 py-5 relative z-[1]">
-              <p className="text-[10px] font-bold tracking-[1px] uppercase text-white/30 mb-3">
-                R10K invested 10 years ago
+              <h4 className="text-lg sm:text-xl font-extrabold text-white leading-tight mb-1">
+                What <span className="text-capital">R10,000</span> invested in 2016
+                <br className="hidden sm:block" /> would be worth today
+              </h4>
+              <p className="text-[11px] font-medium text-white/30 mb-4">
+                10-year growth across SA&apos;s most-watched funds
               </p>
               <div className="space-y-2.5">
                 {[
@@ -293,7 +296,7 @@ export function AdvisoryPreview() {
                   </motion.div>
                 ))}
               </div>
-              <p className="text-[9px] text-white/20 mt-3">
+              <p className="text-[11px] text-white/20 mt-3">
                 Illustrative &middot; Past performance ≠ future results
               </p>
             </div>
@@ -317,17 +320,37 @@ export function AdvisoryPreview() {
           className="mb-16"
         >
           <div className="text-center mb-8">
-            <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal mb-3 block">
-              Your Financial Inclusion Jedi
-            </span>
-            <h3 className="text-[clamp(1.4rem,3vw,2rem)] font-extrabold text-ink leading-tight mb-3">
-              Free AI-powered guidance
-            </h3>
-            <p className="text-sm text-muted leading-[1.7] max-w-[580px] mx-auto">
-              Know your rights before you sign. Get free, instant guidance on
-              credit agreements, debt relief, investment fees, and consumer
-              protection &mdash; so no financial services company can take
-              advantage of what you don&apos;t know.
+            <div className="inline-flex items-center gap-4 sm:gap-5">
+              {/* Ninja icon */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-teal/10 border border-teal/20 flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 36 36" className="w-8 h-8 sm:w-9 sm:h-9" fill="none">
+                  {/* Head */}
+                  <circle cx="18" cy="14" r="9" fill="#0B1933" />
+                  {/* Mask band */}
+                  <rect x="7" y="11" width="22" height="5" rx="2.5" fill="#46CDCF" />
+                  {/* Eyes */}
+                  <ellipse cx="14" cy="13.5" rx="1.8" ry="1.2" fill="white" />
+                  <ellipse cx="22" cy="13.5" rx="1.8" ry="1.2" fill="white" />
+                  <circle cx="14.4" cy="13.5" r="0.7" fill="#0B1933" />
+                  <circle cx="22.4" cy="13.5" r="0.7" fill="#0B1933" />
+                  {/* Mask tail */}
+                  <path d="M27 13.5 C29 12, 32 13.5, 33 11" stroke="#46CDCF" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M27 14.5 C29 14, 31 16, 33 14" stroke="#46CDCF" strokeWidth="1.5" strokeLinecap="round" />
+                  {/* Body */}
+                  <path d="M12 23 C12 19, 24 19, 24 23 L26 32 L10 32 Z" fill="#0B1933" />
+                  {/* Belt */}
+                  <rect x="12" y="25" width="12" height="1.5" rx="0.75" fill="#46CDCF" opacity="0.5" />
+                </svg>
+              </div>
+              <h3 className="text-[clamp(1.8rem,4vw,2.8rem)] font-extrabold text-ink leading-[1.1] tracking-tight text-left">
+                Your Financial Inclusion Jedi.
+                <br />
+                <span className="text-teal">Free AI-powered guidance.</span>
+              </h3>
+            </div>
+            <p className="text-base sm:text-lg text-muted leading-[1.7] max-w-[620px] mx-auto">
+              Get free, instant guidance on your loan agreements, insurance
+              policies, investment fees, and your general rights as a consumer.
             </p>
           </div>
           <AdvisoryChatbot />

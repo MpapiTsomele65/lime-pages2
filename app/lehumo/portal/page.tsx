@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/session";
-import { getMemberById } from "@/lib/airtable";
+import { getCommunityPoolStats, getMemberById } from "@/lib/airtable";
 import { PortalShell } from "@/components/lehumo/portal/PortalShell";
 import { DashboardOverview } from "@/components/lehumo/portal/DashboardOverview";
 
@@ -12,7 +12,16 @@ export default async function PortalDashboardPage() {
     redirect("/lehumo/portal/login");
   }
 
-  const member = await getMemberById(session.memberId);
+  const [member, communityStats] = await Promise.all([
+    getMemberById(session.memberId),
+    getCommunityPoolStats().catch((err) => {
+      // Community stats are non-critical — don't break the dashboard if Airtable
+      // returns an error for the list endpoint (e.g. permissions change).
+      console.error("Failed to load community pool stats:", err);
+      return null;
+    }),
+  ]);
+
   const memberName = member?.fullName ?? session.fullName ?? "Member";
 
   if (!member) {
@@ -35,7 +44,7 @@ export default async function PortalDashboardPage() {
 
   return (
     <PortalShell memberName={memberName}>
-      <DashboardOverview member={member} />
+      <DashboardOverview member={member} communityStats={communityStats} />
     </PortalShell>
   );
 }

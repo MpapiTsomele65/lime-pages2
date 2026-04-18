@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { LaunchCountdown } from "./LaunchCountdown";
 
 const fadeUp = {
   initial: { opacity: 0, y: 28 },
@@ -47,7 +48,7 @@ export function LehumoHero() {
         </div>
 
         {/* Headline */}
-        <h1 className="text-[clamp(1.9rem,4.5vw,3.4rem)] font-extrabold text-white leading-[1.12] tracking-tight mb-6">
+        <h1 className="text-[clamp(1.6rem,3.8vw,2.9rem)] font-extrabold text-white leading-[1.12] tracking-tight mb-6">
           Do you want to join a community
           <br />
           building an <span className="text-lime">Investment Trust</span>
@@ -55,17 +56,25 @@ export function LehumoHero() {
           to create <span className="text-teal">Generational Wealth?</span>
         </h1>
 
-        <p className="text-[clamp(1rem,1.8vw,1.15rem)] text-white/55 leading-[1.8] max-w-[640px] mx-auto mb-12">
+        <p className="text-[clamp(1rem,1.8vw,1.15rem)] text-white/55 leading-[1.8] max-w-[640px] mx-auto mb-10">
           30 Founding Members. 5 Years. R2 Million. One shared mission — Save, Buy, and Protect assets for the next generation.
         </p>
 
+        {/* Countdown to launch */}
+        <LaunchCountdown className="mb-10" />
+
         {/* CTAs */}
-        <div className="flex gap-3.5 justify-center flex-wrap mb-14">
-          <Link href="#join" className="bg-lime text-navy px-9 py-[15px] rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all">
-            Join the Waitlist →
-          </Link>
+        <div className="flex justify-center mb-5">
           <Link href="#what" className="text-white px-9 py-[15px] rounded-full font-semibold text-sm border border-white/20 hover:border-lime/25 hover:bg-lime-dim transition-all">
             Learn How It Works
+          </Link>
+        </div>
+        <div className="flex justify-center mb-14">
+          <Link
+            href="/lehumo/portal/login"
+            className="text-teal/70 hover:text-teal text-sm font-semibold transition-colors inline-flex items-center gap-1.5"
+          >
+            Already a member? Sign in to your portal →
           </Link>
         </div>
 

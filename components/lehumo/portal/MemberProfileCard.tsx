@@ -1,7 +1,7 @@
 "use client";
 
 import { User, Mail, Phone, Hash, Globe } from "lucide-react";
-import type { LehumoMember, MemberStatus } from "@/lib/definitions";
+import { formatMemberNumber, type LehumoMember, type MemberStatus } from "@/lib/definitions";
 
 interface MemberProfileCardProps {
   member: LehumoMember;
@@ -34,8 +34,8 @@ export function MemberProfileCard({ member }: MemberProfileCardProps) {
           {member.fullName}
         </ProfileRow>
 
-        <ProfileRow icon={<Hash className="h-4 w-4" />} label="Member #">
-          {member.memberNumber}
+        <ProfileRow icon={<Hash className="h-4 w-4" />} label="Member ID">
+          {formatMemberNumber(member.memberNumber)}
         </ProfileRow>
 
         <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email">

@@ -12,6 +12,7 @@ import { Cost } from "@/components/sections/lehumo/Cost";
 import { BiggerMission } from "@/components/sections/lehumo/BiggerMission";
 import { JoinCta } from "@/components/sections/lehumo/JoinCta";
 import { WealthPhotoBlock } from "@/components/sections/lehumo/WealthPhotoBlock";
+import { MemberPortalPreview } from "@/components/sections/lehumo/MemberPortalPreview";
 
 export default function LehumoPage() {
   return (
@@ -22,6 +23,7 @@ export default function LehumoPage() {
       <CommunityGrowth />
       <Cost />
       <InvestmentStrategy />
+      <MemberPortalPreview />
       <FiveYearRoadmap />
       <Benefits />
       <LoanGrowthTimeline />

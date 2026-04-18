@@ -80,31 +80,11 @@ export default function HomeHero() {
         <motion.p
           {...fadeUp}
           transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.2 }}
-          className="max-w-[640px] mx-auto text-[clamp(1rem,1.8vw,1.2rem)] leading-relaxed text-white/70 mb-10"
+          className="max-w-[640px] mx-auto text-[clamp(1rem,1.8vw,1.2rem)] leading-relaxed text-white/70"
         >
           Equipping entrepreneurs and young professionals with the strategies
           and solutions to build thriving businesses and generational wealth.
         </motion.p>
-
-        <motion.div
-          {...fadeUp}
-          transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.3 }}
-          className="flex flex-wrap items-center justify-center gap-4"
-        >
-          <Link
-            href="/advisory"
-            className="inline-flex items-center gap-2 rounded-full bg-lime px-8 py-3.5 text-sm font-bold text-navy transition-transform hover:scale-[1.03] active:scale-[0.98]"
-          >
-            Explore Services
-            <span aria-hidden="true">&rarr;</span>
-          </Link>
-          <a
-            href="mailto:hello@limepages.co.za?subject=Let's Have Coffee ☕"
-            className="inline-flex items-center gap-2 rounded-full border border-white/25 px-8 py-3.5 text-sm font-bold text-white transition-colors hover:border-white/50 hover:bg-white/5"
-          >
-            Let&apos;s Have Coffee
-          </a>
-        </motion.div>
 
         {/* Scroll hint */}
         <motion.div

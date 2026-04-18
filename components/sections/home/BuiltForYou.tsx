@@ -2,9 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { ArrowRight } from "lucide-react";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -15,7 +13,7 @@ const fadeUp = {
 
 export default function BuiltForYou() {
   return (
-    <section className="py-24 bg-snow">
+    <section id="built-for-you" className="py-24 bg-snow scroll-mt-[70px]">
       <Container>
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
           {/* Left — photo placeholder */}
@@ -61,24 +59,11 @@ export default function BuiltForYou() {
             <motion.p
               {...fadeUp}
               transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.25 }}
-              className="text-muted leading-relaxed mb-8"
+              className="text-muted leading-relaxed"
             >
               Lime Pages is. Honest advice, practical tools, and a community that builds
               wealth together.
             </motion.p>
-
-            <motion.div
-              {...fadeUp}
-              transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.3 }}
-            >
-              <Link
-                href="/about"
-                className="inline-flex items-center gap-2 rounded-full bg-navy px-8 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] active:scale-[0.98]"
-              >
-                Behind the Pages
-                <ArrowRight size={16} />
-              </Link>
-            </motion.div>
           </div>
         </div>
       </Container>

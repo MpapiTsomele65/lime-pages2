@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { Users, Globe, Briefcase, Rocket, Calendar, ArrowRight } from "lucide-react";
+import { Users, Globe, Briefcase, Rocket, Calendar, ArrowRight, Check } from "lucide-react";
+import { Directory } from "@/components/sections/connect/Directory";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -31,12 +32,19 @@ const features = [
   },
 ];
 
-const roadmap = [
+const roadmap: {
+  num: string;
+  title: string;
+  desc: string;
+  icon: React.ElementType;
+  live?: boolean;
+}[] = [
   {
     num: "01",
     title: "Community profiles & directory",
     desc: "Find and connect with entrepreneurs, investors, and professionals in the Lime Pages ecosystem.",
     icon: Users,
+    live: true,
   },
   {
     num: "02",
@@ -138,6 +146,9 @@ export default function ConnectPage() {
         </Container>
       </section>
 
+      {/* ═══ DIRECTORY ═══ */}
+      <Directory />
+
       {/* ═══ WHAT'S COMING — Roadmap ═══ */}
       <section className="py-24 bg-snow">
         <Container>
@@ -169,9 +180,19 @@ export default function ConnectPage() {
 
                 <div className="flex items-start gap-4">
                   <div>
-                    <span className="text-[13px] font-extrabold tracking-[2px] text-teal uppercase">
-                      {item.num}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[13px] font-extrabold tracking-[2px] text-teal uppercase">
+                        {item.num}
+                      </span>
+                      {item.live && (
+                        <span className="inline-flex items-center gap-1 bg-teal/10 border border-teal/25 rounded-full px-2.5 py-0.5">
+                          <Check className="w-3 h-3 text-teal" />
+                          <span className="text-[10px] font-bold text-teal uppercase tracking-wide">
+                            Live
+                          </span>
+                        </span>
+                      )}
+                    </div>
                     <h3 className="text-[17px] font-extrabold text-ink mt-1.5 mb-2 leading-tight">
                       {item.title}
                     </h3>

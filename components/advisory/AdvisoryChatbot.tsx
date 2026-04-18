@@ -185,7 +185,7 @@ export function AdvisoryChatbot() {
 
   return (
     <div className="w-full max-w-[600px] mx-auto">
-      <div className="bg-white rounded-3xl shadow-[0_8px_60px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.04)] flex flex-col h-[700px] max-h-[82vh] overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-[0_8px_60px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.04)] flex flex-col h-[min(700px,75dvh)] sm:h-[700px] sm:max-h-[82vh] overflow-hidden">
 
         {/* ── Header ── */}
         <div className="px-5 py-4 flex items-center gap-3 border-b border-[#F4F4F5] shrink-0">
@@ -226,7 +226,7 @@ export function AdvisoryChatbot() {
               >
                 {msg.role === "bot" && <BotAvatar />}
                 <div
-                  className={`max-w-[85%] px-4 py-3 text-[13.5px] leading-[1.6] ${
+                  className={`max-w-[88%] sm:max-w-[85%] px-4 py-3 text-[13.5px] leading-[1.6] ${
                     msg.role === "bot"
                       ? "bg-[#F4F4F5] text-[#18181B] rounded-2xl rounded-tl-sm advisory-chat-content"
                       : "bg-[#0B1933] text-white rounded-2xl rounded-br-sm"
@@ -265,10 +265,10 @@ export function AdvisoryChatbot() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.15, delay: 0.03 * i }}
                       onClick={() => handleOption(opt)}
-                      className={`text-[12.5px] font-medium leading-snug cursor-pointer transition-all duration-150 ${
+                      className={`text-[13px] font-medium leading-snug cursor-pointer transition-all duration-150 ${
                         isNav
-                          ? "text-[#71717A] bg-transparent border border-[#E4E4E7] rounded-full px-3.5 py-[7px] hover:bg-[#F4F4F5] hover:border-[#D4D4D8]"
-                          : "text-[#18181B] bg-white border border-[#E4E4E7] rounded-xl px-3.5 py-[9px] hover:border-teal hover:bg-teal/[0.04] hover:shadow-[0_1px_4px_rgba(70,205,207,0.15)] active:scale-[0.98]"
+                          ? "text-[#71717A] bg-transparent border border-[#E4E4E7] rounded-full px-4 py-[10px] min-h-[44px] flex items-center hover:bg-[#F4F4F5] hover:border-[#D4D4D8]"
+                          : "text-[#18181B] bg-white border border-[#E4E4E7] rounded-xl px-4 py-[10px] min-h-[44px] flex items-center hover:border-teal hover:bg-teal/[0.04] hover:shadow-[0_1px_4px_rgba(70,205,207,0.15)] active:scale-[0.98]"
                       } ${
                         currentOptions.length <= 2 || isNav
                           ? "w-full text-left"
@@ -285,7 +285,7 @@ export function AdvisoryChatbot() {
         </AnimatePresence>
 
         {/* ── Input bar ── */}
-        <div className="px-4 pb-4 pt-2 shrink-0">
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shrink-0">
           <form
             onSubmit={handleFreeTextSubmit}
             className="flex items-center gap-2 bg-[#F4F4F5] rounded-2xl px-4 py-1 focus-within:ring-2 focus-within:ring-teal/25 focus-within:bg-white focus-within:shadow-[0_0_0_1px_rgba(70,205,207,0.3)] transition-all"
@@ -296,18 +296,18 @@ export function AdvisoryChatbot() {
               value={freeText}
               onChange={(e) => setFreeText(e.target.value)}
               placeholder="Ask a question..."
-              className="flex-1 bg-transparent py-2.5 text-[13.5px] text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none"
+              className="flex-1 bg-transparent py-3 text-[14px] text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none"
               disabled={typing}
             />
             <button
               type="submit"
               disabled={!freeText.trim() || typing}
-              className="w-8 h-8 rounded-xl bg-[#0B1933] flex items-center justify-center shrink-0 disabled:opacity-20 disabled:cursor-not-allowed hover:bg-[#162a4d] active:scale-95 transition-all"
+              className="w-10 h-10 rounded-xl bg-[#0B1933] flex items-center justify-center shrink-0 disabled:opacity-20 disabled:cursor-not-allowed hover:bg-[#162a4d] active:scale-95 transition-all"
             >
               <ArrowUp className="w-4 h-4 text-white" strokeWidth={2.5} />
             </button>
           </form>
-          <p className="text-[10px] text-[#A1A1AA] text-center mt-2.5 leading-snug">
+          <p className="text-[11px] text-[#A1A1AA] text-center mt-2.5 leading-snug">
             #ThisIsNotFinancialAdvice &middot; Based on NCA, FAIS &amp; CPA
             &middot;{" "}
             <a href="https://www.limepages.co.za" target="_blank" rel="noopener noreferrer" className="text-teal hover:underline">

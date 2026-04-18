@@ -4,15 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { StepPersonalInfo } from "./StepPersonalInfo";
+import { StepPlanSelection } from "./StepPlanSelection";
 import { StepKycDocs } from "./StepKycDocs";
 import { StepPayment } from "./StepPayment";
 import { StepConfirmation } from "./StepConfirmation";
 
 const STEPS = [
   { number: 1, label: "Personal Info" },
-  { number: 2, label: "KYC" },
-  { number: 3, label: "Payment" },
-  { number: 4, label: "Confirmation" },
+  { number: 2, label: "Select Plan" },
+  { number: 3, label: "KYC" },
+  { number: 4, label: "Payment" },
+  { number: 5, label: "Confirmation" },
 ] as const;
 
 interface FormData {
@@ -20,15 +22,19 @@ interface FormData {
   email?: string;
   phone?: string;
   source?: string;
-  reference?: string;
+  intent?: string;
+  plan?: string;
+  sourceOfFunds?: string;
+  memberId?: string;
   memberNumber?: number;
+  reference?: string;
 }
 
 export function OnboardingWizard() {
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Auto-jump to confirmation step if URL has ?step=confirm&reference=xxx
@@ -37,7 +43,7 @@ export function OnboardingWizard() {
     const reference = searchParams.get("reference");
     if (step === "confirm" && reference) {
       setFormData((prev) => ({ ...prev, reference }));
-      setCurrentStep(4);
+      setCurrentStep(5);
     }
   }, [searchParams]);
 
@@ -47,21 +53,69 @@ export function OnboardingWizard() {
         setFormData((prev) => ({ ...prev, ...data }));
       }
       setError(null);
-      setCurrentStep((prev) => Math.min(prev + 1, 4));
+      setCurrentStep((prev) => Math.min(prev + 1, 5));
     },
     []
+  );
+
+  // Create account after KYC (step 3) — before moving to Payment (step 4).
+  // This ensures the member record exists even if they drop off at payment.
+  const handleKycComplete = useCallback(
+    async (data: { sourceOfFunds: string }) => {
+      const updatedData = { ...formData, ...data };
+      setFormData(updatedData);
+      setError(null);
+      setIsCreatingAccount(true);
+
+      try {
+        const res = await fetch("/api/lehumo/onboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName: updatedData.fullName,
+            email: updatedData.email,
+            phone: updatedData.phone,
+            source: updatedData.source,
+            intent: updatedData.intent,
+            plan: updatedData.plan,
+            sourceOfFunds: data.sourceOfFunds,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to create your account.");
+        }
+
+        const result = await res.json();
+        setFormData((prev) => ({
+          ...prev,
+          ...data,
+          memberId: result.memberId,
+          memberNumber: result.memberNumber,
+        }));
+        setCurrentStep(4);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Something went wrong. Please try again."
+        );
+      } finally {
+        setIsCreatingAccount(false);
+      }
+    },
+    [formData]
   );
 
   return (
     <div className="w-full max-w-[640px] mx-auto">
       {/* ── Progress Bar ── */}
-      <div className="flex items-center justify-between mb-12 px-2">
+      <div className="flex items-center justify-between mb-12 px-1">
         {STEPS.map((step, i) => (
           <div key={step.number} className="flex items-center flex-1 last:flex-none">
             {/* Dot + Label */}
             <div className="flex flex-col items-center gap-2 relative z-[1]">
               <div
-                className={`w-[34px] h-[34px] rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500 ${
+                className={`w-[32px] h-[32px] sm:w-[34px] sm:h-[34px] rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500 ${
                   currentStep >= step.number
                     ? "bg-lime text-navy shadow-[0_0_20px_rgba(184,255,0,0.35)]"
                     : "bg-white/[0.07] text-white/30 border border-white/[0.1]"
@@ -82,7 +136,7 @@ export function OnboardingWizard() {
                 )}
               </div>
               <span
-                className={`text-[11px] font-semibold tracking-wide transition-colors duration-300 whitespace-nowrap ${
+                className={`text-[9px] sm:text-[11px] font-semibold tracking-wide transition-colors duration-300 whitespace-nowrap ${
                   currentStep >= step.number ? "text-lime" : "text-white/30"
                 }`}
               >
@@ -92,7 +146,7 @@ export function OnboardingWizard() {
 
             {/* Connecting Line */}
             {i < STEPS.length - 1 && (
-              <div className="flex-1 h-[2px] mx-2 mt-[-22px] relative">
+              <div className="flex-1 h-[2px] mx-1 sm:mx-2 mt-[-22px] relative">
                 <div className="absolute inset-0 bg-white/[0.08] rounded-full" />
                 <motion.div
                   className="absolute inset-y-0 left-0 bg-lime rounded-full"
@@ -122,45 +176,75 @@ export function OnboardingWizard() {
         )}
       </AnimatePresence>
 
-      {/* ── Steps ── */}
-      <AnimatePresence mode="wait">
+      {/* ── Account Creation Loading ── */}
+      {isCreatingAccount && (
         <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -40 }}
-          transition={{ duration: 0.35, ease: "easeInOut" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-16"
         >
-          {currentStep === 1 && (
-            <StepPersonalInfo
-              onNext={(data) => handleNext(data)}
-              defaultValues={formData}
-            />
-          )}
-          {currentStep === 2 && <StepKycDocs onNext={() => handleNext()} />}
-          {currentStep === 3 && (
-            <StepPayment
-              formData={{
-                fullName: formData.fullName ?? "",
-                email: formData.email ?? "",
-                phone: formData.phone ?? "",
-                source: formData.source ?? "",
-              }}
-              onNext={(data) => handleNext(data)}
-            />
-          )}
-          {currentStep === 4 && (
-            <StepConfirmation
-              formData={{
-                fullName: formData.fullName ?? "",
-                email: formData.email ?? "",
-                reference: formData.reference,
-              }}
-              memberNumber={formData.memberNumber}
-            />
-          )}
+          <svg className="w-10 h-10 text-lime animate-spin mb-4" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="text-white/70 text-sm font-semibold">Creating your account...</p>
+          <p className="text-white/40 text-xs mt-1">This only takes a moment</p>
         </motion.div>
-      </AnimatePresence>
+      )}
+
+      {/* ── Steps ── */}
+      {!isCreatingAccount && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
+          >
+            {currentStep === 1 && (
+              <StepPersonalInfo
+                onNext={(data) => handleNext(data)}
+                defaultValues={formData}
+              />
+            )}
+            {currentStep === 2 && (
+              <StepPlanSelection
+                onNext={(data) => handleNext(data)}
+                defaultPlan={formData.plan}
+              />
+            )}
+            {currentStep === 3 && (
+              <StepKycDocs
+                onNext={handleKycComplete}
+                defaultSourceOfFunds={formData.sourceOfFunds}
+              />
+            )}
+            {currentStep === 4 && (
+              <StepPayment
+                memberId={formData.memberId ?? ""}
+                memberNumber={formData.memberNumber}
+                plan={formData.plan ?? "standard"}
+                fullName={formData.fullName ?? ""}
+                onNext={(data) => handleNext(data)}
+                onSkip={() => handleNext()}
+              />
+            )}
+            {currentStep === 5 && (
+              <StepConfirmation
+                formData={{
+                  fullName: formData.fullName ?? "",
+                  email: formData.email ?? "",
+                  reference: formData.reference,
+                }}
+                memberNumber={formData.memberNumber}
+                plan={formData.plan}
+                skippedPayment={!formData.reference}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }

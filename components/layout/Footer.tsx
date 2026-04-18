@@ -62,12 +62,12 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-4">
               Navigate
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-1">
               {FOOTER_NAV.navigate.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200"
+                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200 inline-block py-1.5"
                   >
                     {link.label}
                   </Link>
@@ -81,12 +81,12 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-4">
               Services
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-1">
               {FOOTER_NAV.services.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200"
+                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200 inline-block py-1.5"
                   >
                     {link.label}
                   </Link>
@@ -100,12 +100,12 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-4">
               Community
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-1">
               {FOOTER_NAV.community.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200"
+                    className="text-sm text-white/30 hover:text-teal transition-colors duration-200 inline-block py-1.5"
                   >
                     {link.label}
                   </Link>

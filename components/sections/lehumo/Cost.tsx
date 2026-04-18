@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { LEHUMO_APPLY_URL } from "@/lib/constants";
 import {
   Wallet,
   CreditCard,
@@ -43,16 +44,14 @@ const plans = [
     payment: "Manual EFT",
     paymentDesc:
       "You transfer your R1,000 contribution manually via EFT or banking app each month.",
-    paymentHighlight: false,
+    paymentHighlight: true,
     loanAccess: "After 12 months",
-    loanAmount: "Up to R2,400",
+    loanAmount: "",
     loanDetail: "20% of your R12,000 total contributions at month 12",
     features: [
-      "100% of contribution invested",
-      "Full investment pool access",
-      "Emergency loans from R2,400 (at 12mo)",
-      "Dividend income at SPV maturity",
-      "Member profile on LimePages",
+      "No collection or platform fees",
+      "Transfer on your terms via banking app",
+      "Full control over your monthly payments",
     ],
     notIncluded: [
       "Automated debit order",
@@ -86,15 +85,12 @@ const plans = [
       "We collect via Paystack automatically every month — your contribution is always on time, no effort required.",
     paymentHighlight: true,
     loanAccess: "After 6 months",
-    loanAmount: "Up to R1,200",
+    loanAmount: "",
     loanDetail: "20% of your R6,000 total contributions at month 6",
     features: [
-      "100% of contribution invested",
-      "Automated debit order via Paystack",
-      "Full investment pool access",
-      "Emergency loans from R1,200 (at 6mo)",
-      "Dividend income at SPV maturity",
-      "Member profile on LimePages",
+      "Automated via Paystack — never miss a payment",
+      "Earlier emergency loan access at 6 months",
+      "R19.90/mo fee — transparent, no hidden costs",
     ],
     notIncluded: [
       "WhatsApp VIP group",
@@ -125,14 +121,13 @@ const plans = [
       "Same seamless Paystack automation as Standard — plus exclusive community access.",
     paymentHighlight: true,
     loanAccess: "After 6 months",
-    loanAmount: "Up to R1,200",
+    loanAmount: "",
     loanDetail: "20% of your R6,000 total contributions at month 6",
     features: [
       "Everything in Standard, plus:",
       "Private WhatsApp group for VIP members",
       "Direct engagement with Lehumo leadership",
       "List your services on Lime Connect",
-      "Access a network of trusted professionals",
       "Priority support & exclusive updates",
     ],
     notIncluded: [],
@@ -193,7 +188,7 @@ export function Cost() {
         </motion.div>
 
         {/* ── 3 Plan Cards ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
           {plans.map((plan, i) => {
             const Icon = plan.icon;
             return (
@@ -300,7 +295,9 @@ export function Cost() {
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1.5">
-                      {plan.paymentHighlight ? (
+                      {plan.id === "basic" ? (
+                        <Wallet size={13} className={plan.accentColor} />
+                      ) : plan.paymentHighlight ? (
                         <Zap
                           size={13}
                           className={plan.accentColor}
@@ -333,17 +330,12 @@ export function Cost() {
                   <div
                     className={`rounded-xl border px-4 py-3 mb-5 ${plan.borderColor} ${plan.bgColor}`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <Clock size={13} className={plan.accentColor} />
-                        <span
-                          className={`text-xs font-bold ${plan.accentColor}`}
-                        >
-                          Emergency Loan: {plan.loanAccess}
-                        </span>
-                      </div>
-                      <span className="text-sm font-extrabold text-white">
-                        {plan.loanAmount}
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock size={13} className={plan.accentColor} />
+                      <span
+                        className={`text-xs font-bold ${plan.accentColor}`}
+                      >
+                        Emergency Loan: {plan.loanAccess}
                       </span>
                     </div>
                     <p className="text-[11px] text-white/40">
@@ -403,7 +395,7 @@ export function Cost() {
             <span className="text-sm font-bold text-white">
               Emergency Loan Rules
             </span>
-            <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider ml-auto">
+            <span className="text-[11px] font-semibold text-white/30 uppercase tracking-wider ml-auto">
               All plans
             </span>
           </div>
@@ -411,7 +403,7 @@ export function Cost() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {loanRules.map((rule) => (
               <div key={rule.label}>
-                <p className="text-[10px] font-bold text-white/35 uppercase tracking-wide mb-1">
+                <p className="text-[11px] font-bold text-white/35 uppercase tracking-wide mb-1">
                   {rule.label}
                 </p>
                 <p className="text-sm font-semibold text-white/80">
@@ -443,12 +435,14 @@ export function Cost() {
 
         {/* ── CTA ── */}
         <motion.div {...fadeUp} className="text-center">
-          <Link
-            href="/lehumo/onboard"
+          <a
+            href={LEHUMO_APPLY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-lime text-navy px-9 py-[15px] rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
           >
             Apply to Join <ArrowRight className="w-4 h-4" />
-          </Link>
+          </a>
           <p className="text-[11px] text-white/25 mt-4">
             Limited to 30 founding members &middot; Applications reviewed
             within 48 hours

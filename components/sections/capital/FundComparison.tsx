@@ -188,14 +188,22 @@ export default function FundComparison() {
             </div>
           </div>
 
+          {/* Scroll hint for mobile */}
+          <div className="flex items-center justify-center gap-2 mb-4 sm:hidden">
+            <span className="text-[11px] text-[#A1A1AA] font-medium">Swipe to compare</span>
+            <svg width="16" height="10" viewBox="0 0 16 10" fill="none" className="text-[#A1A1AA]">
+              <path d="M1 5h14M11 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+
           {/* Chart */}
-          <div className="flex items-end justify-center gap-4 sm:gap-8 lg:gap-12 h-[280px] sm:h-[320px] mb-6 relative overflow-visible">
+          <div className="flex items-end justify-start sm:justify-center gap-4 sm:gap-8 lg:gap-12 h-[280px] sm:h-[320px] mb-6 relative overflow-x-auto sm:overflow-visible pb-2 -mx-2 px-2 scrollbar-hide">
             {/* ── R10K starting line ── */}
             <div
               className="absolute left-0 right-0 border-b border-dashed border-[#D4D4D8] z-[1]"
               style={{ bottom: `${labelSpace + (10000 / maxGrowth) * effectiveBarMax}px` }}
             >
-              <span className="absolute -top-3.5 left-1 sm:left-0 text-[9px] text-[#A1A1AA] font-semibold">
+              <span className="absolute -top-3.5 left-1 sm:left-0 text-[10px] sm:text-[9px] text-[#A1A1AA] font-semibold">
                 R10K start
               </span>
             </div>
@@ -217,7 +225,7 @@ export default function FundComparison() {
               <span className="absolute -top-[18px] right-0 text-[10px] text-[#DC2626] font-bold bg-[#FEF2F2] border border-[#FECACA] px-2 py-0.5 rounded-md whitespace-nowrap">
                 Inflation &middot; R{(inflationGrowth / 1000).toFixed(1)}K
               </span>
-              <span className="absolute -top-[18px] left-1 sm:left-0 text-[9px] text-[#EF4444]/60 font-medium whitespace-nowrap">
+              <span className="absolute -top-[18px] left-1 sm:left-0 text-[10px] sm:text-[9px] text-[#EF4444]/60 font-medium whitespace-nowrap">
                 5.2% avg CPI
               </span>
             </div>
@@ -234,7 +242,7 @@ export default function FundComparison() {
               return (
                 <div
                   key={fund.shortName}
-                  className="flex flex-col items-center flex-1 max-w-[130px] gap-2.5"
+                  className="flex flex-col items-center flex-1 min-w-[60px] sm:min-w-0 max-w-[130px] gap-2.5"
                 >
                   {/* Value label */}
                   <motion.div

@@ -1,9 +1,26 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
-import { Mail, ExternalLink, ArrowRight } from "lucide-react";
+import { Mail, ArrowRight, Shield, Clock, Users } from "lucide-react";
+
+const ONBOARD_FEATURES = [
+  {
+    icon: Clock,
+    title: "5-Minute Setup",
+    desc: "Complete your membership application entirely online — no paperwork.",
+  },
+  {
+    icon: Shield,
+    title: "Secure & Private",
+    desc: "Your data is encrypted. KYC documents are verified separately via WhatsApp or email.",
+  },
+  {
+    icon: Users,
+    title: "Join 30 Founding Members",
+    desc: "Spots are limited. Be part of the community building generational wealth together.",
+  },
+];
 
 export function JoinCta() {
   return (
@@ -25,70 +42,83 @@ export function JoinCta() {
           starts <span className="text-lime">today.</span>
         </h2>
 
-        <p className="text-base text-white/55 leading-[1.8] mb-8 max-w-[600px] mx-auto">
-          Spots are limited to 30 Founding Members. Join the waitlist now and be part of the community that builds generational wealth together.
+        <p className="text-base text-white/55 leading-[1.8] mb-10 max-w-[560px] mx-auto">
+          Apply online in under 5 minutes. Choose your plan, verify your
+          identity, and start investing — all from one seamless digital
+          experience.
         </p>
 
         {/* Onboard CTA */}
         <Link
           href="/lehumo/onboard"
-          className="inline-flex items-center gap-2.5 bg-lime text-navy px-10 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all mb-10"
+          className="inline-flex items-center gap-2.5 bg-lime text-navy px-10 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all mb-12"
         >
           Become a Founding Member <ArrowRight className="w-4 h-4" />
         </Link>
 
-        {/* Application form badge */}
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center gap-2.5 bg-lime/10 border border-lime/25 rounded-full px-[18px] py-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-lime" />
-            <span className="text-[11px] font-bold text-lime tracking-[1.2px] uppercase">
-              Application Form · 6 sections · takes ~5 mins
-            </span>
-          </div>
+        {/* Feature cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+          {ONBOARD_FEATURES.map((feat, i) => {
+            const Icon = feat.icon;
+            return (
+              <motion.div
+                key={feat.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 + i * 0.1 }}
+                className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 text-left"
+              >
+                <div className="w-10 h-10 rounded-xl bg-lime/10 flex items-center justify-center mb-3">
+                  <Icon className="w-5 h-5 text-lime" />
+                </div>
+                <h3 className="text-sm font-bold text-white mb-1">
+                  {feat.title}
+                </h3>
+                <p className="text-xs text-white/40 leading-relaxed">
+                  {feat.desc}
+                </p>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* Google Forms embed */}
-        <div className="rounded-[20px] overflow-hidden border border-lime/[0.18] shadow-[0_24px_64px_rgba(0,0,0,0.35)]">
-          <iframe
-            src="https://docs.google.com/forms/d/e/1FAIpQLScMXzeouQPJZSYctW5qzmylkbBdEYKoEpqeRMFjJGFqdXX65Q/viewform?embedded=true"
-            width="100%"
-            height="1450"
-            frameBorder="0"
-            title="Lehumo Membership Onboarding Form"
-            className="block bg-white"
-          >
-            Loading form…
-          </iframe>
-        </div>
-
-        {/* Contact cards */}
-        <div className="flex gap-4 justify-center flex-wrap mt-10">
+        {/* Contact + existing member */}
+        <div className="flex gap-4 justify-center flex-wrap">
           <a
             href="mailto:lehumo@limepages.co.za"
             className="bg-white/[0.04] border border-white/[0.08] rounded-[14px] px-6 py-[18px] flex items-center gap-3 hover:border-teal/25 transition-colors"
           >
             <Mail className="w-5 h-5 text-teal flex-shrink-0" />
             <div className="text-left">
-              <div className="text-[11px] text-white/32 font-semibold uppercase tracking-[1px] mb-0.5">Questions? Email us</div>
-              <div className="text-sm text-white font-semibold">lehumo@limepages.co.za</div>
+              <div className="text-[11px] text-white/32 font-semibold uppercase tracking-[1px] mb-0.5">
+                Questions? Email us
+              </div>
+              <div className="text-sm text-white font-semibold">
+                lehumo@limepages.co.za
+              </div>
             </div>
           </a>
-          <a
-            href="https://forms.gle/57Kes6tx5tio85H16"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/lehumo/portal/login"
             className="bg-white/[0.04] border border-white/[0.08] rounded-[14px] px-6 py-[18px] flex items-center gap-3 hover:border-lime/25 transition-colors"
           >
-            <ExternalLink className="w-5 h-5 text-lime flex-shrink-0" />
+            <Shield className="w-5 h-5 text-lime flex-shrink-0" />
             <div className="text-left">
-              <div className="text-[11px] text-white/32 font-semibold uppercase tracking-[1px] mb-0.5">Open form in new tab</div>
-              <div className="text-sm text-lime font-semibold">forms.gle/57Kes6tx5tio85H16 ↗</div>
+              <div className="text-[11px] text-white/32 font-semibold uppercase tracking-[1px] mb-0.5">
+                Already a member?
+              </div>
+              <div className="text-sm text-lime font-semibold">
+                Sign in to your portal
+              </div>
             </div>
-          </a>
+          </Link>
         </div>
 
         <p className="mt-12 text-sm text-white/32">
-          Founded by <strong className="text-white font-bold">Mpapi Tsomele</strong> · Powered by Lime Pages
+          Founded by{" "}
+          <strong className="text-white font-bold">Mpapi Tsomele</strong> ·
+          Powered by Lime Pages
         </p>
       </motion.div>
     </section>

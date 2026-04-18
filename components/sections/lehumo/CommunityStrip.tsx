@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
+import { LEHUMO_APPLY_URL } from "@/lib/constants";
 
 export function CommunityStrip() {
   return (
@@ -34,9 +34,14 @@ export function CommunityStrip() {
             <p className="text-[15px] text-white/60 leading-[1.8] mb-7">
               For generations, Black South Africans have built wealth informally — through stokvels, extended family networks, and community trust. Lehumo takes that spirit and gives it a structure that creates lasting, tangible assets.
             </p>
-            <Link href="#join" className="inline-flex items-center gap-2 bg-lime text-navy px-7 py-[13px] rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all">
+            <a
+              href={LEHUMO_APPLY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-lime text-navy px-7 py-[13px] rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
+            >
               Join the Waitlist →
-            </Link>
+            </a>
           </motion.div>
         </div>
       </div>

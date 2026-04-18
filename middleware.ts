@@ -5,9 +5,11 @@ export async function middleware(request: NextRequest) {
   const session = request.cookies.get("lehumo_session")?.value;
   const { pathname } = request.nextUrl;
   const isLoginPage = pathname === "/lehumo/portal/login";
+  const isForgotPage = pathname === "/lehumo/portal/forgot";
+  const isPublicPage = isLoginPage || isForgotPage;
 
-  // No session → redirect to login (unless already on login page)
-  if (!session && !isLoginPage) {
+  // No session → redirect to login (unless on a public page)
+  if (!session && !isPublicPage) {
     return NextResponse.redirect(new URL("/lehumo/portal/login", request.url));
   }
 
@@ -16,7 +18,7 @@ export async function middleware(request: NextRequest) {
     const payload = await decrypt(session);
 
     // Invalid/expired session → redirect to login
-    if (!payload && !isLoginPage) {
+    if (!payload && !isPublicPage) {
       const response = NextResponse.redirect(
         new URL("/lehumo/portal/login", request.url),
       );

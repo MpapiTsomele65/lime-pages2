@@ -1,18 +1,27 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { LehumoMember } from "@/lib/definitions";
+import type { CommunityPoolStats, LehumoMember } from "@/lib/definitions";
+import { formatMemberNumber } from "@/lib/definitions";
 import { MemberProfileCard } from "./MemberProfileCard";
 import { ContributionGrid } from "./ContributionGrid";
 import { KycStatusTracker } from "./KycStatusTracker";
 import { PaymentCard } from "./PaymentCard";
+import { CommunityPoolCard } from "./CommunityPoolCard";
 
 interface DashboardOverviewProps {
   member: LehumoMember;
+  communityStats: CommunityPoolStats | null;
 }
 
-export function DashboardOverview({ member }: DashboardOverviewProps) {
+export function DashboardOverview({
+  member,
+  communityStats,
+}: DashboardOverviewProps) {
   const firstName = member.fullName.split(" ")[0];
+
+  const myContributed =
+    Object.values(member.contributions).filter(Boolean).length * 1000;
 
   return (
     <div className="space-y-8">
@@ -27,9 +36,14 @@ export function DashboardOverview({ member }: DashboardOverviewProps) {
           Welcome back, {firstName}
         </h1>
         <span className="inline-flex items-center self-start rounded-full bg-[#B8FF00]/10 px-3 py-1 text-xs font-medium text-[#B8FF00]">
-          Member #{member.memberNumber}
+          Member {formatMemberNumber(member.memberNumber)}
         </span>
       </motion.div>
+
+      {/* Community pool overview */}
+      {communityStats && (
+        <CommunityPoolCard stats={communityStats} myContributed={myContributed} />
+      )}
 
       {/* Dashboard grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

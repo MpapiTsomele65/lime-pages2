@@ -8,6 +8,7 @@ interface PersonalInfoData {
   email: string;
   phone: string;
   source: string;
+  intent: string;
 }
 
 interface StepPersonalInfoProps {
@@ -24,6 +25,14 @@ const SOURCE_OPTIONS = [
   { value: "Direct", label: "Direct" },
 ];
 
+const INTENT_OPTIONS = [
+  { value: "", label: "Select your level of interest..." },
+  { value: "Ready to join", label: "I\u2019m ready to join Lehumo" },
+  { value: "Interested, need more info", label: "Interested, but I need more information" },
+  { value: "Still deciding", label: "I haven\u2019t decided yet" },
+  { value: "Exploring", label: "Just exploring for now" },
+];
+
 const inputClasses =
   "w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-lime/40 focus:ring-1 focus:ring-lime/20 outline-none transition-colors";
 
@@ -34,6 +43,7 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
   const [email, setEmail] = useState(defaultValues?.email ?? "");
   const [phone, setPhone] = useState(defaultValues?.phone ?? "");
   const [source, setSource] = useState(defaultValues?.source ?? "");
+  const [intent, setIntent] = useState(defaultValues?.intent ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate(): boolean {
@@ -59,6 +69,10 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
       newErrors.source = "Please select how you heard about us";
     }
 
+    if (!intent) {
+      newErrors.intent = "Please let us know where you stand";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -66,7 +80,7 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (validate()) {
-      onNext({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim(), source });
+      onNext({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim(), source, intent });
     }
   }
 
@@ -158,6 +172,28 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
         </select>
         {errors.source && (
           <p className="text-red-400 text-xs mt-1.5">{errors.source}</p>
+        )}
+      </div>
+
+      {/* Intent / Readiness */}
+      <div>
+        <label htmlFor="intent" className={labelClasses}>
+          Where are you on your decision?
+        </label>
+        <select
+          id="intent"
+          value={intent}
+          onChange={(e) => setIntent(e.target.value)}
+          className={`${inputClasses} ${!intent ? "text-white/30" : ""} ${errors.intent ? "border-red-500/50" : ""}`}
+        >
+          {INTENT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value} className="bg-navy text-white">
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {errors.intent && (
+          <p className="text-red-400 text-xs mt-1.5">{errors.intent}</p>
         )}
       </div>
 

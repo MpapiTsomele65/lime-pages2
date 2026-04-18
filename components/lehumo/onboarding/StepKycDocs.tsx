@@ -4,7 +4,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 
 interface StepKycDocsProps {
-  onNext: () => void;
+  onNext: (data: { sourceOfFunds: string }) => void;
+  defaultSourceOfFunds?: string;
 }
 
 const KYC_DOCUMENTS = [
@@ -28,8 +29,38 @@ const KYC_DOCUMENTS = [
   },
 ];
 
-export function StepKycDocs({ onNext }: StepKycDocsProps) {
+const SOURCE_OF_FUNDS_OPTIONS = [
+  { value: "", label: "Select source of funds..." },
+  { value: "Employment/Salary", label: "Employment / Salary" },
+  { value: "Self-Employment/Business", label: "Self-Employment / Business Income" },
+  { value: "Savings", label: "Personal Savings" },
+  { value: "Investments", label: "Investment Returns" },
+  { value: "Pension/Retirement", label: "Pension / Retirement Fund" },
+  { value: "Inheritance", label: "Inheritance" },
+  { value: "Gift", label: "Gift / Family Support" },
+  { value: "Rental Income", label: "Rental Income" },
+  { value: "Government Grant", label: "Government Grant / Stipend" },
+  { value: "Other", label: "Other" },
+];
+
+const inputClasses =
+  "w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-teal/40 focus:ring-1 focus:ring-teal/20 outline-none transition-colors";
+
+export function StepKycDocs({ onNext, defaultSourceOfFunds }: StepKycDocsProps) {
   const [agreed, setAgreed] = useState(false);
+  const [sourceOfFunds, setSourceOfFunds] = useState(defaultSourceOfFunds || "");
+  const [error, setError] = useState("");
+
+  const canProceed = agreed && sourceOfFunds;
+
+  function handleContinue() {
+    if (!sourceOfFunds) {
+      setError("Please select your source of funds.");
+      return;
+    }
+    if (!agreed) return;
+    onNext({ sourceOfFunds });
+  }
 
   return (
     <motion.div
@@ -41,8 +72,8 @@ export function StepKycDocs({ onNext }: StepKycDocsProps) {
       <div className="mb-8">
         <h2 className="text-2xl font-extrabold text-white mb-2">Know Your Customer (KYC)</h2>
         <p className="text-white/50 text-sm leading-relaxed">
-          As part of regulatory requirements, we need to verify your identity. Here is what
-          you will need to provide.
+          As part of regulatory requirements, we need to verify your identity and
+          understand the source of your investment funds.
         </p>
       </div>
 
@@ -64,6 +95,32 @@ export function StepKycDocs({ onNext }: StepKycDocsProps) {
             </div>
           </motion.div>
         ))}
+      </div>
+
+      {/* Source of Funds */}
+      <div>
+        <label htmlFor="sourceOfFunds" className="text-sm font-semibold text-white/70 mb-2 block">
+          Source of Funds
+        </label>
+        <p className="text-xs text-white/40 mb-3 leading-relaxed">
+          Where does the money for your monthly R1,000 contribution come from?
+        </p>
+        <select
+          id="sourceOfFunds"
+          value={sourceOfFunds}
+          onChange={(e) => {
+            setSourceOfFunds(e.target.value);
+            setError("");
+          }}
+          className={`${inputClasses} ${!sourceOfFunds ? "text-white/30" : ""} ${error ? "border-red-500/50" : ""}`}
+        >
+          {SOURCE_OF_FUNDS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value} className="bg-navy text-white">
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
       </div>
 
       {/* Note */}
@@ -114,10 +171,10 @@ export function StepKycDocs({ onNext }: StepKycDocsProps) {
       <div className="pt-4">
         <button
           type="button"
-          disabled={!agreed}
-          onClick={onNext}
+          disabled={!canProceed}
+          onClick={handleContinue}
           className={`font-bold rounded-full px-8 py-3.5 text-sm transition-all w-full sm:w-auto cursor-pointer ${
-            agreed
+            canProceed
               ? "bg-lime text-navy hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)]"
               : "bg-white/[0.06] text-white/20 cursor-not-allowed"
           }`}

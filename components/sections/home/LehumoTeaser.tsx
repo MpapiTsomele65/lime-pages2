@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Star } from "lucide-react";
+import { LaunchCountdown } from "@/components/sections/lehumo/LaunchCountdown";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 } as const,
@@ -14,11 +15,11 @@ const fadeUp = {
 };
 
 const bars = [
-  { label: "Year 1", value: "360", height: 40, color: "bg-teal/40", delay: 0.1 },
-  { label: "Year 2", value: "720", height: 80, color: "bg-teal/60", delay: 0.2 },
-  { label: "Year 3", value: "1,080", height: 118, color: "bg-teal/80", delay: 0.3 },
-  { label: "Year 4", value: "1,400", height: 154, color: "bg-teal", delay: 0.4 },
-  { label: "Year 5", value: "1,800", height: 200, color: "bg-lime", delay: 0.5, highlight: true },
+  { label: "Year 1", value: "R360k", height: 40, color: "bg-teal/40", delay: 0.1 },
+  { label: "Year 2", value: "R720k", height: 80, color: "bg-teal/60", delay: 0.2 },
+  { label: "Year 3", value: "R1.08M", height: 118, color: "bg-teal/80", delay: 0.3 },
+  { label: "Year 4", value: "R1.4M", height: 154, color: "bg-teal", delay: 0.4 },
+  { label: "Year 5", value: "R1.8M", height: 200, color: "bg-lime", delay: 0.5, highlight: true },
 ];
 
 const stats = [
@@ -34,19 +35,41 @@ export function LehumoTeaser() {
       <div className="absolute -bottom-[20%] -right-[5%] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.08),transparent_70%)] blur-[60px] pointer-events-none" />
 
       <Container className="relative z-[1]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-[60px] items-center">
-          {/* Left — Text + Bar Chart */}
-          <motion.div {...fadeUp}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-x-[60px] lg:gap-y-6 items-start">
+          {/* Eyebrow + Countdown + Image — second on mobile, top-right on desktop */}
+          <motion.div
+            {...fadeUp}
+            transition={{ ...fadeUp.transition, delay: 0.15 }}
+            className="order-2 lg:order-none flex flex-col gap-4 lg:col-start-2 lg:row-start-1"
+          >
+            <p className="text-sm font-bold tracking-[1.8px] uppercase text-teal">
+              Lehumo Collective Investment Trust
+            </p>
+            <LaunchCountdown
+              eyebrow="Be part of the movement"
+              align="left"
+            />
+            <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden">
+              <Image
+                src="/images/iwaria-inc-M7ALc3UuX_g-unsplash.jpg"
+                alt="Community members collaborating"
+                fill
+                className="object-cover"
+              />
+            </div>
+          </motion.div>
+
+          {/* Left — Text + Bar Chart — first on mobile, left column on desktop */}
+          <motion.div
+            {...fadeUp}
+            className="order-1 lg:order-none lg:col-start-1 lg:row-start-1 lg:row-span-2"
+          >
             <div className="inline-flex items-center gap-2.5 bg-lime/10 border border-lime/25 rounded-full px-4 py-1.5 mb-5">
               <Star className="w-4 h-4 text-lime" />
               <span className="text-[11px] font-bold text-lime tracking-[1.2px] uppercase">
                 New Initiative
               </span>
             </div>
-
-            <p className="text-xs font-bold tracking-[1.5px] uppercase text-teal mb-3">
-              Lehumo Collective Investment Trust
-            </p>
 
             <h2 className="text-[clamp(2rem,5vw,3.4rem)] font-extrabold text-white leading-[1.05] tracking-tight mb-5">
               Building{" "}
@@ -76,8 +99,8 @@ export function LehumoTeaser() {
               transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.2 }}
               className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-7 mb-8"
             >
-              <p className="text-[10px] font-bold text-white/25 tracking-[1px] uppercase mb-6">
-                Cumulative Pool Growth · R&apos;000
+              <p className="text-[11px] font-bold text-white/25 tracking-[1px] uppercase mb-6">
+                Cumulative Pool Growth
               </p>
               <div className="flex items-end gap-3 h-[160px]">
                 {bars.map((b) => (
@@ -120,21 +143,12 @@ export function LehumoTeaser() {
             </div>
           </motion.div>
 
-          {/* Right — Photo + Stats */}
+          {/* Stats — last on mobile, bottom of right column on desktop */}
           <motion.div
             {...fadeUp}
-            transition={{ ...fadeUp.transition, delay: 0.2 }}
-            className="flex flex-col gap-4"
+            transition={{ ...fadeUp.transition, delay: 0.25 }}
+            className="order-3 lg:order-none flex flex-col gap-4 lg:col-start-2 lg:row-start-2"
           >
-            <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden">
-              <Image
-                src="/images/iwaria-inc-M7ALc3UuX_g-unsplash.jpg"
-                alt="Community members collaborating"
-                fill
-                className="object-cover"
-              />
-            </div>
-
             {stats.map((s, i) => (
               <motion.div
                 key={s.label}

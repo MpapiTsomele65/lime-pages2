@@ -120,6 +120,7 @@ export default function Navbar() {
           : "#0B0B0B";
 
   const moreActive = isMoreActive(pathname);
+  const isLehumo = pathname === "/lehumo" || pathname.startsWith("/lehumo/");
 
   return (
     <>
@@ -227,19 +228,44 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-            {/* Book Now CTA */}
-            <Link
-              href="/advisory"
-              className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${ctaClass}`}
-            >
-              Book Now
-            </Link>
+            {/* CTA buttons — context-aware */}
+            {isLehumo ? (
+              <div className="flex items-center gap-2.5">
+                <Link
+                  href="/lehumo/portal/login"
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 ${
+                    pinned
+                      ? "text-navy border border-navy/20 hover:bg-navy/5"
+                      : "text-teal/80 border border-teal/30 hover:bg-teal/10 hover:text-teal"
+                  }`}
+                >
+                  Member Login
+                </Link>
+                <Link
+                  href="/lehumo/onboard"
+                  className={`px-4 py-2.5 rounded-full text-xs font-bold transition-all duration-200 ${
+                    pinned
+                      ? "bg-teal text-white hover:bg-teal/90"
+                      : "bg-lime text-navy hover:shadow-[0_4px_16px_rgba(184,255,0,0.25)]"
+                  }`}
+                >
+                  Join Lehumo
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href="/advisory"
+                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${ctaClass}`}
+              >
+                Book Now
+              </Link>
+            )}
           </div>
 
           {/* Mobile hamburger */}
           <button
             onClick={() => setDrawerOpen((prev) => !prev)}
-            className="flex min-[900px]:hidden flex-col justify-center items-center w-10 h-10 gap-[6px]"
+            className="flex min-[900px]:hidden flex-col justify-center items-center w-11 h-11 gap-[6px] -mr-1"
             aria-label={drawerOpen ? "Close menu" : "Open menu"}
           >
             <motion.span
@@ -298,7 +324,7 @@ export default function Navbar() {
                 })}
 
                 {/* More section divider */}
-                <span className="text-[10px] font-bold tracking-[1.5px] uppercase text-muted mt-6 mb-1 px-1">
+                <span className="text-[11px] font-bold tracking-[1.5px] uppercase text-muted mt-6 mb-1 px-1">
                   More
                 </span>
 
@@ -331,13 +357,30 @@ export default function Navbar() {
                 })}
               </div>
 
-              {/* Book Now button */}
-              <Link
-                href="/advisory"
-                className="mt-auto w-full py-4 bg-teal text-white text-center text-lg font-semibold rounded-xl transition-colors duration-200 hover:bg-teal/90"
-              >
-                Book Now
-              </Link>
+              {/* Bottom CTAs */}
+              {isLehumo ? (
+                <div className="mt-auto flex flex-col gap-3">
+                  <Link
+                    href="/lehumo/portal/login"
+                    className="w-full py-3.5 border-2 border-navy/20 text-navy text-center text-base font-semibold rounded-xl transition-colors duration-200 hover:bg-navy/5"
+                  >
+                    Member Login
+                  </Link>
+                  <Link
+                    href="/lehumo/onboard"
+                    className="w-full py-4 bg-lime text-navy text-center text-lg font-semibold rounded-xl transition-colors duration-200 hover:bg-lime/90"
+                  >
+                    Join Lehumo
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href="/advisory"
+                  className="mt-auto w-full py-4 bg-teal text-white text-center text-lg font-semibold rounded-xl transition-colors duration-200 hover:bg-teal/90"
+                >
+                  Book Now
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

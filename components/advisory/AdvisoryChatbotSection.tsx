@@ -134,7 +134,7 @@ export function AdvisoryChatbotSection() {
                 <div className="text-xl font-extrabold text-[#B8FF00] mb-0.5">
                   {s.value}
                 </div>
-                <div className="text-[10px] text-white/45 font-medium">
+                <div className="text-[11px] text-white/45 font-medium">
                   {s.label}
                 </div>
               </div>

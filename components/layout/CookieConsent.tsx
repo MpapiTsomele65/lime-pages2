@@ -43,10 +43,10 @@ export default function CookieConsent() {
             {/* Close button */}
             <button
               onClick={decline}
-              className="absolute top-3 right-3 text-white/25 hover:text-white/60 transition-colors"
+              className="absolute top-2 right-2 w-10 h-10 flex items-center justify-center text-white/25 hover:text-white/60 transition-colors rounded-full"
               aria-label="Close cookie banner"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4.5 h-4.5" />
             </button>
 
             <div className="flex items-start gap-4">
@@ -73,14 +73,14 @@ export default function CookieConsent() {
                   <button
                     onClick={accept}
                     aria-label="Accept cookies and analytics"
-                    className="bg-capital text-navy px-5 py-2 rounded-full text-xs font-bold hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(193,255,114,0.25)] transition-all"
+                    className="bg-capital text-navy px-6 py-3 min-h-[44px] rounded-full text-sm font-bold hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(193,255,114,0.25)] transition-all"
                   >
                     Accept
                   </button>
                   <button
                     onClick={decline}
                     aria-label="Decline cookies and analytics"
-                    className="text-white/40 px-4 py-2 rounded-full text-xs font-semibold hover:text-white/70 transition-colors"
+                    className="text-white/40 px-5 py-3 min-h-[44px] rounded-full text-sm font-semibold hover:text-white/70 transition-colors"
                   >
                     Decline
                   </button>

@@ -1,3 +1,7 @@
+/** Google Form — Lehumo Founding Member application / waiting list */
+export const LEHUMO_APPLY_URL =
+  "https://forms.gle/57Kes6tx5tio85H16";
+
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Lehumo", href: "/lehumo" },
