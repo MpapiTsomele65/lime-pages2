@@ -88,9 +88,9 @@ export function StepConfirmation({
         ? [
             {
               number: 2,
-              title: "Complete Your Payment",
+              title: "We'll Email You When Debit Orders Go Live",
               description:
-                "Log in to your member portal to set up your debit order when you are ready.",
+                "We're finalising our payment provider verification. Watch your inbox over the next 2–3 weeks — you'll be among the first to activate.",
             },
           ]
         : []),
@@ -233,7 +233,7 @@ export function StepConfirmation({
           transition={{ delay: 0.9 }}
         >
           {skippedPayment
-            ? "Your membership account has been created. Complete your payment when you are ready to fully activate."
+            ? "Your founding-member spot is reserved. We'll email you as soon as debit order setup is live."
             : isBasicPlan
               ? "Your membership account has been created. Make your first EFT payment to activate your investment."
               : "Your membership has been confirmed. Here is what happens next on your journey to building generational wealth."}

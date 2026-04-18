@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Clock } from "lucide-react";
 
 interface StepPaymentProps {
   memberId: string;
@@ -47,25 +47,22 @@ const ALLOCATION = [
   { label: "SV Capital", pct: "10%", color: "bg-pink" },
 ];
 
-// Placeholder — update with real Capitec details when available
 const BANK_DETAILS = {
   bank: "Capitec Business",
   accountName: "Lime Pages (Pty) Ltd",
-  accountNumber: "— to be provided —",
+  accountNumber: "1054737347",
   branchCode: "470010",
   accountType: "Current / Cheque",
+  swift: "CABLZAJJ",
 };
 
 export function StepPayment({
-  memberId,
   memberNumber,
   plan,
   fullName,
   onNext,
   onSkip,
 }: StepPaymentProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const planInfo = PLAN_DETAILS[plan] || PLAN_DETAILS.standard;
@@ -81,30 +78,6 @@ export function StepPayment({
       setCopied(label);
       setTimeout(() => setCopied(null), 2000);
     });
-  }
-
-  async function handlePaystack() {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const paystackRes = await fetch("/api/lehumo/paystack/init", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberId }),
-      });
-
-      if (!paystackRes.ok) {
-        const errData = await paystackRes.json().catch(() => ({}));
-        throw new Error(errData.error || "Failed to initialize payment.");
-      }
-
-      const { authorization_url } = await paystackRes.json();
-      window.location.href = authorization_url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-      setIsLoading(false);
-    }
   }
 
   // Basic plan confirmed EFT — skip to confirmation
@@ -193,6 +166,7 @@ export function StepPayment({
               { label: "Account Number", value: BANK_DETAILS.accountNumber },
               { label: "Branch Code", value: BANK_DETAILS.branchCode },
               { label: "Account Type", value: BANK_DETAILS.accountType },
+              { label: "SWIFT / BIC", value: BANK_DETAILS.swift },
             ].map((row) => (
               <div key={row.label} className="flex items-center justify-between">
                 <div>
@@ -246,36 +220,54 @@ export function StepPayment({
         </motion.div>
       )}
 
-      {/* ── Standard / VIP: Paystack Note ── */}
+      {/* ── Standard / VIP: Coming Soon ── */}
       {!isBasic && (
-        <div className="flex items-center gap-2.5 px-1">
-          <svg
-            className="w-4 h-4 text-teal flex-shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-            />
-          </svg>
-          <span className="text-xs text-white/40">
-            Secure payment processed by Paystack. Your card details are never stored on our servers.
-          </span>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
         <motion.div
-          initial={{ opacity: 0, y: -4 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400"
+          className="rounded-2xl bg-white/[0.04] border border-teal/20 overflow-hidden"
         >
-          {error}
+          <div className="px-6 py-4 border-b border-white/[0.08] bg-teal/[0.05]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-teal/15 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-teal" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-teal">
+                  Automated Debit Order — Coming Soon
+                </p>
+                <p className="text-[11px] text-white/40 mt-0.5">
+                  Launching in the next few weeks
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-3">
+            <p className="text-sm text-white/70 leading-relaxed">
+              Your {planInfo.name} plan is reserved. We&apos;re finalising our
+              payment provider verification and will email you as soon as
+              debit order setup is live — usually within 2&ndash;3 weeks.
+            </p>
+
+            <ul className="space-y-2 pt-1">
+              <li className="flex items-start gap-2.5 text-xs text-white/55">
+                <Check className="w-3.5 h-3.5 text-teal shrink-0 mt-0.5" strokeWidth={2.5} />
+                <span>Your founding-member spot is secured</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-xs text-white/55">
+                <Check className="w-3.5 h-3.5 text-teal shrink-0 mt-0.5" strokeWidth={2.5} />
+                <span>We&apos;ll reach out within 48 hours to confirm details</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-xs text-white/55">
+                <Check className="w-3.5 h-3.5 text-teal shrink-0 mt-0.5" strokeWidth={2.5} />
+                <span>
+                  Or switch to <strong className="text-lime">Basic</strong> to start
+                  immediately via manual EFT
+                </span>
+              </li>
+            </ul>
+          </div>
         </motion.div>
       )}
 
@@ -291,49 +283,13 @@ export function StepPayment({
             I&apos;ve Noted the Details — Continue
           </button>
         ) : (
-          /* Standard / VIP: Paystack redirect */
-          <button
-            type="button"
-            disabled={isLoading}
-            onClick={handlePaystack}
-            className={`font-bold rounded-full px-8 py-3.5 text-sm transition-all w-full sm:w-auto cursor-pointer ${
-              isLoading
-                ? "bg-lime/50 text-navy/70 cursor-wait"
-                : "bg-lime text-navy hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)]"
-            }`}
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Processing...
-              </span>
-            ) : (
-              "Set Up Debit Order"
-            )}
-          </button>
-        )}
-
-        {!isBasic && (
+          /* Standard / VIP: Acknowledge coming-soon and proceed */
           <button
             type="button"
             onClick={onSkip}
-            className="text-sm text-white/40 hover:text-white/60 transition-colors py-3.5 px-4"
+            className="bg-lime text-navy font-bold rounded-full px-8 py-3.5 text-sm transition-all w-full sm:w-auto cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)]"
           >
-            Skip for now — pay later
+            Continue — keep me posted
           </button>
         )}
       </div>
