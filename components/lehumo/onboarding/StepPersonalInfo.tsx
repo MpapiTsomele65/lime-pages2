@@ -215,6 +215,20 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
         >
           Continue
         </button>
+        <p className="text-[11px] text-white/35 leading-relaxed mt-4 max-w-[560px]">
+          By continuing, you consent to Lime Pages processing your personal
+          information under POPIA for the purpose of Lehumo membership,
+          KYC verification, and related communication. See our{" "}
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/55 underline hover:text-white/80"
+          >
+            Privacy Policy
+          </a>
+          .
+        </p>
       </div>
     </motion.form>
   );

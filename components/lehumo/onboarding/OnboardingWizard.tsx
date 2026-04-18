@@ -8,6 +8,7 @@ import { StepPlanSelection } from "./StepPlanSelection";
 import { StepKycDocs } from "./StepKycDocs";
 import { StepPayment } from "./StepPayment";
 import { StepConfirmation } from "./StepConfirmation";
+import { trackEvent } from "@/lib/analytics";
 
 const STEPS = [
   { number: 1, label: "Personal Info" },
@@ -84,6 +85,13 @@ export function OnboardingWizard() {
         }).catch(() => {
           // Silent — leads capture is best-effort, not critical.
         });
+
+        trackEvent("lead_submitted", {
+          source: "Onboarding Step 1",
+          commitment: data.commitment,
+          intent: data.intent,
+        });
+        trackEvent("onboarding_started");
       }
       handleNext(data);
     },

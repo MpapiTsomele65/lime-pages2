@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Loader2, X } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 interface ReferralFormModalProps {
   open: boolean;
@@ -74,6 +75,11 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Something went wrong. Please try again.");
       }
+
+      trackEvent("lead_submitted", {
+        source: "Referral Form",
+        planInterest,
+      });
 
       setSuccess(true);
       setFullName("");
@@ -255,6 +261,21 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
                       "Submit"
                     )}
                   </button>
+
+                  <p className="text-[11px] text-white/35 leading-relaxed text-center">
+                    By submitting, you consent to Lime Pages processing your
+                    personal information under POPIA for the purpose of
+                    Lehumo membership and communication. See our{" "}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white/55 underline hover:text-white/80"
+                    >
+                      Privacy Policy
+                    </a>
+                    .
+                  </p>
                 </form>
               </>
             )}

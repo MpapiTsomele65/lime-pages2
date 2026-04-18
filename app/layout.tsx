@@ -9,6 +9,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import CookieConsent from "@/components/layout/CookieConsent";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/shared/JsonLd";
+import { SiteAnalytics } from "@/components/analytics/SiteAnalytics";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -78,6 +79,7 @@ export default function RootLayout({
         <Footer />
         <Analytics />
         <SpeedInsights />
+        <SiteAnalytics />
         <CookieConsent />
       </body>
     </html>
