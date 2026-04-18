@@ -46,7 +46,11 @@ export default async function PortalDashboardPage() {
 
   return (
     <PortalShell memberName={memberName} isAdmin={isAdmin}>
-      <DashboardOverview member={member} communityStats={communityStats} />
+      <DashboardOverview
+        member={member}
+        communityStats={communityStats}
+        isAdmin={isAdmin}
+      />
     </PortalShell>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { ArrowRight, Shield } from "lucide-react";
 import type { CommunityPoolStats, LehumoMember } from "@/lib/definitions";
 import { formatMemberNumber } from "@/lib/definitions";
 import { MemberProfileCard } from "./MemberProfileCard";
@@ -12,11 +14,13 @@ import { CommunityPoolCard } from "./CommunityPoolCard";
 interface DashboardOverviewProps {
   member: LehumoMember;
   communityStats: CommunityPoolStats | null;
+  isAdmin?: boolean;
 }
 
 export function DashboardOverview({
   member,
   communityStats,
+  isAdmin = false,
 }: DashboardOverviewProps) {
   const firstName = member.fullName.split(" ")[0];
 
@@ -39,6 +43,38 @@ export function DashboardOverview({
           Member {formatMemberNumber(member.memberNumber)}
         </span>
       </motion.div>
+
+      {/* Admin banner — only visible to members whose email is in LEHUMO_ADMIN_EMAILS */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <Link
+            href="/lehumo/portal/admin"
+            className="group flex items-center justify-between gap-4 rounded-2xl border border-[#B8FF00]/30 bg-gradient-to-r from-[#B8FF00]/[0.08] to-[#46CDCF]/[0.04] p-5 hover:border-[#B8FF00]/50 transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#B8FF00]/15 text-[#B8FF00]">
+                <Shield className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  Admin Panel
+                </p>
+                <p className="text-xs text-white/50">
+                  Manage members, contributions, and KYC status
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#B8FF00] group-hover:translate-x-0.5 transition-transform">
+              Open
+              <ArrowRight className="h-4 w-4" />
+            </div>
+          </Link>
+        </motion.div>
+      )}
 
       {/* Community pool overview */}
       {communityStats && (
