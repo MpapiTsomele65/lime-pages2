@@ -1,16 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { LogOut, User } from "lucide-react";
+import { LogOut, Shield, User } from "lucide-react";
 
 interface PortalShellProps {
   memberName: string;
+  isAdmin?: boolean;
   children: React.ReactNode;
 }
 
-export function PortalShell({ memberName, children }: PortalShellProps) {
+export function PortalShell({
+  memberName,
+  isAdmin = false,
+  children,
+}: PortalShellProps) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -45,12 +51,22 @@ export function PortalShell({ memberName, children }: PortalShellProps) {
             <span className="text-lg font-bold tracking-tight">Lehumo</span>
           </a>
 
-          {/* Right: Member name + Logout */}
-          <div className="flex items-center gap-4">
+          {/* Right: Member name + Admin + Logout */}
+          <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-sm text-white/60">
               <User className="h-4 w-4" />
               <span>{memberName}</span>
             </div>
+
+            {isAdmin && (
+              <Link
+                href="/lehumo/portal/admin"
+                className="flex items-center gap-1.5 rounded-full border border-[#B8FF00]/30 bg-[#B8FF00]/10 px-3 py-1.5 text-xs font-semibold text-[#B8FF00] hover:bg-[#B8FF00]/20 hover:border-[#B8FF00]/50 transition-colors"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Admin</span>
+              </Link>
+            )}
 
             <button
               onClick={handleLogout}

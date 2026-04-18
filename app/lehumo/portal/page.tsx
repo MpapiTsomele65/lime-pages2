@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/session";
 import { getCommunityPoolStats, getMemberById } from "@/lib/airtable";
+import { isAdminEmail } from "@/lib/admin-auth";
 import { PortalShell } from "@/components/lehumo/portal/PortalShell";
 import { DashboardOverview } from "@/components/lehumo/portal/DashboardOverview";
 
@@ -23,10 +24,11 @@ export default async function PortalDashboardPage() {
   ]);
 
   const memberName = member?.fullName ?? session.fullName ?? "Member";
+  const isAdmin = isAdminEmail(session.email);
 
   if (!member) {
     return (
-      <PortalShell memberName={memberName}>
+      <PortalShell memberName={memberName} isAdmin={isAdmin}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="bg-[#0F2040] rounded-[20px] border border-white/[0.06] p-8 text-center max-w-md">
             <h2 className="text-xl font-semibold text-white mb-2">
@@ -43,7 +45,7 @@ export default async function PortalDashboardPage() {
   }
 
   return (
-    <PortalShell memberName={memberName}>
+    <PortalShell memberName={memberName} isAdmin={isAdmin}>
       <DashboardOverview member={member} communityStats={communityStats} />
     </PortalShell>
   );

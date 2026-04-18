@@ -33,7 +33,7 @@ export default async function AdminDashboardPage() {
   ).length;
 
   return (
-    <PortalShell memberName={session.fullName || "Admin"}>
+    <PortalShell memberName={session.fullName || "Admin"} isAdmin={true}>
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4">
