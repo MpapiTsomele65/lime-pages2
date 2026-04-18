@@ -247,13 +247,13 @@ export function MemberPortalPreview() {
             <div className="relative px-5 py-5 bg-gradient-to-t from-[#0B1933] via-[#0B1933]/95 to-transparent -mt-4 pt-10">
               <div className="text-center">
                 <p className="text-xs text-white/40 mb-3">
-                  Join the waitlist to reserve your founding-member spot
+                  Sign in to access your personal dashboard
                 </p>
                 <Link
-                  href="/lehumo#waitlist"
+                  href="/lehumo/portal/login"
                   className="inline-flex items-center gap-2 bg-lime text-navy px-7 py-3 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
                 >
-                  Join Waitlist <ArrowRight className="w-4 h-4" />
+                  Member Sign In <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
