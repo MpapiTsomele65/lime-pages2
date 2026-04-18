@@ -200,6 +200,82 @@ export function InvestmentStrategy() {
           </p>
         </motion.div>
 
+        {/* ── R1 000 Distribution Bar ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.5, ease: "easeOut" as const }}
+          className="mb-12 max-w-[860px] mx-auto"
+        >
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal/70">
+              How every R1 000 flows
+            </span>
+            <span className="text-[11px] text-white/40 font-medium">
+              Monthly contribution
+            </span>
+          </div>
+
+          {/* Proportional split bar */}
+          <div className="flex h-14 rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03]">
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: "40%" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="bg-[#B8FF00] flex flex-col items-center justify-center text-navy px-2 overflow-hidden leading-none"
+            >
+              <span className="text-sm font-extrabold whitespace-nowrap">R400</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide mt-1">Sum1</span>
+            </motion.div>
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: "40%" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+              className="bg-teal flex flex-col items-center justify-center text-navy px-2 overflow-hidden leading-none"
+            >
+              <span className="text-sm font-extrabold whitespace-nowrap">R400</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide mt-1">Cash</span>
+            </motion.div>
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: "10%" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              className="bg-indigo-500 flex items-center justify-center text-white px-1 overflow-hidden"
+            >
+              <span className="text-xs font-extrabold whitespace-nowrap">R100</span>
+            </motion.div>
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: "10%" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+              className="bg-purple-500 flex items-center justify-center text-white px-1 overflow-hidden"
+            >
+              <span className="text-xs font-extrabold whitespace-nowrap">R100</span>
+            </motion.div>
+          </div>
+
+          {/* Legend — clarifies the two narrow 10% segments */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 text-[11px] text-white/50">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#B8FF00]" /> R400 · Sum1 Investments
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-teal" /> R400 · Cash Reserves
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-indigo-500" /> R100 · SA Bonds
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-purple-500" /> R100 · SV Capital
+            </span>
+          </div>
+        </motion.div>
+
         {/* ── Allocation Detail Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {allocations.map((a, i) => (
