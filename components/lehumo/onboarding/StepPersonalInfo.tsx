@@ -28,6 +28,7 @@ const COMMITMENT_OPTIONS = [
 const INTENT_OPTIONS = [
   { value: "", label: "Select your level of interest..." },
   { value: "Ready to join", label: "I\u2019m ready to join Lehumo" },
+  { value: "Interested, need time", label: "Interested \u2014 but I need some time before I can start contributing" },
   { value: "Interested, need more info", label: "Interested, but I need more information" },
   { value: "Still deciding", label: "I haven\u2019t decided yet" },
   { value: "Exploring", label: "Just exploring for now" },
