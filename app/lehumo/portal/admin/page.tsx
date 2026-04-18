@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getAdminSession } from "@/lib/admin-auth";
 import { listAllMembers } from "@/lib/airtable-admin";
-import { PortalShell } from "@/components/lehumo/portal/PortalShell";
+import { AdminShell } from "@/components/lehumo/admin/AdminShell";
 import { AdminMemberTable } from "@/components/lehumo/admin/AdminMemberTable";
 import { MONTH_NAMES } from "@/lib/definitions";
 
@@ -12,9 +12,6 @@ export default async function AdminDashboardPage() {
   const session = await getAdminSession();
 
   if (!session) {
-    // Not signed in, or signed in but not an admin email — bounce to login.
-    // We could show a dedicated "Forbidden" page but login is simpler and
-    // doesn't leak whether the /admin route exists.
     redirect("/lehumo/portal/login");
   }
 
@@ -33,23 +30,24 @@ export default async function AdminDashboardPage() {
   ).length;
 
   return (
-    <PortalShell memberName={session.fullName || "Admin"} isAdmin={true}>
+    <AdminShell memberName={session.fullName || "Admin"}>
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#B8FF00]/80 mb-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#0B1933] mb-2">
               Admin Panel
             </p>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#0B0B0B]">
               Lehumo Member Management
             </h1>
-            <p className="mt-1 text-sm text-white/50">
+            <p className="mt-1 text-sm text-[#6B7280]">
               Track contributions, KYC, and status for every member.
             </p>
           </div>
-          <div className="text-xs text-white/40">
-            Signed in as <span className="text-white/70">{session.email}</span>
+          <div className="text-xs text-[#9CA3AF]">
+            Signed in as{" "}
+            <span className="text-[#0B1933] font-medium">{session.email}</span>
           </div>
         </div>
 
@@ -68,32 +66,40 @@ export default async function AdminDashboardPage() {
         <AdminMemberTable initialMembers={members} currentMonth={currentMonth} />
 
         {/* Pool settings placeholder */}
-        <section className="rounded-[20px] border border-white/[0.06] bg-[#0F2040] p-6">
-          <h2 className="text-lg font-semibold text-white mb-1">
+        <section className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+          <h2 className="text-lg font-semibold text-[#0B0B0B] mb-1">
             Pool Interest Earned
           </h2>
-          <p className="text-sm text-white/50 mb-4">
+          <p className="text-sm text-[#6B7280] mb-4">
             The dashboard&rsquo;s cumulative-interest number is currently driven by
-            the <code className="text-[#B8FF00]">LEHUMO_INTEREST_EARNED_ZAR</code>{" "}
-            and <code className="text-[#B8FF00]">LEHUMO_INTEREST_HISTORY_JSON</code>{" "}
+            the{" "}
+            <code className="rounded bg-[#F8F9FA] border border-[#E5E7EB] px-1.5 py-0.5 text-xs text-[#0B1933]">
+              LEHUMO_INTEREST_EARNED_ZAR
+            </code>{" "}
+            and{" "}
+            <code className="rounded bg-[#F8F9FA] border border-[#E5E7EB] px-1.5 py-0.5 text-xs text-[#0B1933]">
+              LEHUMO_INTEREST_HISTORY_JSON
+            </code>{" "}
             Vercel env vars. An in-dashboard editor backed by Airtable is on the
             next milestone.
           </p>
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-[#9CA3AF]">
             To update now: Vercel → Project Settings → Environment Variables →
             edit the two variables above → redeploy.
           </p>
         </section>
       </div>
-    </PortalShell>
+    </AdminShell>
   );
 }
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-[#0F2040] p-4">
-      <p className="text-[11px] uppercase tracking-wider text-white/40">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+    <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+      <p className="text-[11px] uppercase tracking-wider text-[#9CA3AF]">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-bold text-[#0B1933]">{value}</p>
     </div>
   );
 }

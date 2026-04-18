@@ -71,24 +71,24 @@ export function AdminMemberTable({
   }
 
   return (
-    <section className="rounded-[20px] border border-white/[0.06] bg-[#0F2040] overflow-hidden">
+    <section className="rounded-[20px] border border-[#E5E7EB] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4">
-        <h2 className="text-lg font-semibold text-white">Members</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] px-5 py-4">
+        <h2 className="text-lg font-semibold text-[#0B0B0B]">Members</h2>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
           <input
             type="text"
             placeholder="Search name, email or ID…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full sm:w-72 rounded-full bg-white/[0.04] border border-white/[0.08] pl-9 pr-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/40"
+            className="w-full sm:w-72 rounded-full bg-white border border-[#E5E7EB] pl-9 pr-3 py-2 text-sm text-[#0B0B0B] placeholder:text-[#9CA3AF] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/10"
           />
         </div>
       </div>
 
       {error && (
-        <div className="border-b border-red-500/20 bg-red-500/10 px-5 py-2 text-sm text-red-300">
+        <div className="border-b border-red-200 bg-red-50 px-5 py-2 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -97,8 +97,8 @@ export function AdminMemberTable({
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-white/40 bg-white/[0.02]">
-              <th className="sticky left-0 z-10 bg-[#0F2040]/95 backdrop-blur px-4 py-3 font-medium min-w-[200px]">
+            <tr className="text-left text-[11px] uppercase tracking-wider text-[#6B7280] bg-[#F8F9FA]">
+              <th className="sticky left-0 z-10 bg-[#F8F9FA] px-4 py-3 font-medium min-w-[200px]">
                 Member
               </th>
               <th className="px-3 py-3 font-medium min-w-[140px]">Status</th>
@@ -107,7 +107,7 @@ export function AdminMemberTable({
                 <th
                   key={m}
                   className={`px-2 py-3 font-medium text-center w-12 ${
-                    m === currentMonth ? "text-[#B8FF00]" : ""
+                    m === currentMonth ? "text-[#0B1933] bg-[#B8FF00]/20" : ""
                   }`}
                 >
                   {m}
@@ -119,14 +119,14 @@ export function AdminMemberTable({
             {filtered.map((m) => (
               <tr
                 key={m.id}
-                className="border-t border-white/[0.04] hover:bg-white/[0.015]"
+                className="border-t border-[#E5E7EB] hover:bg-[#F8F9FA]/60"
               >
                 {/* Member name + id */}
-                <td className="sticky left-0 z-10 bg-[#0F2040]/95 backdrop-blur px-4 py-3">
-                  <div className="font-medium text-white">
+                <td className="sticky left-0 z-10 bg-white px-4 py-3">
+                  <div className="font-medium text-[#0B0B0B]">
                     {m.fullName || "—"}
                   </div>
-                  <div className="text-xs text-white/40">
+                  <div className="text-xs text-[#6B7280]">
                     {formatMemberNumber(m.memberNumber)} · {m.email || "no email"}
                   </div>
                 </td>
@@ -176,8 +176,8 @@ export function AdminMemberTable({
                         title={`${m.fullName} — ${month}: ${paid ? "paid" : "unpaid"} (click to toggle)`}
                         className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:opacity-50 ${
                           paid
-                            ? "bg-[#B8FF00]/20 border-[#B8FF00]/40 text-[#B8FF00] hover:bg-[#B8FF00]/30"
-                            : "bg-white/[0.03] border-white/[0.08] text-white/20 hover:border-white/30 hover:text-white/50"
+                            ? "bg-[#B8FF00] border-[#0B1933]/20 text-[#0B1933] hover:bg-[#a8ef00]"
+                            : "bg-white border-[#E5E7EB] text-[#9CA3AF] hover:border-[#0B1933]/40 hover:text-[#0B1933]"
                         }`}
                       >
                         {isBusy ? (
@@ -198,9 +198,9 @@ export function AdminMemberTable({
               <tr>
                 <td
                   colSpan={3 + MONTH_NAMES.length}
-                  className="px-4 py-12 text-center text-sm text-white/40"
+                  className="px-4 py-12 text-center text-sm text-[#9CA3AF]"
                 >
-                  No members match “{query}”.
+                  No members match &ldquo;{query}&rdquo;.
                 </td>
               </tr>
             )}
@@ -228,15 +228,15 @@ function SelectCell({
         value={value}
         disabled={busy}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none rounded-lg bg-white/[0.04] border border-white/[0.08] pl-3 pr-8 py-1.5 text-xs text-white outline-none focus:border-[#B8FF00]/40 disabled:opacity-50"
+        className="w-full appearance-none rounded-lg bg-white border border-[#E5E7EB] pl-3 pr-8 py-1.5 text-xs text-[#0B0B0B] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/10 disabled:opacity-50"
       >
         {options.map((opt) => (
-          <option key={opt} value={opt} className="bg-[#0F2040]">
+          <option key={opt} value={opt} className="bg-white text-[#0B0B0B]">
             {opt}
           </option>
         ))}
       </select>
-      <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-white/30">
+      <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#6B7280]">
         {busy ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
