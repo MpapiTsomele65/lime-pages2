@@ -118,89 +118,7 @@ export function InvestmentStrategy() {
           </p>
         </motion.div>
 
-        {/* ── Pie Chart with Integrated Labels ── */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7, ease: "easeOut" as const }}
-          className="mb-16"
-        >
-          <h3 className="text-xl font-extrabold text-white mb-8 text-center">
-            Portfolio Allocation
-          </h3>
-
-          <div className="relative w-full max-w-[600px] mx-auto">
-            {/* Pie chart — centred */}
-            <div className="relative mx-auto w-[260px] h-[260px] sm:w-[320px] sm:h-[320px]">
-              <div
-                className="w-full h-full rounded-full shadow-[0_0_60px_rgba(184,255,0,0.08)]"
-                style={{
-                  background: `conic-gradient(
-                    #B8FF00 0deg 144deg,
-                    #46cdcf 144deg 288deg,
-                    #6366f1 288deg 324deg,
-                    #a855f7 324deg 360deg
-                  )`,
-                }}
-              />
-              {/* Centre donut hole */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-[100px] h-[100px] sm:w-[130px] sm:h-[130px] rounded-full bg-navy-mid" />
-              </div>
-            </div>
-
-            {/* Labels positioned around the chart */}
-            {/* Sum1 Investments — top-right (lime segment) */}
-            <div className="absolute top-[5%] right-[-10px] sm:right-[-40px] text-right">
-              <p className="text-[15px] sm:text-lg font-extrabold text-white leading-tight">
-                Sum1 Investments
-              </p>
-              <p className="text-[13px] sm:text-[15px] font-extrabold text-[#B8FF00]">
-                40%
-              </p>
-            </div>
-
-            {/* Cash — bottom-left (teal segment) */}
-            <div className="absolute bottom-[8%] left-[-10px] sm:left-[-30px]">
-              <p className="text-[15px] sm:text-lg font-extrabold text-white leading-tight">
-                Cash
-              </p>
-              <p className="text-[13px] sm:text-[15px] font-extrabold text-teal">
-                40%
-              </p>
-            </div>
-
-            {/* Bonds — left (indigo segment) */}
-            <div className="absolute top-[30%] left-[-10px] sm:left-[-50px]">
-              <p className="text-[13px] sm:text-[15px] font-bold text-white leading-tight">
-                Bonds
-              </p>
-              <p className="text-[12px] sm:text-[13px] font-extrabold text-indigo-400">
-                10%
-              </p>
-            </div>
-
-            {/* Alternative Investments — top-left (purple segment) */}
-            <div className="absolute top-[-5px] left-[10px] sm:left-[-20px] max-w-[140px]">
-              <p className="text-[13px] sm:text-[15px] font-bold text-white leading-tight">
-                Alternative
-                <br />
-                investments*
-              </p>
-              <p className="text-[12px] sm:text-[13px] font-extrabold text-purple-400">
-                10%
-              </p>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-white/30 mt-6 text-center">
-            *Alternative investments include cattle farming, solar energy, and
-            other high-growth asset classes.
-          </p>
-        </motion.div>
-
-        {/* ── R1 000 Distribution Bar ── */}
+        {/* ── Portfolio Allocation — R1 000 Distribution Bar ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -208,13 +126,13 @@ export function InvestmentStrategy() {
           transition={{ duration: 0.5, ease: "easeOut" as const }}
           className="mb-12 max-w-[860px] mx-auto"
         >
-          <div className="flex items-baseline justify-between gap-3 mb-3">
-            <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal/70">
-              How every R1 000 flows
-            </span>
-            <span className="text-[11px] text-white/40 font-medium">
-              Monthly contribution
-            </span>
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-extrabold text-white mb-1.5">
+              Portfolio Allocation
+            </h3>
+            <p className="text-sm text-white/55">
+              How every R1 000 monthly contribution is split
+            </p>
           </div>
 
           {/* Proportional split bar */}
@@ -271,9 +189,14 @@ export function InvestmentStrategy() {
               <span className="w-2 h-2 rounded-full bg-indigo-500" /> R100 · SA Bonds
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-purple-500" /> R100 · SV Capital
+              <span className="w-2 h-2 rounded-full bg-purple-500" /> R100 · SV Capital*
             </span>
           </div>
+
+          <p className="text-[11px] text-white/30 mt-4 text-center sm:text-left">
+            *SV Capital covers alternative assets including cattle farming,
+            solar energy, and other high-growth classes.
+          </p>
         </motion.div>
 
         {/* ── Allocation Detail Cards ── */}
