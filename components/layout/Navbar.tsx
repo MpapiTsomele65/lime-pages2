@@ -232,14 +232,14 @@ export default function Navbar() {
             {isLehumo ? (
               <div className="flex items-center gap-2.5">
                 <Link
-                  href="/lehumo/portal/login"
+                  href="/lehumo#waitlist"
                   className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 ${
                     pinned
                       ? "text-navy border border-navy/20 hover:bg-navy/5"
                       : "text-teal/80 border border-teal/30 hover:bg-teal/10 hover:text-teal"
                   }`}
                 >
-                  Member Login
+                  Join Waitlist
                 </Link>
                 <Link
                   href="/lehumo/onboard"
@@ -361,10 +361,10 @@ export default function Navbar() {
               {isLehumo ? (
                 <div className="mt-auto flex flex-col gap-3">
                   <Link
-                    href="/lehumo/portal/login"
+                    href="/lehumo#waitlist"
                     className="w-full py-3.5 border-2 border-navy/20 text-navy text-center text-base font-semibold rounded-xl transition-colors duration-200 hover:bg-navy/5"
                   >
-                    Member Login
+                    Join Waitlist
                   </Link>
                   <Link
                     href="/lehumo/onboard"

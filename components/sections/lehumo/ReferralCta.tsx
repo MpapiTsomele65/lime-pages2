@@ -17,7 +17,7 @@ export function ReferralCta() {
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="pb-20 pt-0 bg-navy-mid">
+    <section id="waitlist" className="pb-20 pt-0 bg-navy-mid scroll-mt-24">
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
