@@ -49,6 +49,12 @@ export function OnboardingWizard() {
     }
   }, [searchParams]);
 
+  // Reset scroll to top whenever the user advances or jumps to a new step —
+  // otherwise they land mid-form at the Y position where they hit "Continue".
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
+
   const handleNext = useCallback(
     (data?: Partial<FormData>) => {
       if (data) {
