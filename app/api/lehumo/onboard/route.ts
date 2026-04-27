@@ -33,15 +33,29 @@ export async function POST(request: NextRequest) {
 
     const existing = await findMemberByEmail(email);
 
-    if (existing && existing.status !== "Prospect") {
-      return NextResponse.json(
-        { error: "Already onboarded" },
-        { status: 409 },
-      );
-    }
-
     if (existing) {
-      // Existing prospect — update their record
+      // Block users who are fully onboarded or in a non-resumable state.
+      // Onboarding (KYC done, payment pending) IS resumable — those users
+      // should land back on the Payment step instead of being turned away.
+      if (
+        existing.status === "Active" ||
+        existing.status === "On Hold" ||
+        existing.status === "Exited"
+      ) {
+        return NextResponse.json(
+          {
+            error: "Already onboarded",
+            code: "ALREADY_ONBOARDED",
+            status: existing.status,
+          },
+          { status: 409 },
+        );
+      }
+
+      // Prospect → Onboarding (first KYC), or Onboarding → Onboarding (resume).
+      // In both cases we refresh their record with the latest form values
+      // and return the existing member identity so payment ties back to the
+      // same Airtable row + member number.
       const updateFields: Record<string, unknown> = {
         [AIRTABLE_FIELDS.fullName]: fullName,
         [AIRTABLE_FIELDS.phone]: phone,
@@ -53,17 +67,21 @@ export async function POST(request: NextRequest) {
 
       const updated = await updateMember(existing.id, updateFields);
 
-      // Send welcome email (non-blocking)
-      sendWelcomeEmail({
-        to: updated.email,
-        fullName: updated.fullName,
-        memberNumber: updated.memberNumber,
-      }).catch((err) => console.error("Welcome email failed:", err));
+      // Welcome email only on the first transition into Onboarding —
+      // resumed members already received it, no need to spam.
+      if (existing.status === "Prospect") {
+        sendWelcomeEmail({
+          to: updated.email,
+          fullName: updated.fullName,
+          memberNumber: updated.memberNumber,
+        }).catch((err) => console.error("Welcome email failed:", err));
+      }
 
       return NextResponse.json({
         memberId: updated.id,
         memberNumber: updated.memberNumber,
         email: updated.email,
+        resumed: existing.status === "Onboarding",
       });
     }
 

@@ -179,6 +179,7 @@ export const OnboardingFormSchema = z.object({
 export const PaystackInitSchema = z.object({
   email: z.string().email(),
   memberRecordId: z.string().startsWith("rec"),
+  plan: z.enum(["basic", "standard", "vip"]).optional(),
 });
 
 export type LoginFormData = z.infer<typeof LoginFormSchema>;

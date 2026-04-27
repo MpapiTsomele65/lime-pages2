@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check, Clock } from "lucide-react";
+import { Copy, Check, Clock, CreditCard } from "lucide-react";
 
 interface StepPaymentProps {
   memberId: string;
   memberNumber?: number;
   plan: string;
   fullName: string;
+  email: string;
+  /** True when the user reached this step via the resume-payment shortcut
+   *  (existing Onboarding-status member finishing their first contribution). */
+  resumed?: boolean;
   onNext: (data: { reference: string }) => void;
   onSkip: () => void;
 }
@@ -57,16 +61,23 @@ const BANK_DETAILS = {
 };
 
 export function StepPayment({
+  memberId,
   memberNumber,
   plan,
   fullName,
+  email,
+  resumed = false,
   onNext,
   onSkip,
 }: StepPaymentProps) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [isStartingPaystack, setIsStartingPaystack] = useState(false);
+  const [paystackError, setPaystackError] = useState<string | null>(null);
 
   const planInfo = PLAN_DETAILS[plan] || PLAN_DETAILS.standard;
   const isBasic = plan === "basic";
+  const isStandard = plan === "standard";
+  const isVip = plan === "vip";
 
   // Build EFT reference: e.g. "LHM-007-THABO"
   const eftReference = memberNumber
@@ -85,6 +96,41 @@ export function StepPayment({
     onNext({ reference: `EFT-${eftReference}` });
   }
 
+  // Standard plan — initialize a Paystack subscription and redirect.
+  // The init route looks up PAYSTACK_PLAN_CODE_STANDARD from env, so the
+  // first charge goes through Paystack hosted checkout, the card is
+  // tokenised, and Paystack auto-debits R1,019.90 every month thereafter.
+  async function handleStandardSubscribe() {
+    setIsStartingPaystack(true);
+    setPaystackError(null);
+    try {
+      const res = await fetch("/api/lehumo/paystack/init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          memberRecordId: memberId,
+          plan: "standard",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.authorization_url) {
+        throw new Error(data.error || "Could not start payment. Please try again.");
+      }
+      // Redirect off-site to Paystack's hosted checkout. After payment they
+      // come back to /lehumo/onboard?step=confirm&reference=xxx — the wizard
+      // already handles that URL in OnboardingWizard.tsx.
+      window.location.href = data.authorization_url;
+    } catch (err) {
+      setPaystackError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong starting your payment.",
+      );
+      setIsStartingPaystack(false);
+    }
+  }
+
   return (
     <motion.div
       className="space-y-6"
@@ -93,12 +139,41 @@ export function StepPayment({
       transition={{ delay: 0.1 }}
     >
       <div className="mb-8">
-        <h2 className="text-2xl font-extrabold text-white mb-2">Payment</h2>
+        {resumed && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 rounded-xl bg-lime/10 border border-lime/25 px-4 py-3 flex items-start gap-3"
+          >
+            <Check className="w-4 h-4 text-lime shrink-0 mt-0.5" strokeWidth={3} />
+            <div className="text-sm">
+              <p className="text-lime font-semibold">
+                Welcome back{fullName ? `, ${fullName.split(" ")[0]}` : ""}.
+              </p>
+              <p className="text-white/60 text-xs leading-relaxed mt-0.5">
+                Your details are on file
+                {memberNumber ? ` (Member #${memberNumber})` : ""}. Just finish
+                this last step to activate your Lehumo membership.
+              </p>
+            </div>
+          </motion.div>
+        )}
+        <h2 className="text-2xl font-extrabold text-white mb-2">
+          {resumed ? "Finish your first contribution" : "Payment"}
+        </h2>
         <p className="text-white/50 text-sm leading-relaxed">
-          Your account has been created!{" "}
-          {isBasic
-            ? "Use the bank details below to make your first R1,000 EFT contribution."
-            : "Set up your automated debit order to activate your membership."}
+          {resumed
+            ? isBasic
+              ? "Use the bank details below to make your first R1,000 EFT contribution."
+              : "Set up your automated debit order to activate your membership."
+            : (
+              <>
+                Your account has been created!{" "}
+                {isBasic
+                  ? "Use the bank details below to make your first R1,000 EFT contribution."
+                  : "Set up your automated debit order to activate your membership."}
+              </>
+            )}
         </p>
       </div>
 
@@ -220,8 +295,8 @@ export function StepPayment({
         </motion.div>
       )}
 
-      {/* ── Standard / VIP: Coming Soon ── */}
-      {!isBasic && (
+      {/* ── Standard: Paystack Subscription ── */}
+      {isStandard && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -230,14 +305,14 @@ export function StepPayment({
           <div className="px-6 py-4 border-b border-white/[0.08] bg-teal/[0.05]">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-teal/15 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-teal" />
+                <CreditCard className="w-4 h-4 text-teal" />
               </div>
               <div>
                 <p className="text-sm font-bold text-teal">
-                  Automated Debit Order — Coming Soon
+                  Automated Debit Order via Paystack
                 </p>
                 <p className="text-[11px] text-white/40 mt-0.5">
-                  Launching in the next few weeks
+                  Set it once — we&apos;ll auto-debit R1,019.90 every month
                 </p>
               </div>
             </div>
@@ -245,25 +320,74 @@ export function StepPayment({
 
           <div className="px-6 py-5 space-y-3">
             <p className="text-sm text-white/70 leading-relaxed">
-              Your {planInfo.name} plan is reserved. We&apos;re finalising our
-              payment provider verification and will email you as soon as
-              debit order setup is live — usually within 2&ndash;3 weeks.
+              You&apos;ll be redirected to Paystack&apos;s secure checkout to
+              enter your card details. Your first R1,019.90 contribution is
+              charged today; subsequent months are auto-debited on the same date.
             </p>
 
             <ul className="space-y-2 pt-1">
               <li className="flex items-start gap-2.5 text-xs text-white/55">
                 <Check className="w-3.5 h-3.5 text-teal shrink-0 mt-0.5" strokeWidth={2.5} />
-                <span>Your founding-member spot is secured</span>
+                <span>Paystack-secured — we never see your card details</span>
               </li>
               <li className="flex items-start gap-2.5 text-xs text-white/55">
                 <Check className="w-3.5 h-3.5 text-teal shrink-0 mt-0.5" strokeWidth={2.5} />
+                <span>Cancel or change cards anytime from your member portal</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-xs text-white/55">
+                <Check className="w-3.5 h-3.5 text-teal shrink-0 mt-0.5" strokeWidth={2.5} />
+                <span>R1,000 invested + R19.90 collection fee — fully transparent</span>
+              </li>
+            </ul>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── VIP: Coming Soon ── */}
+      {isVip && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-white/[0.04] border border-[#A855F7]/25 overflow-hidden"
+        >
+          <div className="px-6 py-4 border-b border-white/[0.08] bg-[#A855F7]/[0.06]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#A855F7]/15 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-[#A855F7]" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#A855F7]">
+                  VIP Plan — Coming Soon
+                </p>
+                <p className="text-[11px] text-white/40 mt-0.5">
+                  Launching alongside the inner-circle benefits
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-3">
+            <p className="text-sm text-white/70 leading-relaxed">
+              Your VIP spot is reserved. We&apos;re finalising the inner-circle
+              benefits (private WhatsApp group, Lime Connect listing, leadership
+              access) and will email you the moment VIP enrolment is live —
+              usually within 2&ndash;3 weeks.
+            </p>
+
+            <ul className="space-y-2 pt-1">
+              <li className="flex items-start gap-2.5 text-xs text-white/55">
+                <Check className="w-3.5 h-3.5 text-[#A855F7] shrink-0 mt-0.5" strokeWidth={2.5} />
+                <span>Your founding-VIP spot is secured</span>
+              </li>
+              <li className="flex items-start gap-2.5 text-xs text-white/55">
+                <Check className="w-3.5 h-3.5 text-[#A855F7] shrink-0 mt-0.5" strokeWidth={2.5} />
                 <span>We&apos;ll reach out within 48 hours to confirm details</span>
               </li>
               <li className="flex items-start gap-2.5 text-xs text-white/55">
-                <Check className="w-3.5 h-3.5 text-teal shrink-0 mt-0.5" strokeWidth={2.5} />
+                <Check className="w-3.5 h-3.5 text-[#A855F7] shrink-0 mt-0.5" strokeWidth={2.5} />
                 <span>
-                  Or switch to <strong className="text-lime">Basic</strong> to start
-                  immediately via manual EFT
+                  Or switch to <strong className="text-teal">Standard</strong> to start
+                  immediately via auto-debit
                 </span>
               </li>
             </ul>
@@ -271,9 +395,16 @@ export function StepPayment({
         </motion.div>
       )}
 
+      {/* ── Paystack error banner (Standard only) ── */}
+      {paystackError && (
+        <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3.5 text-sm text-red-400">
+          {paystackError}
+        </div>
+      )}
+
       {/* ── Buttons ── */}
       <div className="pt-4 flex flex-col sm:flex-row gap-3">
-        {isBasic ? (
+        {isBasic && (
           /* Basic: Confirm EFT has been / will be done */
           <button
             type="button"
@@ -282,8 +413,32 @@ export function StepPayment({
           >
             I&apos;ve Noted the Details — Continue
           </button>
-        ) : (
-          /* Standard / VIP: Acknowledge coming-soon and proceed */
+        )}
+
+        {isStandard && (
+          /* Standard: real Paystack subscription button */
+          <button
+            type="button"
+            onClick={handleStandardSubscribe}
+            disabled={isStartingPaystack}
+            className="bg-lime text-navy font-bold rounded-full px-8 py-3.5 text-sm transition-all w-full sm:w-auto cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none flex items-center justify-center gap-2"
+          >
+            {isStartingPaystack ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Redirecting to Paystack…
+              </>
+            ) : (
+              <>Subscribe — R1,019.90/month</>
+            )}
+          </button>
+        )}
+
+        {isVip && (
+          /* VIP: Acknowledge coming-soon and proceed */
           <button
             type="button"
             onClick={onSkip}

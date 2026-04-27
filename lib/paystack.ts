@@ -18,22 +18,41 @@ function getHeaders() {
 }
 
 // ─── Initialize Transaction ─────────────────────────────────────────
+// When `planCode` is supplied, Paystack treats this as the first installment
+// of a subscription: it charges the plan amount immediately, tokenises the
+// card, and auto-debits the same card every interval thereafter.
+//
+// IMPORTANT: Despite plan-based subscriptions deriving their recurring price
+// from the plan, Paystack's `transaction/initialize` endpoint REQUIRES
+// `amount` to be present in every request — without it the API returns
+// HTTP 400 "Invalid Amount Sent". When initialising a subscription, callers
+// must pass the plan's amount (in kobo) so the validation passes; Paystack
+// will then use the plan to drive ongoing billing.
+//
+// When `planCode` is absent, this is a plain one-time charge for `amount` kobo.
 export async function initializeTransaction(params: {
   email: string;
-  amount: number; // in kobo (R1,000 = 100000)
+  amount: number; // in kobo (R1,000 = 100000) — required even with planCode
   callbackUrl: string;
   metadata?: Record<string, unknown>;
+  planCode?: string;
 }): Promise<{ authorization_url: string; access_code: string; reference: string }> {
+  const body: Record<string, unknown> = {
+    email: params.email,
+    amount: params.amount,
+    currency: "ZAR",
+    callback_url: params.callbackUrl,
+    metadata: params.metadata || {},
+  };
+
+  if (params.planCode) {
+    body.plan = params.planCode;
+  }
+
   const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({
-      email: params.email,
-      amount: params.amount,
-      currency: "ZAR",
-      callback_url: params.callbackUrl,
-      metadata: params.metadata || {},
-    }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
@@ -42,6 +61,37 @@ export async function initializeTransaction(params: {
   }
 
   return data.data;
+}
+
+// ─── Plan Amount Resolution ─────────────────────────────────────────
+// Maps a Lehumo plan key to its kobo amount for `transaction/initialize`.
+// Must match the amount configured on the corresponding Paystack Plan.
+// Standard: R1,019.90 = 101,990 kobo (R1,000 contribution + R19.90 fee).
+export function getAmountForPlan(plan: string): number | null {
+  switch (plan) {
+    case "standard":
+      return 101990;
+    case "vip":
+      // Coming soon — no amount configured yet.
+      return null;
+    default:
+      return null;
+  }
+}
+
+// ─── Plan Code Resolution ───────────────────────────────────────────
+// Maps a Lehumo plan key to the matching Paystack Plan code from env vars.
+// Returns null for plans that don't use Paystack subscriptions (basic = EFT,
+// vip = currently coming-soon).
+export function getPlanCodeForPlan(plan: string): string | null {
+  switch (plan) {
+    case "standard":
+      return process.env.PAYSTACK_PLAN_CODE_STANDARD || null;
+    case "vip":
+      return process.env.PAYSTACK_PLAN_CODE_VIP || null;
+    default:
+      return null;
+  }
 }
 
 // ─── Verify Transaction ─────────────────────────────────────────────
