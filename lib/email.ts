@@ -150,6 +150,118 @@ export async function sendWelcomeEmail(params: {
   });
 }
 
+/* ─── Payment success / activation email ─── */
+export async function sendPaymentSuccessEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  amountZar: number;
+  month: string;
+}) {
+  const { to, fullName, memberNumber, amountZar, month } = params;
+  const firstName = fullName.split(" ")[0];
+  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+  const formattedAmount = `R${amountZar.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `Payment received \u2014 your Lehumo membership is now Active (${formatMemberNumber(memberNumber)})`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">You're in, ${firstName}.</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 24px;">
+                We've received your first contribution and your Lehumo membership is now <strong style="color:#B8FF00;">Active</strong>.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(184,255,0,0.08);border:1px solid rgba(184,255,0,0.2);border-radius:14px;margin-bottom:20px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Your Member ID</div>
+                    <div style="font-size:36px;font-weight:800;color:#B8FF00;line-height:1;">${formatMemberNumber(memberNumber)}</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;">Save this \u2014 you'll need it to sign in to your portal.</div>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;">Payment Receipt</div>
+                    <table cellpadding="0" cellspacing="0" style="width:100%;">
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Amount</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${formattedAmount}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Month</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${month}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Email</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${to}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 24px;">
+                    <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
+                      Sign In to Your Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;margin:0;">
+                If you haven't yet, please send your KYC documents (SA ID + proof of address) to <a href="mailto:lehumo@limepages.co.za" style="color:#46CDCF;text-decoration:none;">lehumo@limepages.co.za</a> or via WhatsApp so we can complete your file.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                Lehumo Collective Investment Trust &middot; Powered by Lime Pages<br/>
+                <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}
+
 /* ─── Forgot member number email ─── */
 export async function sendMemberNumberEmail(params: {
   to: string;
