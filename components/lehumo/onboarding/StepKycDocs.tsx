@@ -70,7 +70,9 @@ export function StepKycDocs({ onNext, defaultSourceOfFunds }: StepKycDocsProps) 
       transition={{ delay: 0.1 }}
     >
       <div className="mb-8">
-        <h2 className="text-2xl font-extrabold text-white mb-2">Know Your Customer (KYC)</h2>
+        <h2 className="text-2xl font-extrabold text-white mb-2">
+          KYC & Source of Funds Declaration
+        </h2>
         <p className="text-white/50 text-sm leading-relaxed">
           As part of regulatory requirements, we need to verify your identity and
           understand the source of your investment funds.

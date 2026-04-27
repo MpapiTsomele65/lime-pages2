@@ -13,7 +13,7 @@ import { trackEvent } from "@/lib/analytics";
 const STEPS = [
   { number: 1, label: "Personal Info" },
   { number: 2, label: "Select Plan" },
-  { number: 3, label: "KYC" },
+  { number: 3, label: "KYC & SoF" },
   { number: 4, label: "Payment" },
   { number: 5, label: "Confirmation" },
 ] as const;
