@@ -181,10 +181,10 @@ export async function createMember(fields: {
   memberNumber: number;
   notes?: string;
 }): Promise<LehumoMember> {
-  // returnFieldsByFieldId on the URL ensures the response is keyed by
-  // field ID (matching parseRecord), and also tells Airtable the request
-  // body uses field IDs as keys rather than display names.
-  const url = `${getBaseUrl()}?returnFieldsByFieldId=true`;
+  // For POST/PATCH, Airtable's `returnFieldsByFieldId` flag must live in
+  // the request BODY — passing it as a query string is silently ignored
+  // and the response is keyed by display name, which breaks parseRecord.
+  const url = getBaseUrl();
 
   const airtableFields: Record<string, unknown> = {
     [AIRTABLE_FIELDS.fullName]: fields.fullName,
@@ -200,7 +200,10 @@ export async function createMember(fields: {
     airtableFields[AIRTABLE_FIELDS.notes] = fields.notes;
   }
 
-  const body = { fields: airtableFields };
+  const body = {
+    fields: airtableFields,
+    returnFieldsByFieldId: true,
+  };
 
   const res = await fetch(url, {
     method: "POST",
@@ -221,13 +224,13 @@ export async function updateMember(
   recordId: string,
   fields: Record<string, unknown>,
 ): Promise<LehumoMember> {
-  // Field IDs on input + output — see createMember comment above.
-  const url = `${getBaseUrl()}/${recordId}?returnFieldsByFieldId=true`;
+  // `returnFieldsByFieldId` lives in the body for PATCH — see createMember.
+  const url = `${getBaseUrl()}/${recordId}`;
 
   const res = await fetch(url, {
     method: "PATCH",
     headers: getHeaders(),
-    body: JSON.stringify({ fields }),
+    body: JSON.stringify({ fields, returnFieldsByFieldId: true }),
   });
 
   if (!res.ok) {
