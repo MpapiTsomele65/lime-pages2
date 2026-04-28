@@ -152,6 +152,31 @@ const FAQ: FaqItem[] = [
     ),
   },
   {
+    q: "What if other members drop out — does the pool break?",
+    a: (
+      <>
+        <p>
+          A single member dropping out at year 5 has minimal impact on the
+          overall pool. On a{" "}
+          <span className="text-white font-semibold">~R2M target pool</span>,
+          one R60k exit is well within the buffer the strategy is built
+          around — the remaining 29 contributors still hit conversion
+          comfortably.
+        </p>
+        <p className="mt-3">
+          The structure only needs re-evaluating if{" "}
+          <span className="text-white font-semibold">
+            ~5 members drop out simultaneously
+          </span>
+          . If that ever happened, the playbook is straightforward: existing
+          members can &ldquo;lever up&rdquo;, we open seats to the waitlist,
+          or we oversubscribe to maintain conversion economics. Resilience
+          is built in by design, not luck.
+        </p>
+      </>
+    ),
+  },
+  {
     q: "What if I want to leave, or genuinely can't continue contributing?",
     a: (
       <>
@@ -209,6 +234,54 @@ const FAQ: FaqItem[] = [
           90, large allocations) go to a full-member vote. We&rsquo;ll be
           inviting volunteers from the founding 30 to subscribe for committee
           roles.
+        </p>
+      </>
+    ),
+  },
+  {
+    q: "What documents do I need to provide for KYC?",
+    a: (
+      <>
+        <p>Three things, all standard:</p>
+        <ul className="mt-3 space-y-2 text-white/70">
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              <span className="text-white font-semibold">Full ID number</span>{" "}
+              — SA ID or passport (we auto-detect on the form)
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              <span className="text-white font-semibold">
+                Proof of residential address
+              </span>{" "}
+              — utility bill, lease, or bank statement &lt; 3 months old
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              <span className="text-white font-semibold">
+                Source-of-funds declaration
+              </span>{" "}
+              — a quick dropdown (salary, business income, etc.)
+            </span>
+          </li>
+        </ul>
+        <p className="mt-3">
+          You can upload your ID copy and proof of address through the
+          member portal once your account is activated, or email them to{" "}
+          <span className="text-white font-semibold">
+            lehumo@limepages.co.za
+          </span>
+          .
+        </p>
+        <p className="mt-3">
+          KYC and FICA compliance is required because our asset managers
+          (Samman Investments, SV Capital) are FSCA-registered FSPs —
+          they can&rsquo;t deploy capital from an unverified member.
         </p>
       </>
     ),
