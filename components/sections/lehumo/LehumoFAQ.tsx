@@ -17,9 +17,58 @@ interface FaqItem {
  * sessions (21 & 23 April 2026). Phrased in the founder's voice; copy
  * trimmed to what was actually clarified on the calls — no aspirational
  * promises about returns. Order roughly mirrors the buyer journey:
- * money in → returns → money out → safety → governance → joining.
+ * frame → money in → returns → money out → safety → governance → joining.
  */
 const FAQ: FaqItem[] = [
+  {
+    q: "How is Lehumo different from a typical stokvel?",
+    a: (
+      <>
+        <p>
+          Three things, and they all compound:
+        </p>
+        <ul className="mt-3 space-y-2 text-white/70">
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              Most stokvels{" "}
+              <span className="text-white font-semibold">
+                pay out cash every 12 months
+              </span>
+              , so the money never gets a chance to compound. We lock
+              contributions for{" "}
+              <span className="text-white font-semibold">60 months</span> so
+              they can sit in productive, regulated investments that actually
+              grow.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              You don&rsquo;t lose access to your money during the lock-up.
+              Internal lending lets you draw{" "}
+              <span className="text-white font-semibold">up to 20%</span> of
+              your contributions, plus peer-to-peer beyond that — so a
+              short-term cash need doesn&rsquo;t force you to pull out
+              entirely.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              The model is{" "}
+              <span className="text-white font-semibold">
+                built as scalable infrastructure
+              </span>
+              . After year 5 the same playbook can be cloned for other
+              communities and stokvels — it&rsquo;s designed to scale, not
+              wind down.
+            </span>
+          </li>
+        </ul>
+      </>
+    ),
+  },
   {
     q: "Will my monthly contribution increase automatically each year?",
     a: (
@@ -83,6 +132,35 @@ const FAQ: FaqItem[] = [
         <p className="mt-3">
           Every third-party manager is FSCA-regulated, which is why we run
           full KYC and FICA on every member.
+        </p>
+      </>
+    ),
+  },
+  {
+    q: "Do members have any say in how the money is invested?",
+    a: (
+      <>
+        <p>
+          Yes — within the strategy. The bulk (~80–90%) follows the agreed
+          allocation through{" "}
+          <span className="text-white font-semibold">
+            FSCA-registered managers
+          </span>
+          , which is what gives the strategy its consistency.
+        </p>
+        <p className="mt-3">
+          But{" "}
+          <span className="text-lime font-semibold">~10% is a
+          member-influenced bucket</span>{" "}
+          — a sandbox for the group to vote on. It can go into non-traditional
+          ideas (livestock, equities, a new lending product) provided we can
+          articulate the recovery mechanism. We treat it as a testing ground:
+          if a sandbox model proves out, it can graduate to the main strategy
+          in a future cycle.
+        </p>
+        <p className="mt-3">
+          Strategic-allocation changes go to a steering-committee vote so
+          everyone has a clear voice on direction.
         </p>
       </>
     ),
