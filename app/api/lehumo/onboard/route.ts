@@ -6,7 +6,11 @@ import {
   createMember,
   updateMember,
 } from "@/lib/airtable";
-import { OnboardingFormSchema, AIRTABLE_FIELDS } from "@/lib/definitions";
+import {
+  OnboardingFormSchema,
+  AIRTABLE_FIELDS,
+  idTypeToAirtable,
+} from "@/lib/definitions";
 import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
@@ -35,20 +39,19 @@ export async function POST(request: NextRequest) {
       residentialAddress,
     } = parsed.data;
 
-    // Build a notes string with extra fields until dedicated Airtable
-    // columns exist for ID type, ID number, and residential address.
-    // The pipe-delimited format is human-readable in Airtable and
-    // round-trippable if we ever migrate to proper columns.
+    // Build a notes string for fields that don't yet have dedicated
+    // Airtable columns (intent, commitment, plan, source-of-funds). The
+    // pipe-delimited format is human-readable and round-trippable when
+    // we eventually migrate plan / SoF to proper columns.
+    //
+    // ID type, ID number, and residential address WERE in this notes
+    // blob before Tier 2A (Apr 2026) — they now live in dedicated
+    // Airtable columns and flow through `setMemberKyc` / `createMember`.
     const noteParts: string[] = [];
     if (intent) noteParts.push(`Intent: ${intent}`);
     if (commitment) noteParts.push(`Commitment: ${commitment}`);
     if (plan) noteParts.push(`Plan: ${plan}`);
     if (sourceOfFunds) noteParts.push(`Source of Funds: ${sourceOfFunds}`);
-    if (idType && idNumber) {
-      const label = idType === "sa_id" ? "SA ID" : "Passport";
-      noteParts.push(`${label}: ${idNumber}`);
-    }
-    if (residentialAddress) noteParts.push(`Address: ${residentialAddress}`);
     const notesValue = noteParts.length > 0 ? noteParts.join(" | ") : "";
 
     const existing = await findMemberByEmail(email);
@@ -84,6 +87,14 @@ export async function POST(request: NextRequest) {
         [AIRTABLE_FIELDS.kycStatus]: "Docs Requested",
       };
       if (notesValue) updateFields[AIRTABLE_FIELDS.notes] = notesValue;
+      // Tier 2A: ID type / ID number / address now live in dedicated cols.
+      // We patch them in the same updateMember call so the resume path
+      // also gets fresh values without an extra round-trip.
+      if (idType) updateFields[AIRTABLE_FIELDS.idType] = idTypeToAirtable(idType);
+      if (idNumber !== undefined) updateFields[AIRTABLE_FIELDS.idNumber] = idNumber;
+      if (residentialAddress !== undefined) {
+        updateFields[AIRTABLE_FIELDS.residentialAddress] = residentialAddress;
+      }
 
       const updated = await updateMember(existing.id, updateFields);
 
@@ -114,6 +125,12 @@ export async function POST(request: NextRequest) {
       source,
       memberNumber,
       notes: notesValue,
+      // Tier 2A: write Step-3 KYC captures to dedicated Airtable columns
+      // (idType / idNumber / residentialAddress) instead of stuffing them
+      // into the notes blob.
+      idType,
+      idNumber,
+      residentialAddress,
     });
 
     // Send welcome email (non-blocking)

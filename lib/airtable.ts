@@ -7,11 +7,14 @@ import {
   STATUS_CHOICE_ID_TO_NAME,
   KYC_CHOICE_ID_TO_NAME,
   SOURCE_CHOICE_ID_TO_NAME,
+  ID_TYPE_CHOICE_ID_TO_NAME,
+  idTypeToAirtable,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
   type CommunityPoolStats,
   type PoolMonthPoint,
+  type AirtableAttachment,
 } from "./definitions";
 
 // ─── Config ─────────────────────────────────────────────────────────
@@ -67,6 +70,16 @@ function parseRecord(record: any): LehumoMember {
     contributions[month] = f[MONTH_FIELDS[month]] === true;
   }
 
+  // Multipart attachments may be undefined when no file has been uploaded
+  // yet, so coerce to undefined (rather than empty array) to mirror the
+  // optional shape on LehumoMember.
+  const idDoc = f[AIRTABLE_FIELDS.kycIdDocument] as
+    | AirtableAttachment[]
+    | undefined;
+  const poaDoc = f[AIRTABLE_FIELDS.kycProofOfAddress] as
+    | AirtableAttachment[]
+    | undefined;
+
   return {
     id: record.id,
     fullName: f[AIRTABLE_FIELDS.fullName] || "",
@@ -90,6 +103,18 @@ function parseRecord(record: any): LehumoMember {
     ),
     notes: f[AIRTABLE_FIELDS.notes] || "",
     contributions,
+    // ── KYC fields (Tier 2A) — all optional, populated post-onboarding ──
+    idType: resolveSelect(
+      f[AIRTABLE_FIELDS.idType],
+      ID_TYPE_CHOICE_ID_TO_NAME,
+      "",
+    ) as "SA ID" | "Passport" | "",
+    idNumber: f[AIRTABLE_FIELDS.idNumber] || "",
+    residentialAddress: f[AIRTABLE_FIELDS.residentialAddress] || "",
+    kycIdDocument: idDoc && idDoc.length > 0 ? idDoc : undefined,
+    kycProofOfAddress: poaDoc && poaDoc.length > 0 ? poaDoc : undefined,
+    kycSubmittedAt: f[AIRTABLE_FIELDS.kycSubmittedAt] || undefined,
+    kycVerifiedAt: f[AIRTABLE_FIELDS.kycVerifiedAt] || undefined,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -180,6 +205,10 @@ export async function createMember(fields: {
   source: string;
   memberNumber: number;
   notes?: string;
+  // ── KYC structured fields (optional — Tier 2A) ──
+  idType?: "sa_id" | "passport";
+  idNumber?: string;
+  residentialAddress?: string;
 }): Promise<LehumoMember> {
   // For POST/PATCH, Airtable's `returnFieldsByFieldId` flag must live in
   // the request BODY — passing it as a query string is silently ignored
@@ -198,6 +227,15 @@ export async function createMember(fields: {
 
   if (fields.notes) {
     airtableFields[AIRTABLE_FIELDS.notes] = fields.notes;
+  }
+  if (fields.idType) {
+    airtableFields[AIRTABLE_FIELDS.idType] = idTypeToAirtable(fields.idType);
+  }
+  if (fields.idNumber) {
+    airtableFields[AIRTABLE_FIELDS.idNumber] = fields.idNumber;
+  }
+  if (fields.residentialAddress) {
+    airtableFields[AIRTABLE_FIELDS.residentialAddress] = fields.residentialAddress;
   }
 
   const body = {
@@ -256,6 +294,52 @@ export async function setMemberActive(recordId: string): Promise<void> {
   await updateMember(recordId, {
     [AIRTABLE_FIELDS.status]: "Active",
   });
+}
+
+/**
+ * Patch the structured KYC fields on a member record. Used by:
+ *   - the onboarding API to write Step-3 captures (id type, id number,
+ *     residential address) to dedicated columns instead of the notes blob
+ *   - the resume path to refresh those fields if the user re-runs Step 3
+ *
+ * Document attachments (kycIdDocument / kycProofOfAddress) live on a
+ * different Airtable endpoint (the content-upload API) and are handled by
+ * `uploadKycAttachment` in Tier 2B, NOT this helper.
+ */
+export async function setMemberKyc(
+  recordId: string,
+  fields: {
+    idType?: "sa_id" | "passport";
+    idNumber?: string;
+    residentialAddress?: string;
+    /** Set the kycStatus column. Pass to flag eg. "In Progress" once docs land. */
+    kycStatus?: KycStatus;
+    /** When true, stamps kycSubmittedAt with the current ISO timestamp. */
+    markSubmittedNow?: boolean;
+    /** When true, stamps kycVerifiedAt with the current ISO timestamp. */
+    markVerifiedNow?: boolean;
+  },
+): Promise<LehumoMember> {
+  const update: Record<string, unknown> = {};
+  if (fields.idType) {
+    update[AIRTABLE_FIELDS.idType] = idTypeToAirtable(fields.idType);
+  }
+  if (fields.idNumber !== undefined) {
+    update[AIRTABLE_FIELDS.idNumber] = fields.idNumber;
+  }
+  if (fields.residentialAddress !== undefined) {
+    update[AIRTABLE_FIELDS.residentialAddress] = fields.residentialAddress;
+  }
+  if (fields.kycStatus) {
+    update[AIRTABLE_FIELDS.kycStatus] = fields.kycStatus;
+  }
+  if (fields.markSubmittedNow) {
+    update[AIRTABLE_FIELDS.kycSubmittedAt] = new Date().toISOString();
+  }
+  if (fields.markVerifiedNow) {
+    update[AIRTABLE_FIELDS.kycVerifiedAt] = new Date().toISOString();
+  }
+  return updateMember(recordId, update);
 }
 
 // ─── Community Pool Stats ──────────────────────────────────────────

@@ -10,8 +10,17 @@ export const AIRTABLE_FIELDS = {
   kycStatus: "fld6ziBOUgGNVMnkA",
   source: "fldHT2KWI4fh2E6C0",
   notes: "fldKKvYST9FxOyfND",
-  // Plan & KYC fields — stored in notes until dedicated Airtable columns are created
-  // When you add "Plan" and "Source of Funds" columns in Airtable, replace these:
+  // ── KYC / identity fields (added Apr 2026 in Tier 2A schema migration) ──
+  // Captured on Step 3 of the onboarding wizard and via the member portal.
+  idType: "fldMS1ht7AZmly9IS",
+  idNumber: "fldZqNlioxhtRIMAY",
+  residentialAddress: "fldi5lWpTW8b5t690",
+  kycIdDocument: "fldmvfGp7asEwEB7i",
+  kycProofOfAddress: "fldkKd5RFtAZ5uivc",
+  kycSubmittedAt: "flde48OYccGxnkV04",
+  kycVerifiedAt: "fld9RKaIVL5RAvhcT",
+  // Plan & Source-of-Funds still ride along in `notes` — add dedicated
+  // columns later if/when reporting needs them as first-class fields.
   // plan: "fldXXXXXXXXXXXXXXX",
   // sourceOfFunds: "fldXXXXXXXXXXXXXXX",
 } as const;
@@ -76,6 +85,19 @@ export const SOURCE_CHOICE_ID_TO_NAME: Record<string, string> = {
   seltpSSM4UEbnJzNr: "Direct",
 };
 
+export const ID_TYPE_CHOICE_ID_TO_NAME: Record<string, string> = {
+  selu73LPS0rKoSq7c: "SA ID",
+  sel2aXQ83h42dEBkU: "Passport",
+};
+
+/**
+ * Convert the wizard's internal id-type code to the human-readable name
+ * expected by Airtable's singleSelect choices ("SA ID" / "Passport").
+ */
+export function idTypeToAirtable(value: "sa_id" | "passport"): "SA ID" | "Passport" {
+  return value === "sa_id" ? "SA ID" : "Passport";
+}
+
 // ─── TypeScript Types ───────────────────────────────────────────────
 export type MemberStatus = (typeof MEMBER_STATUS)[keyof typeof MEMBER_STATUS];
 export type KycStatus = (typeof KYC_STATUS)[keyof typeof KYC_STATUS];
@@ -110,6 +132,24 @@ export function parseMemberNumber(raw: string | number | null | undefined): numb
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+/**
+ * Shape of an Airtable attachment cell value. We only consume the fields
+ * we actually render or link to in the UI (url, filename, type, size,
+ * thumbnails for image previews); Airtable returns more.
+ */
+export interface AirtableAttachment {
+  id: string;
+  url: string;
+  filename: string;
+  size?: number;
+  type?: string; // mime type, e.g. "image/jpeg" or "application/pdf"
+  thumbnails?: {
+    small?: { url: string; width: number; height: number };
+    large?: { url: string; width: number; height: number };
+    full?: { url: string; width: number; height: number };
+  };
+}
+
 export interface LehumoMember {
   id: string; // Airtable record ID
   fullName: string;
@@ -121,6 +161,14 @@ export interface LehumoMember {
   source: string;
   notes: string;
   contributions: Record<string, boolean>; // { Jan: true, Feb: false, ... }
+  // ── KYC / identity (optional — populated post-Tier 2A onboarding) ──
+  idType?: "SA ID" | "Passport" | "";
+  idNumber?: string;
+  residentialAddress?: string;
+  kycIdDocument?: AirtableAttachment[];
+  kycProofOfAddress?: AirtableAttachment[];
+  kycSubmittedAt?: string; // ISO date
+  kycVerifiedAt?: string; // ISO date
 }
 
 /** One month in the cumulative pool timeline. */
