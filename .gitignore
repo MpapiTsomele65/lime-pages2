@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# lighthouse — point-in-time perf snapshots, regenerable on demand.
+# Use Vercel Speed Insights / Lighthouse CI for longitudinal tracking
+# instead of committing single-run reports.
+lighthouse-report.json
+*.lighthouse-report.json
+.lighthouseci/
