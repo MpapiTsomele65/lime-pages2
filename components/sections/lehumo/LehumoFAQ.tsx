@@ -211,6 +211,45 @@ const FAQ: FaqItem[] = [
     ),
   },
   {
+    q: "What happens if I borrow against my contributions and can't pay it back?",
+    a: (
+      <>
+        <p>
+          You don&rsquo;t lose the money outright. The unrepaid amount (plus
+          any interest charged above the 20% threshold) is recovered from
+          your contributions at the 5-year mark — but the bigger consequence
+          is what it does to your{" "}
+          <span className="text-white font-semibold">
+            ownership at Phase 2
+          </span>
+          .
+        </p>
+        <p className="mt-3">
+          A lower contribution balance means a smaller share of the pool when
+          we convert into the company. As a concrete example: a member who
+          would normally enter Phase 2 with{" "}
+          <span className="text-white font-semibold">
+            3 shares and 3 votes
+          </span>{" "}
+          might enter with{" "}
+          <span className="text-white font-semibold">
+            2 shares and 2 votes
+          </span>{" "}
+          instead — fewer voting rights, and a proportionally smaller share
+          of future dividends.
+        </p>
+        <p className="mt-3">
+          The structure is built so the cost of default is{" "}
+          <span className="text-white font-semibold">
+            proportional and transparent
+          </span>
+          , not punitive. How you manage the loan during the 60 months
+          shapes your ownership at conversion.
+        </p>
+      </>
+    ),
+  },
+  {
     q: "What happens if I miss a few months of contributions?",
     a: (
       <>
