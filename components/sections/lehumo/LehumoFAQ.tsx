@@ -105,6 +105,56 @@ const FAQ: FaqItem[] = [
     ),
   },
   {
+    q: "Can I switch contribution tiers during the 60 months?",
+    a: (
+      <>
+        <p>
+          Yes — you&rsquo;re not locked to whatever you started on. You can
+          move <span className="text-white font-semibold">up</span> to a higher
+          tier whenever you want (more shareholding at conversion), or move{" "}
+          <span className="text-white font-semibold">down</span> if your
+          circumstances change.
+        </p>
+        <p className="mt-3">
+          The only hard constraint is the{" "}
+          <span className="text-lime font-semibold">R40,000 floor at year 5</span>.
+          If you spend a chunk of the term on a lower tier, you&rsquo;ll need
+          to catch up — either by increasing the monthly amount or topping up
+          directly — to clear the conversion threshold.
+        </p>
+        <p className="mt-3">
+          The member portal keeps your running total visible so you always
+          know how far ahead or behind you are versus the floor.
+        </p>
+      </>
+    ),
+  },
+  {
+    q: "What does the monthly admin fee cover, and what's the R100 VIP tier?",
+    a: (
+      <>
+        <p>
+          Every member pays a small{" "}
+          <span className="text-lime font-semibold">R9 monthly admin fee</span>{" "}
+          on top of their contribution. It covers payment-collection costs,
+          portal hosting, and the operational overhead of running the scheme
+          (KYC processing, reconciliation, statements). It&rsquo;s{" "}
+          <span className="text-white font-semibold">not profit</span> — it
+          just keeps the lights on so 100% of your contribution can go into
+          the pool.
+        </p>
+        <p className="mt-3">
+          The <span className="text-white font-semibold">R100 VIP tier</span>{" "}
+          is still in ideation. The current thinking is a higher-touch option
+          for members who want a less-cluttered WhatsApp group, more frequent
+          check-ins, and earlier visibility on new sandbox ideas. We&rsquo;ll
+          only roll it out if there&rsquo;s genuine demand from the founding
+          30 — and it would be additive, never a paywall on existing benefits.
+        </p>
+      </>
+    ),
+  },
+  {
     q: "Where will my money actually sit, and who manages it?",
     a: (
       <>
@@ -206,6 +256,37 @@ const FAQ: FaqItem[] = [
           Unrepaid borrowed amounts (plus interest) are clawed back from your
           remaining contributions at the 5-year mark before capital is
           deployed.
+        </p>
+      </>
+    ),
+  },
+  {
+    q: "How does interest work on a peer-to-peer loan above the 20% threshold?",
+    a: (
+      <>
+        <p>
+          Inside your 20% allowance there&rsquo;s{" "}
+          <span className="text-white font-semibold">no interest</span> — it&rsquo;s
+          your own money. Interest only enters the picture when you need to
+          borrow <span className="text-white font-semibold">above</span> that
+          threshold and another member fronts the difference.
+        </p>
+        <p className="mt-3">
+          On a peer-to-peer loan, the{" "}
+          <span className="text-white font-semibold">
+            lending member sets the rate
+          </span>{" "}
+          within group-agreed guidelines (a floor and ceiling adopted by the
+          steering committee). The committee facilitates the match and the
+          paperwork; the borrower repays both principal and interest within
+          the agreed term.
+        </p>
+        <p className="mt-3">
+          If a P2P borrower defaults, the unpaid principal{" "}
+          <span className="text-lime font-semibold">plus the agreed interest</span>{" "}
+          is recovered from their remaining contributions before the pool is
+          deployed at year 5 — so the lender is made whole at conversion, not
+          left exposed.
         </p>
       </>
     ),
@@ -459,6 +540,54 @@ const FAQ: FaqItem[] = [
         <p className="mt-3">
           This keeps overheads low while we build the pool — and the path is
           designed up-front, not retrofitted.
+        </p>
+      </>
+    ),
+  },
+  {
+    q: "What's the long-term vision beyond year 5 — is this just a 5-year scheme?",
+    a: (
+      <>
+        <p>
+          No. Year 5 is the conversion point, not the finish line. After that,
+          three things compound:
+        </p>
+        <ul className="mt-3 space-y-2 text-white/70">
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              The pool keeps deploying — same SME-loan strategy, now inside a
+              registered company (and eventually a trust) with formal
+              shareholder mechanics.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              The infrastructure we&rsquo;re building (KYC pipeline, member
+              portal, reporting, reconciliation) is{" "}
+              <span className="text-white font-semibold">designed to be cloned</span>.
+              Other communities and stokvels can adopt the same playbook
+              without rebuilding it from scratch.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-lime shrink-0">●</span>
+            <span>
+              Over 10–15 years, the ambition is to grow this into a full{" "}
+              <span className="text-white font-semibold">
+                financial services business
+              </span>{" "}
+              — validating a sustainable peer-to-peer lending model and a
+              wealth-creation framework that historically hasn&rsquo;t been
+              built for our communities.
+            </span>
+          </li>
+        </ul>
+        <p className="mt-3 text-[13px] text-white/40">
+          Phase 2 is real and contractually defined; phase 3+ is direction,
+          not a guarantee. The founding 30 are deciding the first step — the
+          rest is built with you, not for you.
         </p>
       </>
     ),
