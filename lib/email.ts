@@ -366,3 +366,212 @@ export async function sendMemberNumberEmail(params: {
 </html>`,
   });
 }
+
+/* ─── KYC documents received (auto, on upload) ─── */
+export async function sendKycReceivedEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+}) {
+  const { to, fullName, memberNumber } = params;
+  const firstName = fullName.split(" ")[0];
+  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `We've received your KYC documents \u2014 reviewing now (${formatMemberNumber(memberNumber)})`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Got it, ${firstName}.</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 24px;">
+                We've received your KYC documents and we're reviewing them now. You'll get another email as soon as your file is verified \u2014 usually within 1\u20132 business days.
+              </p>
+
+              <!-- Status Card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(70,205,207,0.08);border:1px solid rgba(70,205,207,0.2);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Current Status</div>
+                    <div style="font-size:20px;font-weight:700;color:#46CDCF;line-height:1.2;">In Review</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;">Member ID: <span style="color:#B8FF00;font-weight:600;">${formatMemberNumber(memberNumber)}</span></div>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;margin:0 0 24px;">
+                If we need anything else from you, we'll reach out directly. No action required from your side right now.
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0;">
+                    <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
+                      View Your Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                Lehumo Collective Investment Trust &middot; Powered by Lime Pages<br/>
+                <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}
+
+/* ─── KYC verified (admin-triggered, on transition to Complete) ─── */
+export async function sendKycVerifiedEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+}) {
+  const { to, fullName, memberNumber } = params;
+  const firstName = fullName.split(" ")[0];
+  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `Your KYC is verified \u2014 welcome aboard, ${firstName}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">You're verified, ${firstName}.</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 24px;">
+                Your KYC documents have been reviewed and approved. Your Lehumo file is now <strong style="color:#B8FF00;">Complete</strong> \u2014 you have full access to the portal and all member benefits.
+              </p>
+
+              <!-- Status Card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(184,255,0,0.08);border:1px solid rgba(184,255,0,0.2);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">KYC Status</div>
+                    <div style="font-size:24px;font-weight:800;color:#B8FF00;line-height:1.2;">Verified &check;</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;">Member ID: <span style="color:#B8FF00;font-weight:600;">${formatMemberNumber(memberNumber)}</span></div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- What's Next -->
+              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;">What's Unlocked</div>
+              <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:6px 0;vertical-align:top;">
+                    <span style="display:inline-block;width:8px;height:8px;background:#B8FF00;border-radius:50%;margin:7px 12px 0 0;"></span>
+                  </td>
+                  <td style="padding:6px 0;font-size:14px;color:#ffffff;line-height:1.5;">
+                    Monthly contribution tracking in your portal
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;vertical-align:top;">
+                    <span style="display:inline-block;width:8px;height:8px;background:#B8FF00;border-radius:50%;margin:7px 12px 0 0;"></span>
+                  </td>
+                  <td style="padding:6px 0;font-size:14px;color:#ffffff;line-height:1.5;">
+                    Emergency access (after 6 months of contributions)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;vertical-align:top;">
+                    <span style="display:inline-block;width:8px;height:8px;background:#B8FF00;border-radius:50%;margin:7px 12px 0 0;"></span>
+                  </td>
+                  <td style="padding:6px 0;font-size:14px;color:#ffffff;line-height:1.5;">
+                    Annual dividends, funeral cover, and Lime Pages profile
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0;">
+                    <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
+                      Open Your Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                Lehumo Collective Investment Trust &middot; Powered by Lime Pages<br/>
+                <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}

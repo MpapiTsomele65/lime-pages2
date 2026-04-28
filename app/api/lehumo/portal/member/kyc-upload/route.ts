@@ -6,6 +6,7 @@ import {
   uploadKycAttachment,
   setMemberKyc,
 } from "@/lib/airtable";
+import { sendKycReceivedEmail } from "@/lib/email";
 
 // ─── Limits ─────────────────────────────────────────────────────────
 // Airtable's hard ceiling for inline-base64 uploads is 5MB. We mirror
@@ -112,6 +113,19 @@ export async function POST(request: NextRequest) {
         kycStatus: "In Progress",
         markSubmittedNow: true,
       });
+
+      // Best-effort receipt email — fire once on the Docs Requested →
+      // In Progress transition. Don't await; a Resend hiccup must not
+      // roll back the status flip.
+      if (updated.email) {
+        sendKycReceivedEmail({
+          to: updated.email,
+          fullName: updated.fullName,
+          memberNumber: updated.memberNumber,
+        }).catch((err) =>
+          console.error("KYC received email failed:", err),
+        );
+      }
     }
 
     return NextResponse.json({

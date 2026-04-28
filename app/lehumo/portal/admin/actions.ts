@@ -10,9 +10,10 @@ import {
 import {
   createMember,
   findMemberByEmail,
+  getMemberById,
   getNextMemberNumber,
 } from "@/lib/airtable";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendKycVerifiedEmail, sendWelcomeEmail } from "@/lib/email";
 import {
   AIRTABLE_FIELDS,
   MONTH_NAMES,
@@ -107,9 +108,26 @@ export async function updateMemberKyc(
   if (!kycOk.success) return { ok: false, error: "Invalid KYC status" };
 
   try {
+    // Read prev state so we can fire the verified-email only on the
+    // not-Complete → Complete transition. Otherwise an admin toggling
+    // around (Complete → In Progress → Complete) would spam members.
+    const prev = await getMemberById(recordId);
+    const wasAlreadyComplete = prev?.kycStatus === "Complete";
+
     const member = await adminUpdateMember(recordId, {
       [AIRTABLE_FIELDS.kycStatus]: kycOk.data,
     });
+
+    if (!wasAlreadyComplete && kycOk.data === "Complete" && member.email) {
+      sendKycVerifiedEmail({
+        to: member.email,
+        fullName: member.fullName,
+        memberNumber: member.memberNumber,
+      }).catch((err) =>
+        console.error("KYC verified email failed (updateMemberKyc):", err),
+      );
+    }
+
     return { ok: true, member };
   } catch (err) {
     console.error("updateMemberKyc error:", err);
@@ -134,10 +152,26 @@ export async function adminApproveKyc(
   if (!idOk.success) return { ok: false, error: "Invalid record id" };
 
   try {
+    // Same transition guard as updateMemberKyc — only email on the
+    // not-Complete → Complete edge so re-approvals don't double-fire.
+    const prev = await getMemberById(recordId);
+    const wasAlreadyComplete = prev?.kycStatus === "Complete";
+
     const member = await adminUpdateMember(recordId, {
       [AIRTABLE_FIELDS.kycStatus]: "Complete",
       [AIRTABLE_FIELDS.kycVerifiedAt]: todayDate(),
     });
+
+    if (!wasAlreadyComplete && member.email) {
+      sendKycVerifiedEmail({
+        to: member.email,
+        fullName: member.fullName,
+        memberNumber: member.memberNumber,
+      }).catch((err) =>
+        console.error("KYC verified email failed (adminApproveKyc):", err),
+      );
+    }
+
     return { ok: true, member };
   } catch (err) {
     console.error("adminApproveKyc error:", err);
