@@ -7,6 +7,7 @@ import type { CommunityPoolStats, LehumoMember } from "@/lib/definitions";
 import { formatMemberNumber } from "@/lib/definitions";
 import { MemberProfileCard } from "./MemberProfileCard";
 import { ContributionGrid } from "./ContributionGrid";
+import { ContributionReminderCard } from "./ContributionReminderCard";
 import { KycStatusTracker } from "./KycStatusTracker";
 import { KycDocumentsCard } from "./KycDocumentsCard";
 import { BeneficiaryCard } from "./BeneficiaryCard";
@@ -19,12 +20,20 @@ interface DashboardOverviewProps {
   member: LehumoMember;
   communityStats: CommunityPoolStats | null;
   isAdmin?: boolean;
+  /** SAST month code (e.g. "Apr") computed server-side. Powers the
+   *  ContributionReminderCard's "pay this month" copy. */
+  currentMonth: string;
+  /** Days remaining in the current SAST month (1-31). Used for the
+   *  reminder card's urgency tier. */
+  daysLeftInMonth: number;
 }
 
 export function DashboardOverview({
   member,
   communityStats,
   isAdmin = false,
+  currentMonth,
+  daysLeftInMonth,
 }: DashboardOverviewProps) {
   const firstName = member.fullName.split(" ")[0];
 
@@ -85,6 +94,17 @@ export function DashboardOverview({
           </Link>
         </motion.div>
       )}
+
+      {/* Current-month contribution reminder. Sits high so the most
+          common monthly action is one tap away. Renders nothing when
+          the member has paid all 12 months (PaymentCard already shows
+          the celebration state in that case) — and renders a quiet
+          confirmation chip when this month is already paid. */}
+      <ContributionReminderCard
+        contributions={member.contributions}
+        currentMonth={currentMonth}
+        daysLeftInMonth={daysLeftInMonth}
+      />
 
       {/* Community pool overview */}
       {communityStats && (

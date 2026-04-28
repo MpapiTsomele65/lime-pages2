@@ -271,6 +271,42 @@ export function todayDate(): string {
 }
 
 /**
+ * Current SAST (Africa/Johannesburg) month + days left.
+ *
+ * Used by the member-portal contribution reminder card so it shows the
+ * right month even when the function happens to run just before/after
+ * UTC midnight. Vercel runs in UTC; SA is UTC+2, so a naive
+ * `new Date().getMonth()` can be off by one for the last/first two
+ * hours of the month.
+ *
+ * Returns the three-letter month code (matching MONTH_NAMES) and the
+ * count of days remaining including today (1 = today is the last day
+ * of the month).
+ */
+export function getSastMonthInfo(now: Date = new Date()): {
+  monthCode: string;
+  daysLeftInMonth: number;
+} {
+  // en-CA gives YYYY-MM-DD which is trivial to slice. timeZone option
+  // is what makes this SAST instead of UTC.
+  const sastYmd = now.toLocaleDateString("en-CA", {
+    timeZone: "Africa/Johannesburg",
+  });
+  const [yearStr, monthStr, dayStr] = sastYmd.split("-");
+  const year = Number(yearStr);
+  const monthIdx = Number(monthStr) - 1; // 0-11
+  const day = Number(dayStr);
+
+  const monthCode = MONTH_NAMES[monthIdx] ?? "Jan";
+
+  // Day 0 of next month = last day of current month.
+  const lastDay = new Date(Date.UTC(year, monthIdx + 1, 0)).getUTCDate();
+  const daysLeftInMonth = Math.max(1, lastDay - day + 1);
+
+  return { monthCode, daysLeftInMonth };
+}
+
+/**
  * Whether a member has a beneficiary on file.
  *
  * Single source of truth for the "is the next-of-kin captured?" check —

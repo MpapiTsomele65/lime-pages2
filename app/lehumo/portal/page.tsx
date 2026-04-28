@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getCommunityPoolStats, getMemberById } from "@/lib/airtable";
 import { isAdminEmail } from "@/lib/admin-auth";
+import { getSastMonthInfo } from "@/lib/definitions";
 import { PortalShell } from "@/components/lehumo/portal/PortalShell";
 import { DashboardOverview } from "@/components/lehumo/portal/DashboardOverview";
 
@@ -44,12 +45,20 @@ export default async function PortalDashboardPage() {
     );
   }
 
+  // Compute SAST current-month + days-left server-side so the
+  // contribution reminder card renders correctly on first paint and
+  // doesn't rely on a useEffect to settle (which would flash the wrong
+  // month for two hours either side of UTC midnight).
+  const { monthCode: currentMonth, daysLeftInMonth } = getSastMonthInfo();
+
   return (
     <PortalShell memberName={memberName} isAdmin={isAdmin}>
       <DashboardOverview
         member={member}
         communityStats={communityStats}
         isAdmin={isAdmin}
+        currentMonth={currentMonth}
+        daysLeftInMonth={daysLeftInMonth}
       />
     </PortalShell>
   );
