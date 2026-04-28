@@ -8,10 +8,17 @@ import {
   setMonthPayment,
 } from "@/lib/airtable-admin";
 import {
+  createMember,
+  findMemberByEmail,
+  getNextMemberNumber,
+} from "@/lib/airtable";
+import { sendWelcomeEmail } from "@/lib/email";
+import {
   AIRTABLE_FIELDS,
   MONTH_NAMES,
   MEMBER_STATUS,
   KYC_STATUS,
+  formatMemberNumber,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
@@ -160,5 +167,95 @@ export async function adminRequestKycResubmission(
   } catch (err) {
     console.error("adminRequestKycResubmission error:", err);
     return { ok: false, error: "Airtable update failed" };
+  }
+}
+
+// ─── Manual member creation (admin add-on-behalf) ─────────────────────
+//
+// Use case: a prospect submits KYC docs by email (lehumo@limepages.co.za)
+// before — or instead of — going through the public onboarding form.
+// Without this action there'd be no Airtable row for them, so admin
+// can't park their docs anywhere or track their KYC progress.
+//
+// Mirrors the public `/api/lehumo/onboard` flow as closely as possible:
+//   - same dedup-by-email guard
+//   - same auto-assign of the next member number
+//   - same default state (Status=Onboarding, kycStatus=Docs Requested)
+//   - same opt-in welcome email (admin can suppress for back-channel members)
+const SourceValues = [
+  "Google",
+  "Instagram",
+  "Referral",
+  "WhatsApp",
+  "Direct",
+] as const;
+
+const AdminCreateMemberSchema = z.object({
+  fullName: z.string().min(2, "Full name is required"),
+  email: z.string().email("Invalid email"),
+  phone: z.string().min(10, "Phone is required"),
+  source: z.enum(SourceValues),
+  idType: z.enum(["sa_id", "passport"]).optional(),
+  idNumber: z.string().optional(),
+  residentialAddress: z.string().optional(),
+  sendWelcomeEmail: z.boolean().default(true),
+});
+
+export type AdminCreateMemberInput = z.input<typeof AdminCreateMemberSchema>;
+
+export async function adminCreateMember(
+  input: AdminCreateMemberInput,
+): Promise<AdminActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as AdminActionResult;
+
+  const parsed = AdminCreateMemberSchema.safeParse(input);
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0]?.message ?? "Invalid input";
+    return { ok: false, error: firstIssue };
+  }
+  const data = parsed.data;
+
+  try {
+    // Dedup-by-email — surface the existing record so admin can act on
+    // it instead of creating a duplicate row that would split the audit
+    // trail. The error message includes their member number so it's
+    // immediately searchable in the table below.
+    const existing = await findMemberByEmail(data.email);
+    if (existing) {
+      return {
+        ok: false,
+        error: `Email already registered as ${formatMemberNumber(existing.memberNumber)} (${existing.fullName || "no name"} · ${existing.status}). Use the table below to manage this member.`,
+      };
+    }
+
+    const memberNumber = await getNextMemberNumber();
+    const member = await createMember({
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      source: data.source,
+      memberNumber,
+      idType: data.idType,
+      idNumber: data.idNumber,
+      residentialAddress: data.residentialAddress,
+    });
+
+    // Welcome email is best-effort — log + ignore on failure so an
+    // SMTP hiccup doesn't roll back a successful Airtable create.
+    if (data.sendWelcomeEmail) {
+      sendWelcomeEmail({
+        to: member.email,
+        fullName: member.fullName,
+        memberNumber: member.memberNumber,
+      }).catch((err) =>
+        console.error("Welcome email failed (admin create):", err),
+      );
+    }
+
+    return { ok: true, member };
+  } catch (err) {
+    console.error("adminCreateMember error:", err);
+    return { ok: false, error: "Could not create member. Check Airtable connectivity." };
   }
 }

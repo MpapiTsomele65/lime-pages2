@@ -5,6 +5,7 @@ import { listAllMembers } from "@/lib/airtable-admin";
 import { AdminShell } from "@/components/lehumo/admin/AdminShell";
 import { AdminMemberTable } from "@/components/lehumo/admin/AdminMemberTable";
 import { AdminKycReviewSection } from "@/components/lehumo/admin/AdminKycReviewSection";
+import { AdminAddMemberCard } from "@/components/lehumo/admin/AdminAddMemberCard";
 import { MONTH_NAMES } from "@/lib/definitions";
 
 export const dynamic = "force-dynamic";
@@ -63,13 +64,29 @@ export default async function AdminDashboardPage() {
           <StatTile label="KYC Pending" value={pendingKyc.toString()} />
         </div>
 
+        {/* Manual add-member — for prospects who emailed KYC docs without
+            going through the public onboarding form. Creating here drops
+            them straight into the review queue below. */}
+        <AdminAddMemberCard />
+
         {/* KYC review queue — surfaces members waiting on document review
             or chase-up. Sits above the member table so the most actionable
-            work is the first thing an admin sees on load. */}
-        <AdminKycReviewSection initialMembers={members} />
+            work is the first thing an admin sees on load.
+            `key={members.length}` forces a remount when AdminAddMemberCard
+            calls router.refresh() after a successful create — without it
+            the section's local useState would keep the stale member list. */}
+        <AdminKycReviewSection
+          key={`kyc-${members.length}`}
+          initialMembers={members}
+        />
 
-        {/* Member table */}
-        <AdminMemberTable initialMembers={members} currentMonth={currentMonth} />
+        {/* Member table — same key trick so a freshly-created member
+            shows up in the full table on the next render. */}
+        <AdminMemberTable
+          key={`table-${members.length}`}
+          initialMembers={members}
+          currentMonth={currentMonth}
+        />
 
         {/* Pool settings placeholder */}
         <section className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
