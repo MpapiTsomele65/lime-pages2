@@ -130,26 +130,34 @@ const FAQ: FaqItem[] = [
     ),
   },
   {
-    q: "What does the monthly admin fee cover, and what's the R100 VIP tier?",
+    q: "Are there any fees on top of my R1,000 contribution?",
     a: (
       <>
         <p>
-          Every member pays a small{" "}
-          <span className="text-lime font-semibold">R9 monthly admin fee</span>{" "}
-          on top of their contribution. It covers payment-collection costs,
-          portal hosting, and the operational overhead of running the scheme
-          (KYC processing, reconciliation, statements). It&rsquo;s{" "}
-          <span className="text-white font-semibold">not profit</span> — it
-          just keeps the lights on so 100% of your contribution can go into
-          the pool.
+          It depends on the plan, but{" "}
+          <span className="text-white font-semibold">100% of your R1,000</span>{" "}
+          always goes into the investment pool. Plan fees sit on top of your
+          contribution, never deducted from it.
+        </p>
+        <p className="mt-3">
+          <span className="text-white font-semibold">Basic</span> charges
+          zero fees — you transfer R1,000 manually each month, and emergency
+          loan access unlocks at month 12.{" "}
+          <span className="text-white font-semibold">Standard</span> adds a{" "}
+          <span className="text-lime font-semibold">R19.90/mo collection fee</span>{" "}
+          for the Paystack debit-order automation, portal hosting, KYC
+          processing and reconciliation — and unlocks emergency loan access
+          six months earlier (month 6).
         </p>
         <p className="mt-3">
           The <span className="text-white font-semibold">R100 VIP tier</span>{" "}
-          is still in ideation. The current thinking is a higher-touch option
-          for members who want a less-cluttered WhatsApp group, more frequent
-          check-ins, and earlier visibility on new sandbox ideas. We&rsquo;ll
-          only roll it out if there&rsquo;s genuine demand from the founding
-          30 — and it would be additive, never a paywall on existing benefits.
+          is still in refinement — value proposition isn&rsquo;t finalised
+          yet, so it&rsquo;s flagged as <em>coming soon</em> on the plans
+          page. The current thinking is private WhatsApp, Lime Connect
+          listing, priority support, and earlier visibility on sandbox ideas.
+          We&rsquo;ll only roll it out if there&rsquo;s genuine demand from
+          the founding 30 — and it would be additive, never a paywall on
+          existing benefits.
         </p>
       </>
     ),

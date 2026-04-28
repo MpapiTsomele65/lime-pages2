@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { LEHUMO_APPLY_URL } from "@/lib/constants";
 import {
   Wallet,
   CreditCard,
@@ -105,20 +104,22 @@ const plans = [
     name: "VIP",
     price: "R1,000",
     priceSuffix: "/month",
-    priceNote: "R1,099 total monthly debit",
-    planFee: "+ R99 platform fee",
-    planFeeAmount: "R99",
-    tagline: "All of Standard + inner circle access",
+    // Pricing is illustrative — final value prop is still being shaped, so
+    // we deliberately don't promise a debit total yet.
+    priceNote: "Tier in refinement · pricing indicative",
+    planFee: "+ R100 platform fee",
+    planFeeAmount: "R100",
+    tagline: "Inner circle — coming soon",
     color: "purple",
     borderColor: "border-[#A855F7]/30",
     bgColor: "bg-[#A855F7]/[0.04]",
     accentColor: "text-[#A855F7]",
     accentBg: "bg-[#A855F7]/15",
     highlight: false,
-    badge: "Inner Circle",
+    badge: "Coming Soon",
     payment: "Automated Debit Order",
     paymentDesc:
-      "Same seamless Paystack automation as Standard — plus exclusive community access.",
+      "Same Paystack automation as Standard once the tier launches — exclusive community perks layered on top.",
     paymentHighlight: true,
     loanAccess: "After 6 months",
     loanAmount: "",
@@ -131,9 +132,10 @@ const plans = [
       "Priority support & exclusive updates",
     ],
     notIncluded: [],
-    cta: "Join VIP",
+    comingSoon: true,
+    cta: "Coming Soon",
     ctaStyle:
-      "bg-[#A855F7] text-white hover:shadow-[0_8px_28px_rgba(168,85,247,0.3)]",
+      "bg-white/[0.04] border border-white/[0.10] text-white/45 cursor-not-allowed",
   },
 ];
 
@@ -369,13 +371,23 @@ export function Cost() {
                     ))}
                   </ul>
 
-                  {/* CTA */}
-                  <Link
-                    href="/lehumo/onboard"
-                    className={`w-full py-3.5 rounded-full text-center text-sm font-bold transition-all hover:-translate-y-0.5 ${plan.ctaStyle}`}
-                  >
-                    {plan.cta}
-                  </Link>
+                  {/* CTA — VIP renders as a non-interactive "Coming Soon"
+                      pill while the tier is being shaped. */}
+                  {plan.comingSoon ? (
+                    <span
+                      aria-disabled="true"
+                      className={`w-full py-3.5 rounded-full text-center text-sm font-bold block ${plan.ctaStyle}`}
+                    >
+                      {plan.cta}
+                    </span>
+                  ) : (
+                    <Link
+                      href="/lehumo/onboard"
+                      className={`w-full py-3.5 rounded-full text-center text-sm font-bold transition-all hover:-translate-y-0.5 ${plan.ctaStyle}`}
+                    >
+                      {plan.cta}
+                    </Link>
+                  )}
                 </div>
               </motion.div>
             );
@@ -435,14 +447,12 @@ export function Cost() {
 
         {/* ── CTA ── */}
         <motion.div {...fadeUp} className="text-center">
-          <a
-            href={LEHUMO_APPLY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/lehumo/onboard"
             className="inline-flex items-center gap-2 bg-lime text-navy px-9 py-[15px] rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
           >
             Apply to Join <ArrowRight className="w-4 h-4" />
-          </a>
+          </Link>
           <p className="text-[11px] text-white/25 mt-4">
             Limited to 30 founding members &middot; Applications reviewed
             within 48 hours
