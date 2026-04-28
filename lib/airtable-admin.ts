@@ -7,6 +7,8 @@ import {
   STATUS_CHOICE_ID_TO_NAME,
   KYC_CHOICE_ID_TO_NAME,
   SOURCE_CHOICE_ID_TO_NAME,
+  ID_TYPE_CHOICE_ID_TO_NAME,
+  type AirtableAttachment,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
@@ -53,6 +55,16 @@ function parseRecord(record: any): LehumoMember {
     contributions[month] = f[MONTH_FIELDS[month]] === true;
   }
 
+  // Mirror the optional-shape coercion done in lib/airtable.ts so the
+  // admin reads expose the same `LehumoMember` contract — admin UI can
+  // safely render attachments without TS gymnastics.
+  const idDoc = f[AIRTABLE_FIELDS.kycIdDocument] as
+    | AirtableAttachment[]
+    | undefined;
+  const poaDoc = f[AIRTABLE_FIELDS.kycProofOfAddress] as
+    | AirtableAttachment[]
+    | undefined;
+
   return {
     id: record.id,
     fullName: f[AIRTABLE_FIELDS.fullName] || "",
@@ -76,6 +88,18 @@ function parseRecord(record: any): LehumoMember {
     ),
     notes: f[AIRTABLE_FIELDS.notes] || "",
     contributions,
+    // ── KYC fields (Tier 2A) — admin needs to read attachments + dates ──
+    idType: resolveSelect(
+      f[AIRTABLE_FIELDS.idType],
+      ID_TYPE_CHOICE_ID_TO_NAME,
+      "",
+    ) as "SA ID" | "Passport" | "",
+    idNumber: f[AIRTABLE_FIELDS.idNumber] || "",
+    residentialAddress: f[AIRTABLE_FIELDS.residentialAddress] || "",
+    kycIdDocument: idDoc && idDoc.length > 0 ? idDoc : undefined,
+    kycProofOfAddress: poaDoc && poaDoc.length > 0 ? poaDoc : undefined,
+    kycSubmittedAt: f[AIRTABLE_FIELDS.kycSubmittedAt] || undefined,
+    kycVerifiedAt: f[AIRTABLE_FIELDS.kycVerifiedAt] || undefined,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

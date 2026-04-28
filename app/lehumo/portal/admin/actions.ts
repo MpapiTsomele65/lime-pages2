@@ -108,3 +108,57 @@ export async function updateMemberKyc(
     return { ok: false, error: "Airtable update failed" };
   }
 }
+
+/**
+ * Approve a member's KYC submission. Flips kycStatus → "Complete" and
+ * stamps kycVerifiedAt with the current ISO timestamp. Used from the
+ * admin KYC review queue once the admin has visually confirmed the ID
+ * + proof of address attachments match the form data.
+ */
+export async function adminApproveKyc(
+  recordId: string,
+): Promise<AdminActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as AdminActionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  try {
+    const member = await adminUpdateMember(recordId, {
+      [AIRTABLE_FIELDS.kycStatus]: "Complete",
+      [AIRTABLE_FIELDS.kycVerifiedAt]: new Date().toISOString(),
+    });
+    return { ok: true, member };
+  } catch (err) {
+    console.error("adminApproveKyc error:", err);
+    return { ok: false, error: "Airtable update failed" };
+  }
+}
+
+/**
+ * Reject a KYC submission and ask the member to re-upload one or both
+ * documents. Flips kycStatus back to "Docs Requested" — the member
+ * portal then re-renders the upload card with both slots accepting new
+ * files. The original attachments stay in Airtable (admins can clear
+ * them manually if needed) so we have an audit trail of what was sent.
+ */
+export async function adminRequestKycResubmission(
+  recordId: string,
+): Promise<AdminActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as AdminActionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  try {
+    const member = await adminUpdateMember(recordId, {
+      [AIRTABLE_FIELDS.kycStatus]: "Docs Requested",
+    });
+    return { ok: true, member };
+  } catch (err) {
+    console.error("adminRequestKycResubmission error:", err);
+    return { ok: false, error: "Airtable update failed" };
+  }
+}

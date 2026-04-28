@@ -4,6 +4,7 @@ import { getAdminSession } from "@/lib/admin-auth";
 import { listAllMembers } from "@/lib/airtable-admin";
 import { AdminShell } from "@/components/lehumo/admin/AdminShell";
 import { AdminMemberTable } from "@/components/lehumo/admin/AdminMemberTable";
+import { AdminKycReviewSection } from "@/components/lehumo/admin/AdminKycReviewSection";
 import { MONTH_NAMES } from "@/lib/definitions";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,11 @@ export default async function AdminDashboardPage() {
           />
           <StatTile label="KYC Pending" value={pendingKyc.toString()} />
         </div>
+
+        {/* KYC review queue — surfaces members waiting on document review
+            or chase-up. Sits above the member table so the most actionable
+            work is the first thing an admin sees on load. */}
+        <AdminKycReviewSection initialMembers={members} />
 
         {/* Member table */}
         <AdminMemberTable initialMembers={members} currentMonth={currentMonth} />
