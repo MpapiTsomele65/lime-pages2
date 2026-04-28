@@ -174,6 +174,13 @@ export const OnboardingFormSchema = z.object({
   commitment: z.string().optional(),
   plan: z.enum(["basic", "standard", "vip"]).optional(),
   sourceOfFunds: z.string().optional(),
+  /** "sa_id" or "passport" — captured on Step 3 of the wizard. */
+  idType: z.enum(["sa_id", "passport"]).optional(),
+  /** Raw ID/passport number captured on Step 3 (already validated
+   *  client-side; stored as-is for now). */
+  idNumber: z.string().optional(),
+  /** Free-form residential address captured on Step 3. */
+  residentialAddress: z.string().optional(),
 });
 
 export const PaystackInitSchema = z.object({

@@ -27,6 +27,12 @@ interface FormData {
   commitment?: string;
   plan?: string;
   sourceOfFunds?: string;
+  /** "sa_id" | "passport" — auto-detected from idNumber on Step 3. */
+  idType?: "sa_id" | "passport";
+  /** Raw ID/passport number entered on Step 3 (validated client-side). */
+  idNumber?: string;
+  /** Free-form residential address captured on Step 3. */
+  residentialAddress?: string;
   memberId?: string;
   memberNumber?: number;
   reference?: string;
@@ -171,7 +177,12 @@ export function OnboardingWizard() {
   // Create account after KYC (step 3) — before moving to Payment (step 4).
   // This ensures the member record exists even if they drop off at payment.
   const handleKycComplete = useCallback(
-    async (data: { sourceOfFunds: string }) => {
+    async (data: {
+      sourceOfFunds: string;
+      idType: "sa_id" | "passport";
+      idNumber: string;
+      residentialAddress: string;
+    }) => {
       const updatedData = { ...formData, ...data };
       setFormData(updatedData);
       setError(null);
@@ -190,6 +201,9 @@ export function OnboardingWizard() {
             commitment: updatedData.commitment,
             plan: updatedData.plan,
             sourceOfFunds: data.sourceOfFunds,
+            idType: data.idType,
+            idNumber: data.idNumber,
+            residentialAddress: data.residentialAddress,
           }),
         });
 
@@ -329,6 +343,8 @@ export function OnboardingWizard() {
               <StepKycDocs
                 onNext={handleKycComplete}
                 defaultSourceOfFunds={formData.sourceOfFunds}
+                defaultIdNumber={formData.idNumber}
+                defaultResidentialAddress={formData.residentialAddress}
               />
             )}
             {currentStep === 4 && (

@@ -21,14 +21,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { fullName, email, phone, source, intent, commitment, plan, sourceOfFunds } = parsed.data;
+    const {
+      fullName,
+      email,
+      phone,
+      source,
+      intent,
+      commitment,
+      plan,
+      sourceOfFunds,
+      idType,
+      idNumber,
+      residentialAddress,
+    } = parsed.data;
 
-    // Build a notes string with extra fields until dedicated Airtable columns exist
+    // Build a notes string with extra fields until dedicated Airtable
+    // columns exist for ID type, ID number, and residential address.
+    // The pipe-delimited format is human-readable in Airtable and
+    // round-trippable if we ever migrate to proper columns.
     const noteParts: string[] = [];
     if (intent) noteParts.push(`Intent: ${intent}`);
     if (commitment) noteParts.push(`Commitment: ${commitment}`);
     if (plan) noteParts.push(`Plan: ${plan}`);
     if (sourceOfFunds) noteParts.push(`Source of Funds: ${sourceOfFunds}`);
+    if (idType && idNumber) {
+      const label = idType === "sa_id" ? "SA ID" : "Passport";
+      noteParts.push(`${label}: ${idNumber}`);
+    }
+    if (residentialAddress) noteParts.push(`Address: ${residentialAddress}`);
     const notesValue = noteParts.length > 0 ? noteParts.join(" | ") : "";
 
     const existing = await findMemberByEmail(email);
