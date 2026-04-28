@@ -73,7 +73,16 @@ export function LaunchCountdown({
     },
   ];
 
-  const launched = time !== null && TARGET - Date.now() <= 0;
+  // Derive `launched` purely from state. `getTimeLeft()` clamps the diff
+  // to zero at/after target, so all four segments hitting zero is the
+  // launched signal. Calling Date.now() here in render trips React's
+  // react-hooks/purity rule and risks hydration mismatches.
+  const launched =
+    time !== null &&
+    time.days === 0 &&
+    time.hours === 0 &&
+    time.minutes === 0 &&
+    time.seconds === 0;
   const eyebrowText =
     eyebrow ?? (launched ? "Lehumo Has Launched" : "Launching 1 June 2026");
   const alignClass = align === "left" ? "text-left" : "text-center";
