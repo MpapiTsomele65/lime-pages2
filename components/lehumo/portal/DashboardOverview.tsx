@@ -8,6 +8,7 @@ import { formatMemberNumber } from "@/lib/definitions";
 import { MemberProfileCard } from "./MemberProfileCard";
 import { ContributionGrid } from "./ContributionGrid";
 import { KycStatusTracker } from "./KycStatusTracker";
+import { KycDocumentsCard } from "./KycDocumentsCard";
 import { PaymentCard } from "./PaymentCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
 
@@ -119,6 +120,17 @@ export function DashboardOverview({
           />
         </motion.div>
       </div>
+
+      {/* KYC Documents — full-width below the grid. Stays mounted even
+          after verification so members can re-find their submitted docs;
+          the card itself swaps to a verified-state view internally. */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+      >
+        <KycDocumentsCard member={member} />
+      </motion.div>
     </div>
   );
 }

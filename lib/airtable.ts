@@ -297,14 +297,69 @@ export async function setMemberActive(recordId: string): Promise<void> {
 }
 
 /**
+ * Upload a file as an Airtable attachment to one of the two KYC slots
+ * (ID document or proof of address). Uses Airtable's content-upload
+ * endpoint which lives on `content.airtable.com` (different host from
+ * the data API) and accepts base64-encoded files inline.
+ *
+ * Limits enforced by Airtable: 5MB per file, image/* + application/pdf
+ * are the practical content types we care about. We don't enforce these
+ * here — the API route is the gate for size/type validation so the
+ * caller gets a clean 4xx instead of a generic Airtable failure.
+ *
+ * Returns the freshly-fetched member record (the upload endpoint
+ * returns only the new attachment metadata, not the full row, so we
+ * re-fetch via getMemberById to get parseRecord's normalised shape).
+ */
+export async function uploadKycAttachment(
+  recordId: string,
+  slot: "id" | "poa",
+  file: { contentType: string; base64: string; filename: string },
+): Promise<LehumoMember> {
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  if (!baseId) throw new Error("AIRTABLE_BASE_ID is not set");
+
+  const fieldId =
+    slot === "id"
+      ? AIRTABLE_FIELDS.kycIdDocument
+      : AIRTABLE_FIELDS.kycProofOfAddress;
+
+  const url = `https://content.airtable.com/v0/${baseId}/${recordId}/${fieldId}/uploadAttachment`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({
+      contentType: file.contentType,
+      file: file.base64,
+      filename: file.filename,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Airtable attachment upload error: ${res.status} — ${err}`);
+  }
+
+  // The upload endpoint returns the field's new attachment array only.
+  // Re-fetch the whole record so the caller gets a fully-parsed
+  // LehumoMember (including all the other KYC bits).
+  const refreshed = await getMemberById(recordId);
+  if (!refreshed) {
+    throw new Error("Member disappeared after attachment upload");
+  }
+  return refreshed;
+}
+
+/**
  * Patch the structured KYC fields on a member record. Used by:
  *   - the onboarding API to write Step-3 captures (id type, id number,
  *     residential address) to dedicated columns instead of the notes blob
  *   - the resume path to refresh those fields if the user re-runs Step 3
  *
- * Document attachments (kycIdDocument / kycProofOfAddress) live on a
- * different Airtable endpoint (the content-upload API) and are handled by
- * `uploadKycAttachment` in Tier 2B, NOT this helper.
+ * Document attachments (kycIdDocument / kycProofOfAddress) flow through
+ * `uploadKycAttachment` above — that's the content-upload API which
+ * lives on a different Airtable host.
  */
 export async function setMemberKyc(
   recordId: string,
