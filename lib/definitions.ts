@@ -167,8 +167,24 @@ export interface LehumoMember {
   residentialAddress?: string;
   kycIdDocument?: AirtableAttachment[];
   kycProofOfAddress?: AirtableAttachment[];
-  kycSubmittedAt?: string; // ISO date
-  kycVerifiedAt?: string; // ISO date
+  kycSubmittedAt?: string; // YYYY-MM-DD (Airtable date-only field)
+  kycVerifiedAt?: string; // YYYY-MM-DD (Airtable date-only field)
+}
+
+/**
+ * Today's date as `YYYY-MM-DD` (UTC).
+ *
+ * The Airtable `KYC Submitted At` and `KYC Verified At` columns are
+ * configured as date-only fields, so they reject full ISO timestamps
+ * with `INVALID_VALUE_FOR_COLUMN`. Use this helper anywhere we stamp
+ * those columns server-side.
+ *
+ * Anchored to UTC so the value is stable regardless of where the
+ * Vercel function happens to execute. The display layer can format
+ * for the viewer's locale.
+ */
+export function todayDate(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 /** One month in the cumulative pool timeline. */

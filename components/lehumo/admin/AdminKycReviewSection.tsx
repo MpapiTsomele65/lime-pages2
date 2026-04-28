@@ -341,13 +341,18 @@ function Field({
 
 function formatDate(iso: string): string {
   try {
-    const d = new Date(iso);
-    return d.toLocaleString("en-ZA", {
+    // kycSubmittedAt / kycVerifiedAt are stored as Airtable date-only
+    // values (YYYY-MM-DD), so there's no time component to display.
+    // We normalize first in case a legacy full-ISO value is ever read
+    // back, then pin to UTC to avoid the midnight-local timezone shift
+    // that can flip the displayed day in some locales.
+    const dateOnly = iso.slice(0, 10);
+    const d = new Date(`${dateOnly}T00:00:00Z`);
+    return d.toLocaleDateString("en-ZA", {
       year: "numeric",
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      timeZone: "UTC",
     });
   } catch {
     return iso;

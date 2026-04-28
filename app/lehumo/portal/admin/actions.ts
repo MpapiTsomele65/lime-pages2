@@ -19,6 +19,7 @@ import {
   MEMBER_STATUS,
   KYC_STATUS,
   formatMemberNumber,
+  todayDate,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
@@ -118,9 +119,10 @@ export async function updateMemberKyc(
 
 /**
  * Approve a member's KYC submission. Flips kycStatus → "Complete" and
- * stamps kycVerifiedAt with the current ISO timestamp. Used from the
- * admin KYC review queue once the admin has visually confirmed the ID
- * + proof of address attachments match the form data.
+ * stamps kycVerifiedAt with today's date (YYYY-MM-DD — the column is a
+ * date-only field, so a full ISO timestamp gets rejected). Used from
+ * the admin KYC review queue once the admin has visually confirmed
+ * the ID + proof of address attachments match the form data.
  */
 export async function adminApproveKyc(
   recordId: string,
@@ -134,7 +136,7 @@ export async function adminApproveKyc(
   try {
     const member = await adminUpdateMember(recordId, {
       [AIRTABLE_FIELDS.kycStatus]: "Complete",
-      [AIRTABLE_FIELDS.kycVerifiedAt]: new Date().toISOString(),
+      [AIRTABLE_FIELDS.kycVerifiedAt]: todayDate(),
     });
     return { ok: true, member };
   } catch (err) {

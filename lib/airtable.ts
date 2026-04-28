@@ -9,6 +9,7 @@ import {
   SOURCE_CHOICE_ID_TO_NAME,
   ID_TYPE_CHOICE_ID_TO_NAME,
   idTypeToAirtable,
+  todayDate,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
@@ -369,9 +370,9 @@ export async function setMemberKyc(
     residentialAddress?: string;
     /** Set the kycStatus column. Pass to flag eg. "In Progress" once docs land. */
     kycStatus?: KycStatus;
-    /** When true, stamps kycSubmittedAt with the current ISO timestamp. */
+    /** When true, stamps kycSubmittedAt with today's date (YYYY-MM-DD). */
     markSubmittedNow?: boolean;
-    /** When true, stamps kycVerifiedAt with the current ISO timestamp. */
+    /** When true, stamps kycVerifiedAt with today's date (YYYY-MM-DD). */
     markVerifiedNow?: boolean;
   },
 ): Promise<LehumoMember> {
@@ -388,11 +389,13 @@ export async function setMemberKyc(
   if (fields.kycStatus) {
     update[AIRTABLE_FIELDS.kycStatus] = fields.kycStatus;
   }
+  // Airtable's date columns reject ISO timestamps with a time component
+  // (INVALID_VALUE_FOR_COLUMN). todayDate() returns plain YYYY-MM-DD.
   if (fields.markSubmittedNow) {
-    update[AIRTABLE_FIELDS.kycSubmittedAt] = new Date().toISOString();
+    update[AIRTABLE_FIELDS.kycSubmittedAt] = todayDate();
   }
   if (fields.markVerifiedNow) {
-    update[AIRTABLE_FIELDS.kycVerifiedAt] = new Date().toISOString();
+    update[AIRTABLE_FIELDS.kycVerifiedAt] = todayDate();
   }
   return updateMember(recordId, update);
 }
