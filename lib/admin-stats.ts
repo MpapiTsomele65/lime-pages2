@@ -1,5 +1,6 @@
 import {
   MONTH_NAMES,
+  computeEmergencyAccess,
   hasBeneficiary,
   type LehumoMember,
 } from "./definitions";
@@ -112,6 +113,22 @@ export function computeAdminStats(
     })
     .sort((a, b) => b.monthsBehindYTD - a.monthsBehindYTD);
 
+  // ── Lending ledger: pull each member's emergency-access state and
+  //    aggregate the active-loan slice. computeEmergencyAccess is the
+  //    single source of truth for the 6-month gate, 20% cap, and 90-day
+  //    overdue check, so the admin dashboard reuses it rather than
+  //    re-deriving the same rules here. ──
+  const loanStates = members.map((m) => computeEmergencyAccess(m));
+  const activeLoans = loanStates.flatMap((s) =>
+    s.kind === "active-loan" ? [s] : [],
+  );
+  const totalLent = activeLoans.reduce(
+    (sum, s) => sum + s.activeBalanceZAR,
+    0,
+  );
+  const activeLoanCount = activeLoans.length;
+  const overdueLoanCount = activeLoans.filter((s) => s.isOverdue).length;
+
   // ── Member capacity: 30 founding members → R30,000 / month → R360,000 / yr.
   //    Phase-1 cap is what the dashboard treats as "100% pool". ──
   const FOUNDING_CAP_MEMBERS = 30;
@@ -152,6 +169,11 @@ export function computeAdminStats(
       100,
       Math.round((totalContributed / annualPoolCapZAR) * 100),
     ),
+
+    // Lending ledger (Phase 1 emergency access)
+    totalLent,
+    activeLoanCount,
+    overdueLoanCount,
 
     // Current-month vs previous-month contribution rate
     activePaidThisMonth,

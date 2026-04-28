@@ -30,6 +30,14 @@ export const AIRTABLE_FIELDS = {
   beneficiaryEmail: "flddo4fRLXr4ftwSW",
   beneficiaryAddress: "fldivvdpebdiXn7TI",
   beneficiaryUpdatedAt: "fldkUJbalfT5lW6oC",
+  // ── Active loan tracking (added Apr 2026 for the Emergency Access Monitor).
+  //    Per Cost.tsx + the 21 April investor session, members can hold one
+  //    active loan at a time, so the loan ledger is flattened onto the
+  //    Member record (no separate Loans table for v1). When
+  //    activeLoanBalance is 0 / unset, the member has no outstanding loan. ──
+  activeLoanBalance: "fld70n897jjS4st8W",
+  activeLoanIssuedAt: "flddkKeNUDWCrHrsh",
+  activeLoanType: "fld9GqPKfrJMoeL2d",
   // Plan & Source-of-Funds still ride along in `notes` — add dedicated
   // columns later if/when reporting needs them as first-class fields.
   // plan: "fldXXXXXXXXXXXXXXX",
@@ -130,6 +138,29 @@ export const RELATIONSHIP_OPTIONS = [
 export type BeneficiaryRelationship = (typeof RELATIONSHIP_OPTIONS)[number];
 
 /**
+ * Active loan type — tells us which lending track funded this draw.
+ *
+ * - "Self": member is borrowing against their own 20% allowance. Always
+ *   interest-free; max draw = min(contributed × 20%, R20,000).
+ * - "P2P":  another member fronts the difference above the 20% cap. Interest
+ *   is set by the lending member within group-agreed guidelines, and any
+ *   unpaid principal + interest is clawed back from the borrower's
+ *   contributions before capital is deployed at year 5 (per the 21 April
+ *   investor session).
+ *
+ * The Lending Pledges marketplace (members posting offers + others
+ * expressing interest) is the next-session deliverable; for now P2P loans
+ * land via committee facilitation and are recorded with type = "P2P".
+ */
+export const LOAN_TYPE_CHOICE_ID_TO_NAME: Record<string, string> = {
+  selbSSFgbMHGTGCsN: "Self",
+  selrDOnkP1cPtpkrT: "P2P",
+};
+
+export const ACTIVE_LOAN_TYPES = ["Self", "P2P"] as const;
+export type ActiveLoanType = (typeof ACTIVE_LOAN_TYPES)[number];
+
+/**
  * Convert the wizard's internal id-type code to the human-readable name
  * expected by Airtable's singleSelect choices ("SA ID" / "Passport").
  */
@@ -216,6 +247,11 @@ export interface LehumoMember {
   beneficiaryEmail?: string;
   beneficiaryAddress?: string;
   beneficiaryUpdatedAt?: string; // YYYY-MM-DD (Airtable date-only field)
+  // ── Active loan (optional — populated when a member draws on their 20%
+  //    allowance or receives a P2P advance). One active loan at a time. ──
+  activeLoanBalance?: number;
+  activeLoanIssuedAt?: string; // YYYY-MM-DD (Airtable date-only field)
+  activeLoanType?: ActiveLoanType | "";
 }
 
 /**
@@ -251,6 +287,133 @@ export function hasBeneficiary(member: LehumoMember): boolean {
   return Boolean(
     member.beneficiaryFirstName?.trim() && member.beneficiarySurname?.trim(),
   );
+}
+
+// ─── Emergency Access (member loans against own contributions) ─────
+/**
+ * Months of contributions a member must have on record before any of
+ * their 20% becomes accessible. Per the 21 April investor session this
+ * is uniform across all plan tiers — six months in, regardless of
+ * which monthly amount they're contributing.
+ */
+export const EMERGENCY_ACCESS_TENURE_MONTHS = 6;
+/** % of cumulative contributions a member can borrow against, interest-free. */
+export const EMERGENCY_ACCESS_PCT = 0.2;
+/** Hard ceiling on a self-loan, in ZAR — kicks in at R100k contributed. */
+export const EMERGENCY_ACCESS_CAP_ZAR = 20_000;
+/** Days from issue until repayment is due. Past this, the loan is overdue. */
+export const EMERGENCY_ACCESS_TERM_DAYS = 90;
+/**
+ * Default monthly contribution rate used to translate ticked months
+ * into a ZAR balance. This is an approximation: per Cost.tsx, plans
+ * range R500 / R1,000 / R2,000 (Basic / Standard / VIP) and `plan` is
+ * not yet a first-class column on `LehumoMember` (it rides along in
+ * `notes` from the onboarding form). Until plan becomes a real field,
+ * we treat everyone as standard-tier — under-counts Basic members,
+ * over-counts VIP. Same assumption already lives in admin-stats.ts.
+ */
+export const EMERGENCY_ACCESS_MONTHLY_ZAR = 1000;
+
+/**
+ * Discriminated state describing a member's emergency-access status.
+ *
+ *  - `locked`      → still inside the 6-month tenure window
+ *  - `available`   → eligible, no active loan; `availableZAR` is what
+ *                    they can draw right now
+ *  - `active-loan` → already drawn; balance + due date populated, plus
+ *                    `remainingHeadroomZAR` if they're still under cap
+ */
+export type EmergencyAccessState =
+  | {
+      kind: "locked";
+      monthsContributed: number;
+      monthsRemaining: number;
+    }
+  | {
+      kind: "available";
+      monthsContributed: number;
+      contributedZAR: number;
+      maxAvailableZAR: number; // min(contributed × 20%, R20k)
+      availableZAR: number; // maxAvailableZAR (no active draw to subtract)
+      capReason: "percent" | "ceiling";
+    }
+  | {
+      kind: "active-loan";
+      monthsContributed: number;
+      contributedZAR: number;
+      maxAvailableZAR: number;
+      activeBalanceZAR: number;
+      issuedAt: string; // YYYY-MM-DD
+      dueAt: string; // YYYY-MM-DD = issuedAt + 90d
+      isOverdue: boolean;
+      loanType: ActiveLoanType;
+      remainingHeadroomZAR: number; // additional Self draw still available before hitting the 20% cap
+    };
+
+/**
+ * Compute a member's emergency-access state from their contributions
+ * + active-loan ledger fields.
+ *
+ * Business rules (per Cost.tsx + the 21 April investor session):
+ *   1. 6-month minimum tenure — no draws until the member has paid 6 months.
+ *   2. 20% cap with R20,000 ceiling — max self-loan = min(contributed × 20%, 20_000).
+ *   3. Interest-free within the 20%; P2P only kicks in above the cap.
+ *   4. 90-day repayment window from issue date.
+ *   5. One active loan at a time — represented as scalar fields on the
+ *      member record (no separate Loans table for v1).
+ *
+ * `today` is injectable so server components / tests can pin a date.
+ */
+export function computeEmergencyAccess(
+  member: LehumoMember,
+  today: Date = new Date(),
+): EmergencyAccessState {
+  const monthsContributed = Object.values(member.contributions).filter(
+    Boolean,
+  ).length;
+
+  if (monthsContributed < EMERGENCY_ACCESS_TENURE_MONTHS) {
+    return {
+      kind: "locked",
+      monthsContributed,
+      monthsRemaining: EMERGENCY_ACCESS_TENURE_MONTHS - monthsContributed,
+    };
+  }
+
+  const contributedZAR = monthsContributed * EMERGENCY_ACCESS_MONTHLY_ZAR;
+  const percentCap = Math.floor(contributedZAR * EMERGENCY_ACCESS_PCT);
+  const maxAvailableZAR = Math.min(percentCap, EMERGENCY_ACCESS_CAP_ZAR);
+  const capReason: "percent" | "ceiling" =
+    percentCap < EMERGENCY_ACCESS_CAP_ZAR ? "percent" : "ceiling";
+
+  const activeBalance = Math.max(0, member.activeLoanBalance ?? 0);
+
+  if (activeBalance > 0 && member.activeLoanIssuedAt) {
+    const issued = new Date(member.activeLoanIssuedAt);
+    const due = new Date(issued);
+    due.setDate(due.getDate() + EMERGENCY_ACCESS_TERM_DAYS);
+    return {
+      kind: "active-loan",
+      monthsContributed,
+      contributedZAR,
+      maxAvailableZAR,
+      activeBalanceZAR: activeBalance,
+      issuedAt: member.activeLoanIssuedAt,
+      dueAt: due.toISOString().slice(0, 10),
+      isOverdue: today > due,
+      loanType: (member.activeLoanType || "Self") as ActiveLoanType,
+      remainingHeadroomZAR: Math.max(0, maxAvailableZAR - activeBalance),
+    };
+  }
+
+  return {
+    kind: "available",
+    monthsContributed,
+    contributedZAR,
+    maxAvailableZAR,
+    availableZAR: maxAvailableZAR,
+    capReason,
+  };
 }
 
 /** One month in the cumulative pool timeline. */

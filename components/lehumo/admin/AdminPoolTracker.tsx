@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, Wallet } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Wallet,
+  HandCoins,
+  AlertTriangle,
+} from "lucide-react";
 
 import type { AdminStats } from "@/lib/admin-stats";
 
@@ -43,6 +50,9 @@ export function AdminPoolTracker({ stats }: AdminPoolTrackerProps) {
     thisMonthRate,
     prevMonthRate,
     activePaidPrevMonth,
+    totalLent,
+    activeLoanCount,
+    overdueLoanCount,
   } = stats;
 
   // Trend: positive when this month >= last month (members can still pay
@@ -143,6 +153,39 @@ export function AdminPoolTracker({ stats }: AdminPoolTrackerProps) {
           </p>
         </div>
       </div>
+
+      {/* Lending strip — outstanding self/P2P loans across the roster.
+          Hidden when no loans are active so the card stays compact in
+          early months when emergency-access is still locked for most. */}
+      {activeLoanCount > 0 && (
+        <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#46CDCF]/10 text-[#0B1933]">
+                <HandCoins className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-[#9CA3AF]">
+                  Outstanding loans · {activeLoanCount} active
+                </p>
+                <p className="mt-0.5 text-lg font-semibold text-[#0B1933]">
+                  {formatZAR(totalLent)}
+                </p>
+              </div>
+            </div>
+            {overdueLoanCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700">
+                <AlertTriangle className="h-3 w-3" />
+                {overdueLoanCount} overdue
+              </span>
+            ) : (
+              <span className="text-[11px] text-[#9CA3AF]">
+                All within 90-day window
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

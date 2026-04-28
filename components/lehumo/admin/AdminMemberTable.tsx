@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Check, Loader2, Search, X, HeartHandshake } from "lucide-react";
+import {
+  Check,
+  Loader2,
+  Search,
+  X,
+  HeartHandshake,
+  HandCoins,
+  AlertTriangle,
+} from "lucide-react";
 
 import {
   MONTH_NAMES,
@@ -9,6 +17,7 @@ import {
   KYC_STATUS,
   formatMemberNumber,
   hasBeneficiary,
+  computeEmergencyAccess,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
@@ -35,6 +44,10 @@ export function AdminMemberTable({
   // chase up. Excludes Exited members from the missing set since their
   // next-of-kin is no longer relevant.
   const [missingBeneficiaryOnly, setMissingBeneficiaryOnly] = useState(false);
+  // "Active loans only" filter — surfaces members currently holding an
+  // emergency-access draw. Admins use this to chase repayments and to
+  // sense-check who's borrowing in any given month.
+  const [activeLoansOnly, setActiveLoansOnly] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -53,8 +66,11 @@ export function AdminMemberTable({
     if (missingBeneficiaryOnly) {
       rows = rows.filter((m) => m.status !== "Exited" && !hasBeneficiary(m));
     }
+    if (activeLoansOnly) {
+      rows = rows.filter((m) => (m.activeLoanBalance ?? 0) > 0);
+    }
     return rows;
-  }, [members, query, missingBeneficiaryOnly]);
+  }, [members, query, missingBeneficiaryOnly, activeLoansOnly]);
 
   async function runAction(
     key: string,
@@ -109,6 +125,21 @@ export function AdminMemberTable({
             )}
           </button>
 
+          <button
+            type="button"
+            onClick={() => setActiveLoansOnly((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeLoansOnly
+                ? "border-[#0B1933]/30 bg-[#0B1933] text-[#46CDCF] hover:bg-[#0B1933]/90"
+                : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933]"
+            }`}
+            title="Show only members with an active emergency-access loan"
+          >
+            <HandCoins className="h-3.5 w-3.5" />
+            <span>Active loans</span>
+            {activeLoansOnly && <X className="h-3 w-3 ml-0.5 opacity-70" />}
+          </button>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
             <input
@@ -139,6 +170,9 @@ export function AdminMemberTable({
               <th className="px-3 py-3 font-medium min-w-[140px]">Status</th>
               <th className="px-3 py-3 font-medium min-w-[140px]">KYC</th>
               <th className="px-3 py-3 font-medium min-w-[110px]">Beneficiary</th>
+              <th className="px-3 py-3 font-medium min-w-[120px]">
+                Active Loan
+              </th>
               {MONTH_NAMES.map((m) => (
                 <th
                   key={m}
@@ -204,6 +238,15 @@ export function AdminMemberTable({
                   <BeneficiaryCell member={m} />
                 </td>
 
+                {/* Active loan indicator — surfaces outstanding balance,
+                    type (Self vs P2P) and overdue state if applicable.
+                    Read-only here; loan issue/repay flows live in
+                    Airtable for v1 (admin updates the three loan
+                    columns directly). */}
+                <td className="px-3 py-3">
+                  <LoanCell member={m} />
+                </td>
+
                 {/* Month toggle cells */}
                 {MONTH_NAMES.map((month) => {
                   const paid = m.contributions[month];
@@ -242,12 +285,14 @@ export function AdminMemberTable({
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={4 + MONTH_NAMES.length}
+                  colSpan={5 + MONTH_NAMES.length}
                   className="px-4 py-12 text-center text-sm text-[#9CA3AF]"
                 >
-                  {missingBeneficiaryOnly && !query.trim()
-                    ? "Every non-exited member has a beneficiary on file. Nice."
-                    : `No members match \u201C${query}\u201D.`}
+                  {activeLoansOnly && !query.trim() && !missingBeneficiaryOnly
+                    ? "No active emergency-access loans on the books right now."
+                    : missingBeneficiaryOnly && !query.trim()
+                      ? "Every non-exited member has a beneficiary on file. Nice."
+                      : `No members match \u201C${query}\u201D.`}
                 </td>
               </tr>
             )}
@@ -294,6 +339,71 @@ function BeneficiaryCell({ member }: { member: LehumoMember }) {
       <Check className="h-3 w-3" />
       On file
     </span>
+  );
+}
+
+/**
+ * Read-only emergency-access loan indicator for the admin table.
+ *
+ * Renders a muted "—" pill when the member has no active loan, otherwise a
+ * teal pill with the outstanding ZAR amount and a small Self / P2P type
+ * chip. If the helper flags the loan as past the 90-day repayment window,
+ * the pill flips to a red overdue variant with a warning glyph so admins
+ * can prioritise chase-ups at a glance.
+ *
+ * Stays read-only here — issue / repay flows happen in Airtable directly
+ * for v1; the dashboard is just a window onto the lending ledger.
+ */
+function LoanCell({ member }: { member: LehumoMember }) {
+  const balance = member.activeLoanBalance ?? 0;
+  if (balance <= 0) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full border border-dashed border-[#E5E7EB] px-2 py-0.5 text-[11px] text-[#9CA3AF]"
+        title="No active emergency-access loan"
+      >
+        —
+      </span>
+    );
+  }
+
+  // Defensive: balance > 0 but the helper hasn't reached "active-loan"
+  // (e.g. corrupt data with balance set but no issue date) — still show
+  // the balance, just skip the issue/due/overdue signals that depend on
+  // the helper's full state.
+  const access = computeEmergencyAccess(member);
+  const isActive = access.kind === "active-loan";
+  const overdue = isActive && access.isOverdue;
+  const loanType = isActive ? access.loanType : member.activeLoanType || "";
+
+  const tooltipParts: string[] = [
+    `R ${balance.toLocaleString("en-ZA")} outstanding`,
+  ];
+  if (isActive) {
+    tooltipParts.push(`Issued ${access.issuedAt}`);
+    tooltipParts.push(`Due ${access.dueAt}`);
+    if (access.isOverdue) tooltipParts.push("Past 90-day window");
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+          overdue
+            ? "border border-red-200 bg-red-50 text-red-700"
+            : "bg-[#46CDCF]/15 text-[#0B1933]"
+        }`}
+        title={tooltipParts.join(" · ")}
+      >
+        {overdue && <AlertTriangle className="h-3 w-3" />}
+        R {balance.toLocaleString("en-ZA")}
+      </span>
+      {loanType && (
+        <span className="rounded border border-[#E5E7EB] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[#6B7280]">
+          {loanType}
+        </span>
+      )}
+    </div>
   );
 }
 

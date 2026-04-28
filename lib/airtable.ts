@@ -9,6 +9,7 @@ import {
   SOURCE_CHOICE_ID_TO_NAME,
   ID_TYPE_CHOICE_ID_TO_NAME,
   RELATIONSHIP_CHOICE_ID_TO_NAME,
+  LOAN_TYPE_CHOICE_ID_TO_NAME,
   idTypeToAirtable,
   todayDate,
   type LehumoMember,
@@ -18,6 +19,7 @@ import {
   type PoolMonthPoint,
   type AirtableAttachment,
   type BeneficiaryRelationship,
+  type ActiveLoanType,
 } from "./definitions";
 
 // ─── Config ─────────────────────────────────────────────────────────
@@ -131,6 +133,20 @@ function parseRecord(record: any): LehumoMember {
     beneficiaryAddress: f[AIRTABLE_FIELDS.beneficiaryAddress] || undefined,
     beneficiaryUpdatedAt:
       f[AIRTABLE_FIELDS.beneficiaryUpdatedAt] || undefined,
+    // ── Active loan ledger (Phase 1 emergency access). When the cell is
+    //    empty / unset Airtable returns `undefined`; we coerce numerics to
+    //    actual numbers and let the type-only-loan field fall through the
+    //    same singleSelect resolver as every other choice column. ──
+    activeLoanBalance:
+      typeof f[AIRTABLE_FIELDS.activeLoanBalance] === "number"
+        ? (f[AIRTABLE_FIELDS.activeLoanBalance] as number)
+        : undefined,
+    activeLoanIssuedAt: f[AIRTABLE_FIELDS.activeLoanIssuedAt] || undefined,
+    activeLoanType: resolveSelect(
+      f[AIRTABLE_FIELDS.activeLoanType],
+      LOAN_TYPE_CHOICE_ID_TO_NAME,
+      "",
+    ) as ActiveLoanType | "",
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

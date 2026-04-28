@@ -13,6 +13,7 @@ import { BeneficiaryCard } from "./BeneficiaryCard";
 import { PaymentCard } from "./PaymentCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
 import { CompletenessMeter } from "./CompletenessMeter";
+import { EmergencyAccessCard } from "./EmergencyAccessCard";
 
 interface DashboardOverviewProps {
   member: LehumoMember;
@@ -130,6 +131,23 @@ export function DashboardOverview({
           />
         </motion.div>
       </div>
+
+      {/* Emergency Access — surfaces the member's 20% self-loan position.
+          Adapts to three states (locked / available / active-loan). For
+          members <6 months in it serves as an aspirational signal of the
+          safety net coming; for eligible members it's an actionable
+          request CTA; for active borrowers it's the outstanding-balance
+          ledger. Sits between the immediate-action grid and the KYC /
+          beneficiary maintenance cards. */}
+      <motion.div
+        id="emergency-access"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.45, ease: "easeOut" }}
+        className="scroll-mt-24"
+      >
+        <EmergencyAccessCard member={member} />
+      </motion.div>
 
       {/* KYC Documents — full-width below the grid. Stays mounted even
           after verification so members can re-find their submitted docs;
