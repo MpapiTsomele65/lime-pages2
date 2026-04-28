@@ -12,6 +12,7 @@ import { KycDocumentsCard } from "./KycDocumentsCard";
 import { BeneficiaryCard } from "./BeneficiaryCard";
 import { PaymentCard } from "./PaymentCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
+import { CompletenessMeter } from "./CompletenessMeter";
 
 interface DashboardOverviewProps {
   member: LehumoMember;
@@ -45,6 +46,12 @@ export function DashboardOverview({
           Member {formatMemberNumber(member.memberNumber)}
         </span>
       </motion.div>
+
+      {/* Account-setup completeness meter — three checks (KYC verified,
+          beneficiary on file, first contribution). Hides itself once a
+          member is fully set up. Each pending chip is an anchor link to
+          the matching card lower on the page. */}
+      <CompletenessMeter member={member} />
 
       {/* Admin banner — only visible to members whose email is in LEHUMO_ADMIN_EMAILS */}
       {isAdmin && (
@@ -110,9 +117,11 @@ export function DashboardOverview({
         </motion.div>
 
         <motion.div
+          id="payment"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+          className="scroll-mt-24"
         >
           <PaymentCard
             contributions={member.contributions}
@@ -126,9 +135,11 @@ export function DashboardOverview({
           after verification so members can re-find their submitted docs;
           the card itself swaps to a verified-state view internally. */}
       <motion.div
+        id="kyc-docs"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+        className="scroll-mt-24"
       >
         <KycDocumentsCard member={member} />
       </motion.div>
@@ -138,9 +149,11 @@ export function DashboardOverview({
           identity verification: once the member is verified, the next thing
           we need is who to contact if anything happens to them. */}
       <motion.div
+        id="beneficiary"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+        className="scroll-mt-24"
       >
         <BeneficiaryCard member={member} />
       </motion.div>
