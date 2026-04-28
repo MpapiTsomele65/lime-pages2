@@ -8,6 +8,7 @@ import {
   KYC_CHOICE_ID_TO_NAME,
   SOURCE_CHOICE_ID_TO_NAME,
   ID_TYPE_CHOICE_ID_TO_NAME,
+  RELATIONSHIP_CHOICE_ID_TO_NAME,
   idTypeToAirtable,
   todayDate,
   type LehumoMember,
@@ -16,6 +17,7 @@ import {
   type CommunityPoolStats,
   type PoolMonthPoint,
   type AirtableAttachment,
+  type BeneficiaryRelationship,
 } from "./definitions";
 
 // ─── Config ─────────────────────────────────────────────────────────
@@ -116,6 +118,19 @@ function parseRecord(record: any): LehumoMember {
     kycProofOfAddress: poaDoc && poaDoc.length > 0 ? poaDoc : undefined,
     kycSubmittedAt: f[AIRTABLE_FIELDS.kycSubmittedAt] || undefined,
     kycVerifiedAt: f[AIRTABLE_FIELDS.kycVerifiedAt] || undefined,
+    // ── Beneficiary / next-of-kin (all optional) ──
+    beneficiaryFirstName: f[AIRTABLE_FIELDS.beneficiaryFirstName] || undefined,
+    beneficiarySurname: f[AIRTABLE_FIELDS.beneficiarySurname] || undefined,
+    beneficiaryRelationship: resolveSelect(
+      f[AIRTABLE_FIELDS.beneficiaryRelationship],
+      RELATIONSHIP_CHOICE_ID_TO_NAME,
+      "",
+    ) as BeneficiaryRelationship | "",
+    beneficiaryPhone: f[AIRTABLE_FIELDS.beneficiaryPhone] || undefined,
+    beneficiaryEmail: f[AIRTABLE_FIELDS.beneficiaryEmail] || undefined,
+    beneficiaryAddress: f[AIRTABLE_FIELDS.beneficiaryAddress] || undefined,
+    beneficiaryUpdatedAt:
+      f[AIRTABLE_FIELDS.beneficiaryUpdatedAt] || undefined,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -397,6 +412,55 @@ export async function setMemberKyc(
   if (fields.markVerifiedNow) {
     update[AIRTABLE_FIELDS.kycVerifiedAt] = todayDate();
   }
+  return updateMember(recordId, update);
+}
+
+/**
+ * Save (or update) a member's next-of-kin / beneficiary details.
+ *
+ * Always stamps `beneficiaryUpdatedAt` with today's date so admins can
+ * see at a glance how stale a record is — beneficiary info that hasn't
+ * been touched in a year is worth a nudge to reconfirm.
+ *
+ * Empty-string inputs are translated to `null` so Airtable clears the
+ * field rather than storing the literal "" — that way a member can
+ * remove a phone/email/address they previously entered. The first-name
+ * / surname / relationship fields are required by the Zod schema, so
+ * we don't allow null on those.
+ *
+ * Single-beneficiary today; multi-beneficiary splits land with the
+ * trust paperwork after Phase 2.
+ */
+export async function setMemberBeneficiary(
+  recordId: string,
+  fields: {
+    firstName: string;
+    surname: string;
+    relationship: BeneficiaryRelationship;
+    phone?: string;
+    email?: string;
+    address?: string;
+  },
+): Promise<LehumoMember> {
+  // Optional contact fields: empty string → null (Airtable clears the cell);
+  // otherwise trim and pass through.
+  const blank = (v: string | undefined) => {
+    const t = (v ?? "").trim();
+    return t.length === 0 ? null : t;
+  };
+
+  const update: Record<string, unknown> = {
+    [AIRTABLE_FIELDS.beneficiaryFirstName]: fields.firstName.trim(),
+    [AIRTABLE_FIELDS.beneficiarySurname]: fields.surname.trim(),
+    [AIRTABLE_FIELDS.beneficiaryRelationship]: fields.relationship,
+    [AIRTABLE_FIELDS.beneficiaryPhone]: blank(fields.phone),
+    [AIRTABLE_FIELDS.beneficiaryEmail]: blank(fields.email),
+    [AIRTABLE_FIELDS.beneficiaryAddress]: blank(fields.address),
+    // Date-only field: full ISO timestamps are rejected with
+    // INVALID_VALUE_FOR_COLUMN. todayDate() returns YYYY-MM-DD.
+    [AIRTABLE_FIELDS.beneficiaryUpdatedAt]: todayDate(),
+  };
+
   return updateMember(recordId, update);
 }
 

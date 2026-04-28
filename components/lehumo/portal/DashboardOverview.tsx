@@ -9,6 +9,7 @@ import { MemberProfileCard } from "./MemberProfileCard";
 import { ContributionGrid } from "./ContributionGrid";
 import { KycStatusTracker } from "./KycStatusTracker";
 import { KycDocumentsCard } from "./KycDocumentsCard";
+import { BeneficiaryCard } from "./BeneficiaryCard";
 import { PaymentCard } from "./PaymentCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
 
@@ -130,6 +131,18 @@ export function DashboardOverview({
         transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
       >
         <KycDocumentsCard member={member} />
+      </motion.div>
+
+      {/* Next of Kin / Beneficiary — full-width row matching the KYC card.
+          Placed below KYC because next-of-kin is the natural follow-up to
+          identity verification: once the member is verified, the next thing
+          we need is who to contact if anything happens to them. */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+      >
+        <BeneficiaryCard member={member} />
       </motion.div>
     </div>
   );

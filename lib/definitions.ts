@@ -19,6 +19,17 @@ export const AIRTABLE_FIELDS = {
   kycProofOfAddress: "fldkKd5RFtAZ5uivc",
   kycSubmittedAt: "flde48OYccGxnkV04",
   kycVerifiedAt: "fld9RKaIVL5RAvhcT",
+  // ── Next-of-kin / beneficiary fields (added Apr 2026 per investor info-session
+  //    next-step "Collect beneficiary details immediately"). One beneficiary
+  //    captured pre-Phase-2 — multi-beneficiary splits land with the trust
+  //    paperwork after year five. ──
+  beneficiaryFirstName: "fldTmdNgwr2LGrEcx",
+  beneficiarySurname: "fldQwJ9DZ7wtaFAEK",
+  beneficiaryRelationship: "fldDQqPFhQliGTX3L",
+  beneficiaryPhone: "fldUVPJiETuyypK2i",
+  beneficiaryEmail: "flddo4fRLXr4ftwSW",
+  beneficiaryAddress: "fldivvdpebdiXn7TI",
+  beneficiaryUpdatedAt: "fldkUJbalfT5lW6oC",
   // Plan & Source-of-Funds still ride along in `notes` — add dedicated
   // columns later if/when reporting needs them as first-class fields.
   // plan: "fldXXXXXXXXXXXXXXX",
@@ -89,6 +100,34 @@ export const ID_TYPE_CHOICE_ID_TO_NAME: Record<string, string> = {
   selu73LPS0rKoSq7c: "SA ID",
   sel2aXQ83h42dEBkU: "Passport",
 };
+
+/**
+ * Beneficiary relationship choices (Beneficiary Relationship singleSelect).
+ * Order intentionally mirrors the most common SA next-of-kin patterns so the
+ * portal dropdown surfaces the likely match first.
+ */
+export const RELATIONSHIP_CHOICE_ID_TO_NAME: Record<string, string> = {
+  seln7J3Rls77mXfFw: "Spouse",
+  sely6Sl0pBjkq279a: "Partner",
+  selB10SunMjn7P7zk: "Parent",
+  selWixrWPyQEUv80B: "Child",
+  seldrIL1yRizkZ4g8: "Sibling",
+  sel6Uwal9nKcWk0DM: "Other Family",
+  selRnx45Gfk00Sye7: "Friend",
+  selfxOhOwXKgcxVww: "Other",
+};
+
+export const RELATIONSHIP_OPTIONS = [
+  "Spouse",
+  "Partner",
+  "Parent",
+  "Child",
+  "Sibling",
+  "Other Family",
+  "Friend",
+  "Other",
+] as const;
+export type BeneficiaryRelationship = (typeof RELATIONSHIP_OPTIONS)[number];
 
 /**
  * Convert the wizard's internal id-type code to the human-readable name
@@ -169,6 +208,14 @@ export interface LehumoMember {
   kycProofOfAddress?: AirtableAttachment[];
   kycSubmittedAt?: string; // YYYY-MM-DD (Airtable date-only field)
   kycVerifiedAt?: string; // YYYY-MM-DD (Airtable date-only field)
+  // ── Next-of-kin / beneficiary (optional — captured post-onboarding) ──
+  beneficiaryFirstName?: string;
+  beneficiarySurname?: string;
+  beneficiaryRelationship?: BeneficiaryRelationship | "";
+  beneficiaryPhone?: string;
+  beneficiaryEmail?: string;
+  beneficiaryAddress?: string;
+  beneficiaryUpdatedAt?: string; // YYYY-MM-DD (Airtable date-only field)
 }
 
 /**
@@ -252,6 +299,65 @@ export const PaystackInitSchema = z.object({
   memberRecordId: z.string().startsWith("rec"),
   plan: z.enum(["basic", "standard", "vip"]).optional(),
 });
+
+/**
+ * Beneficiary update payload (member portal).
+ *
+ * Name + Surname + Relationship are required so a record always has enough
+ * to identify the next-of-kin. Phone, Email, and Address are individually
+ * optional, but the API enforces that **at least one** of them is present —
+ * that's the actual contactability requirement we promised in the FAQ.
+ *
+ * Empty-string trims are deliberate: HTML inputs default to "" and we want
+ * those treated as "not provided" rather than valid-but-empty values.
+ */
+export const BeneficiaryFormSchema = z
+  .object({
+    firstName: z
+      .string()
+      .trim()
+      .min(1, "First name is required")
+      .max(100, "First name is too long"),
+    surname: z
+      .string()
+      .trim()
+      .min(1, "Surname is required")
+      .max(100, "Surname is too long"),
+    relationship: z.enum(RELATIONSHIP_OPTIONS, {
+      message: "Pick a relationship",
+    }),
+    phone: z
+      .string()
+      .trim()
+      .max(40, "Phone is too long")
+      .optional()
+      .or(z.literal("")),
+    email: z
+      .string()
+      .trim()
+      .email("Enter a valid email")
+      .max(200, "Email is too long")
+      .optional()
+      .or(z.literal("")),
+    address: z
+      .string()
+      .trim()
+      .max(500, "Address is too long")
+      .optional()
+      .or(z.literal("")),
+  })
+  .refine(
+    (data) =>
+      Boolean((data.phone ?? "").trim()) ||
+      Boolean((data.email ?? "").trim()) ||
+      Boolean((data.address ?? "").trim()),
+    {
+      message: "Provide at least one of phone, email, or address",
+      path: ["phone"],
+    },
+  );
+
+export type BeneficiaryFormData = z.infer<typeof BeneficiaryFormSchema>;
 
 export type LoginFormData = z.infer<typeof LoginFormSchema>;
 export type OnboardingFormData = z.infer<typeof OnboardingFormSchema>;
