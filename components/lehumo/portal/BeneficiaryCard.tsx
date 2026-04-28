@@ -17,6 +17,7 @@ import {
 
 import {
   RELATIONSHIP_OPTIONS,
+  hasBeneficiary as memberHasBeneficiary,
   type LehumoMember,
   type BeneficiaryRelationship,
 } from "@/lib/definitions";
@@ -63,9 +64,7 @@ function formatUpdatedAt(iso: string): string {
 export function BeneficiaryCard({ member }: BeneficiaryCardProps) {
   const router = useRouter();
 
-  const hasBeneficiary = Boolean(
-    member.beneficiaryFirstName && member.beneficiarySurname,
-  );
+  const hasBeneficiary = memberHasBeneficiary(member);
 
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);

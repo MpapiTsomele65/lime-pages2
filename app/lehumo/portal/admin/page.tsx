@@ -6,7 +6,7 @@ import { AdminShell } from "@/components/lehumo/admin/AdminShell";
 import { AdminMemberTable } from "@/components/lehumo/admin/AdminMemberTable";
 import { AdminKycReviewSection } from "@/components/lehumo/admin/AdminKycReviewSection";
 import { AdminAddMemberCard } from "@/components/lehumo/admin/AdminAddMemberCard";
-import { MONTH_NAMES } from "@/lib/definitions";
+import { MONTH_NAMES, hasBeneficiary } from "@/lib/definitions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,12 @@ export default async function AdminDashboardPage() {
   const paidThisMonth = members.filter((m) => m.contributions[currentMonth]).length;
   const pendingKyc = members.filter(
     (m) => m.kycStatus !== "Complete" && m.status !== "Exited",
+  ).length;
+  // Missing-beneficiary count — excludes Exited members so the tile only
+  // surfaces rows an admin can still chase up. Mirrors the AdminMemberTable
+  // "Missing only" filter.
+  const missingBeneficiary = members.filter(
+    (m) => m.status !== "Exited" && !hasBeneficiary(m),
   ).length;
 
   return (
@@ -54,7 +60,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Stat tiles */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           <StatTile label="Total Members" value={members.length.toString()} />
           <StatTile label="Active" value={activeCount.toString()} />
           <StatTile
@@ -62,6 +68,10 @@ export default async function AdminDashboardPage() {
             value={paidThisMonth.toString()}
           />
           <StatTile label="KYC Pending" value={pendingKyc.toString()} />
+          <StatTile
+            label="Beneficiary Missing"
+            value={missingBeneficiary.toString()}
+          />
         </div>
 
         {/* Manual add-member — for prospects who emailed KYC docs without

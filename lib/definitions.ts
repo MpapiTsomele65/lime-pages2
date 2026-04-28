@@ -234,6 +234,25 @@ export function todayDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Whether a member has a beneficiary on file.
+ *
+ * Single source of truth for the "is the next-of-kin captured?" check —
+ * used by the member-portal BeneficiaryCard, the admin members table
+ * (Beneficiary column / Missing-only filter / stat tile), and the
+ * dashboard completeness meter.
+ *
+ * Definition: both name fields populated. The Zod schema
+ * (BeneficiaryFormSchema) enforces relationship + at-least-one-contact
+ * before a row can be written, so name presence is sufficient — if the
+ * names are there, the rest came in through the same validated form.
+ */
+export function hasBeneficiary(member: LehumoMember): boolean {
+  return Boolean(
+    member.beneficiaryFirstName?.trim() && member.beneficiarySurname?.trim(),
+  );
+}
+
 /** One month in the cumulative pool timeline. */
 export interface PoolMonthPoint {
   month: string; // e.g. "Jan"

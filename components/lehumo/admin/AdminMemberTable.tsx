@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Check, Loader2, Search, X } from "lucide-react";
+import { Check, Loader2, Search, X, HeartHandshake } from "lucide-react";
 
 import {
   MONTH_NAMES,
   MEMBER_STATUS,
   KYC_STATUS,
   formatMemberNumber,
+  hasBeneficiary,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
@@ -30,20 +31,30 @@ export function AdminMemberTable({
 }: AdminMemberTableProps) {
   const [members, setMembers] = useState<LehumoMember[]>(initialMembers);
   const [query, setQuery] = useState("");
+  // "Missing beneficiary only" filter — surfaces members an admin needs to
+  // chase up. Excludes Exited members from the missing set since their
+  // next-of-kin is no longer relevant.
+  const [missingBeneficiaryOnly, setMissingBeneficiaryOnly] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter(
-      (m) =>
-        m.fullName.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q) ||
-        formatMemberNumber(m.memberNumber).toLowerCase().includes(q),
-    );
-  }, [members, query]);
+    let rows = members;
+    if (q) {
+      rows = rows.filter(
+        (m) =>
+          m.fullName.toLowerCase().includes(q) ||
+          m.email.toLowerCase().includes(q) ||
+          formatMemberNumber(m.memberNumber).toLowerCase().includes(q),
+      );
+    }
+    if (missingBeneficiaryOnly) {
+      rows = rows.filter((m) => m.status !== "Exited" && !hasBeneficiary(m));
+    }
+    return rows;
+  }, [members, query, missingBeneficiaryOnly]);
 
   async function runAction(
     key: string,
@@ -75,15 +86,39 @@ export function AdminMemberTable({
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] px-5 py-4">
         <h2 className="text-lg font-semibold text-[#0B0B0B]">Members</h2>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
-          <input
-            type="text"
-            placeholder="Search name, email or ID…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full sm:w-72 rounded-full bg-white border border-[#E5E7EB] pl-9 pr-3 py-2 text-sm text-[#0B0B0B] placeholder:text-[#9CA3AF] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/10"
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Missing-beneficiary filter — toggle pill. Active state mirrors
+              the lime accent we use on dashboard CTAs so admins can spot
+              that the table is filtered at a glance. */}
+          <button
+            type="button"
+            onClick={() => setMissingBeneficiaryOnly((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              missingBeneficiaryOnly
+                ? "border-[#0B1933]/30 bg-[#0B1933] text-[#B8FF00] hover:bg-[#0B1933]/90"
+                : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933]"
+            }`}
+            title="Show only non-exited members without a beneficiary on file"
+          >
+            <HeartHandshake className="h-3.5 w-3.5" />
+            <span>
+              {missingBeneficiaryOnly ? "Missing beneficiary" : "Missing beneficiary"}
+            </span>
+            {missingBeneficiaryOnly && (
+              <X className="h-3 w-3 ml-0.5 opacity-70" />
+            )}
+          </button>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+            <input
+              type="text"
+              placeholder="Search name, email or ID…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full sm:w-72 rounded-full bg-white border border-[#E5E7EB] pl-9 pr-3 py-2 text-sm text-[#0B0B0B] placeholder:text-[#9CA3AF] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/10"
+            />
+          </div>
         </div>
       </div>
 
@@ -103,6 +138,7 @@ export function AdminMemberTable({
               </th>
               <th className="px-3 py-3 font-medium min-w-[140px]">Status</th>
               <th className="px-3 py-3 font-medium min-w-[140px]">KYC</th>
+              <th className="px-3 py-3 font-medium min-w-[110px]">Beneficiary</th>
               {MONTH_NAMES.map((m) => (
                 <th
                   key={m}
@@ -159,6 +195,15 @@ export function AdminMemberTable({
                   />
                 </td>
 
+                {/* Beneficiary on-file indicator. Read-only — admins can't
+                    edit a member's next-of-kin from here, the member fills
+                    it in via their portal. Tooltip surfaces relationship
+                    + last-updated when present so an admin can sense-check
+                    without leaving the row. */}
+                <td className="px-3 py-3">
+                  <BeneficiaryCell member={m} />
+                </td>
+
                 {/* Month toggle cells */}
                 {MONTH_NAMES.map((month) => {
                   const paid = m.contributions[month];
@@ -197,10 +242,12 @@ export function AdminMemberTable({
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={3 + MONTH_NAMES.length}
+                  colSpan={4 + MONTH_NAMES.length}
                   className="px-4 py-12 text-center text-sm text-[#9CA3AF]"
                 >
-                  No members match &ldquo;{query}&rdquo;.
+                  {missingBeneficiaryOnly && !query.trim()
+                    ? "Every non-exited member has a beneficiary on file. Nice."
+                    : `No members match \u201C${query}\u201D.`}
                 </td>
               </tr>
             )}
@@ -208,6 +255,45 @@ export function AdminMemberTable({
         </table>
       </div>
     </section>
+  );
+}
+
+/**
+ * Read-only beneficiary indicator for the admin table.
+ *
+ * Lime ✓ pill when a beneficiary is on file (with relationship + last-updated
+ * surfaced via tooltip), muted "—" placeholder otherwise. Stays read-only —
+ * the member is the only one who can edit their own next-of-kin (via the
+ * portal). Admins surface it here so they can chase up the missing rows.
+ */
+function BeneficiaryCell({ member }: { member: LehumoMember }) {
+  const onFile = hasBeneficiary(member);
+
+  if (!onFile) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full border border-dashed border-[#E5E7EB] px-2 py-0.5 text-[11px] text-[#9CA3AF]"
+        title="No beneficiary on file"
+      >
+        —
+      </span>
+    );
+  }
+
+  const tooltipParts = [
+    `${member.beneficiaryFirstName} ${member.beneficiarySurname}`.trim(),
+    member.beneficiaryRelationship || null,
+    member.beneficiaryUpdatedAt ? `Updated ${member.beneficiaryUpdatedAt}` : null,
+  ].filter(Boolean);
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-[#B8FF00]/15 px-2 py-0.5 text-[11px] font-medium text-[#0B1933]"
+      title={tooltipParts.join(" · ")}
+    >
+      <Check className="h-3 w-3" />
+      On file
+    </span>
   );
 }
 
