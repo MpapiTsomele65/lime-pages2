@@ -122,37 +122,44 @@ export async function sendWelcomeEmail(params: {
                 </tr>
               </table>
 
-              <!-- Next Steps -->
-              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;">What Happens Next</div>
+              <!-- Next Steps - vertical timeline visual mirroring the
+                   portal's KYC tracker (teal-outlined badges joined by a
+                   thin connector line). Single-row layout: left column
+                   stacks circle-line-circle, right column stacks the two
+                   text blocks. The connector height (62px) is calibrated
+                   to align circle-2 with the start of step-2's text. -->
+              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px;">What Happens Next</div>
               <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:24px;">
                 <tr>
-                  <td style="padding:8px 0;vertical-align:top;">
-                    <span style="display:inline-block;width:24px;height:24px;background:rgba(70,205,207,0.15);border-radius:8px;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#46CDCF;margin-right:12px;">1</span>
+                  <!-- Timeline rail -->
+                  <td width="40" valign="top" style="padding:0;">
+                    <!-- Step 1 badge -->
+                    <div style="width:32px;height:32px;border-radius:50%;background:rgba(70,205,207,0.12);border:2px solid #46CDCF;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#46CDCF;">1</div>
+                    <!-- Connector -->
+                    <div style="width:2px;height:62px;background:rgba(70,205,207,0.3);margin:8px 0 8px 15px;"></div>
+                    <!-- Step 2 badge -->
+                    <div style="width:32px;height:32px;border-radius:50%;background:rgba(70,205,207,0.12);border:2px solid #46CDCF;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#46CDCF;">2</div>
                   </td>
-                  <td style="padding:8px 0;">
-                    <div style="font-size:14px;font-weight:600;color:#ffffff;">Upload Your KYC Documents</div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">SA ID + Proof of Address \u2014 <a href="${portalUrl}" style="color:#46CDCF;text-decoration:underline;">upload them in your portal</a></div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:8px 0;vertical-align:top;">
-                    <span style="display:inline-block;width:24px;height:24px;background:rgba(70,205,207,0.15);border-radius:8px;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#46CDCF;margin-right:12px;">2</span>
-                  </td>
-                  <td style="padding:8px 0;">
-                    <div style="font-size:14px;font-weight:600;color:#ffffff;">Make Your First Contribution</div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">R19.90 monthly via Paystack \u2014 set up in your portal</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:8px 0;vertical-align:top;">
-                    <span style="display:inline-block;width:24px;height:24px;background:rgba(70,205,207,0.15);border-radius:8px;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#46CDCF;margin-right:12px;">3</span>
-                  </td>
-                  <td style="padding:8px 0;">
-                    <div style="font-size:14px;font-weight:600;color:#ffffff;">Join the Community</div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">WhatsApp group + first virtual meeting</div>
+                  <!-- Step copy column -->
+                  <td valign="top" style="padding:0 0 0 14px;">
+                    <!-- Step 1 -->
+                    <div style="margin-bottom:32px;padding-top:5px;">
+                      <div style="font-size:14px;font-weight:600;color:#ffffff;line-height:1.3;">Make Your First Contribution</div>
+                      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;line-height:1.6;">Your first contribution confirms your spot. Thank you for choosing the frictionless option for automated collections.</div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div style="padding-top:5px;">
+                      <div style="font-size:14px;font-weight:600;color:#ffffff;line-height:1.3;">Upload Your KYC Documents</div>
+                      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;line-height:1.6;">SA ID + Proof of Address \u2014 <a href="${portalUrl}" style="color:#46CDCF;text-decoration:underline;">upload them in your portal</a></div>
+                    </div>
                   </td>
                 </tr>
               </table>
+
+              <!-- Support note -->
+              <p style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;margin:0;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
+                For any enquiries or admin issues, please email <a href="mailto:lehumo@limepages.co.za" style="color:#46CDCF;text-decoration:none;font-weight:600;">lehumo@limepages.co.za</a>.
+              </p>
             </td>
           </tr>
 
