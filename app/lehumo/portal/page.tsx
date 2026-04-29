@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getCommunityPoolStats, getMemberById } from "@/lib/airtable";
 import { isAdminEmail } from "@/lib/admin-auth";
-import { getSastMonthInfo } from "@/lib/definitions";
+import { getSastMonthInfo, isBeforeLaunch } from "@/lib/definitions";
 import { PortalShell } from "@/components/lehumo/portal/PortalShell";
 import { DashboardOverview } from "@/components/lehumo/portal/DashboardOverview";
 
@@ -51,6 +51,12 @@ export default async function PortalDashboardPage() {
   // month for two hours either side of UTC midnight).
   const { monthCode: currentMonth, daysLeftInMonth } = getSastMonthInfo();
 
+  // Lehumo collections start 1 Jun 2026. Members onboarding before that
+  // shouldn't see "Next due: Jan" / past-month catch-up prompts — gate
+  // payment-prompt UI on this flag, computed server-side so SSR matches
+  // the client.
+  const beforeLaunch = isBeforeLaunch();
+
   return (
     <PortalShell memberName={memberName} isAdmin={isAdmin}>
       <DashboardOverview
@@ -59,6 +65,7 @@ export default async function PortalDashboardPage() {
         isAdmin={isAdmin}
         currentMonth={currentMonth}
         daysLeftInMonth={daysLeftInMonth}
+        beforeLaunch={beforeLaunch}
       />
     </PortalShell>
   );

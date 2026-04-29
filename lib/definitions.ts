@@ -113,6 +113,43 @@ export const MONTH_FIELDS: Record<string, string> = {
 
 export const MONTH_NAMES = Object.keys(MONTH_FIELDS);
 
+/**
+ * Order in which contribution months appear on member-facing UI.
+ *
+ * Lehumo collects from 1 Jun 2026 onwards, so "Jun" should be the *first*
+ * unpaid month for new members — not "Jan". Use this instead of
+ * MONTH_NAMES anywhere we surface "next month due" / payment-card
+ * ordering. Admin/reporting views can keep MONTH_NAMES (Jan-first
+ * calendar order) where that makes more sense.
+ */
+export const CONTRIBUTION_MONTH_ORDER: ReadonlyArray<string> = [
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+];
+
+/**
+ * First contribution due date — 1 Jun 2026 00:00 SAST (UTC+2).
+ *
+ * Members onboarding before this date shouldn't be told they're "behind"
+ * on Jan-May contributions, so portal/admin UI gates payment prompts on
+ * `isBeforeLaunch()`.
+ */
+export const LEHUMO_LAUNCH_DATE_ISO = "2026-06-01T00:00:00+02:00";
+
+export function isBeforeLaunch(now: Date = new Date()): boolean {
+  return now.getTime() < new Date(LEHUMO_LAUNCH_DATE_ISO).getTime();
+}
+
 // ─── Status Values ──────────────────────────────────────────────────
 export const MEMBER_STATUS = {
   prospect: "Prospect",

@@ -2,19 +2,24 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CreditCard, CheckCircle2 } from "lucide-react";
-import { MONTH_NAMES } from "@/lib/definitions";
+import { CalendarClock, CreditCard, CheckCircle2 } from "lucide-react";
+import { CONTRIBUTION_MONTH_ORDER } from "@/lib/definitions";
 
 interface PaymentCardProps {
   contributions: Record<string, boolean>;
   email: string;
   memberId: string;
+  /** Pre-launch flag — when true, the card shows a "Contributions begin
+   *  1 June 2026" placeholder instead of a payment CTA. Lehumo collections
+   *  start 1 Jun 2026; before then there's no real "next due" to surface. */
+  beforeLaunch?: boolean;
 }
 
 export function PaymentCard({
   contributions,
   email,
   memberId,
+  beforeLaunch = false,
 }: PaymentCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,8 +27,10 @@ export function PaymentCard({
   const paidCount = Object.values(contributions).filter(Boolean).length;
   const allPaid = paidCount === 12;
 
-  // Find the next unpaid month
-  const nextUnpaidMonth = MONTH_NAMES.find(
+  // Find the next unpaid month — using collection order (Jun → May), not
+  // calendar order. Otherwise pre-Jun members would see "Next due: Jan"
+  // even though Jan-May 2027 are *future* contributions, not arrears.
+  const nextUnpaidMonth = CONTRIBUTION_MONTH_ORDER.find(
     (month) => contributions[month] !== true,
   );
 
@@ -68,7 +75,22 @@ export function PaymentCard({
         Monthly Contribution
       </h2>
 
-      {allPaid ? (
+      {beforeLaunch ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex-1 flex flex-col items-center justify-center text-center py-4"
+        >
+          <CalendarClock className="h-12 w-12 text-[#46CDCF] mb-3" />
+          <h3 className="text-lg font-semibold text-white">
+            Contributions begin 1 June 2026
+          </h3>
+          <p className="text-sm text-white/50 mt-1 max-w-xs">
+            Your first R1,000 contribution will be due then. We&rsquo;ll send a
+            reminder closer to the date — nothing to do for now.
+          </p>
+        </motion.div>
+      ) : allPaid ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}

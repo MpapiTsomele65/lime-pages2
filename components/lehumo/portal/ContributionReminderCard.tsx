@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { CalendarClock, ArrowRight, CheckCircle2 } from "lucide-react";
 
-import { MONTH_NAMES } from "@/lib/definitions";
+import { CONTRIBUTION_MONTH_ORDER } from "@/lib/definitions";
 
 interface ContributionReminderCardProps {
   contributions: Record<string, boolean>;
@@ -13,6 +13,11 @@ interface ContributionReminderCardProps {
   currentMonth: string;
   /** How many calendar days are left in the current SAST month (1-31). */
   daysLeftInMonth: number;
+  /** Pre-launch flag — when true the card renders nothing. Lehumo
+   *  collections start 1 Jun 2026; before then there's no contribution
+   *  to remind anyone about, and the PaymentCard already shows a
+   *  "Contributions begin 1 June 2026" placeholder. */
+  beforeLaunch?: boolean;
 }
 
 const MONTH_FULL_NAMES: Record<string, string> = {
@@ -59,7 +64,14 @@ export function ContributionReminderCard({
   contributions,
   currentMonth,
   daysLeftInMonth,
+  beforeLaunch = false,
 }: ContributionReminderCardProps) {
+  // Pre-launch (before 1 Jun 2026): no contribution is actually due, so
+  // showing "Pay your April contribution" would be wrong. PaymentCard
+  // handles the "Contributions begin 1 June 2026" placeholder; this card
+  // simply hides itself.
+  if (beforeLaunch) return null;
+
   const paidCount = Object.values(contributions).filter(Boolean).length;
   const allPaid = paidCount === 12;
 
@@ -72,8 +84,9 @@ export function ContributionReminderCard({
 
   // ── Paid state — subdued confirmation ──────────────────────────────
   if (currentMonthPaid) {
-    // Find the next unpaid month for the "next due" hint.
-    const nextUnpaidMonth = MONTH_NAMES.find(
+    // Find the next unpaid month for the "next due" hint — using
+    // collection order (Jun → May) so it matches PaymentCard.
+    const nextUnpaidMonth = CONTRIBUTION_MONTH_ORDER.find(
       (m) => contributions[m] !== true,
     );
     const nextDueFull = nextUnpaidMonth

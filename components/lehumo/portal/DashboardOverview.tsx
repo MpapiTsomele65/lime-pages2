@@ -26,6 +26,10 @@ interface DashboardOverviewProps {
   /** Days remaining in the current SAST month (1-31). Used for the
    *  reminder card's urgency tier. */
   daysLeftInMonth: number;
+  /** True until 1 Jun 2026 SAST — when set, the dashboard hides
+   *  contribution-due prompts and PaymentCard shows a "starts 1 June
+   *  2026" placeholder instead of "Next due: Jan". */
+  beforeLaunch: boolean;
 }
 
 export function DashboardOverview({
@@ -34,6 +38,7 @@ export function DashboardOverview({
   isAdmin = false,
   currentMonth,
   daysLeftInMonth,
+  beforeLaunch,
 }: DashboardOverviewProps) {
   const firstName = member.fullName.split(" ")[0];
 
@@ -104,6 +109,7 @@ export function DashboardOverview({
         contributions={member.contributions}
         currentMonth={currentMonth}
         daysLeftInMonth={daysLeftInMonth}
+        beforeLaunch={beforeLaunch}
       />
 
       {/* Community pool overview */}
@@ -148,6 +154,7 @@ export function DashboardOverview({
             contributions={member.contributions}
             email={member.email}
             memberId={member.id}
+            beforeLaunch={beforeLaunch}
           />
         </motion.div>
       </div>
