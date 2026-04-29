@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { findMemberByEmail } from "@/lib/airtable";
+import { emailField } from "@/lib/definitions";
 
 // ─── Resume Onboarding Lookup ───────────────────────────────────────
 // When a returning visitor enters their email at Step 1, the wizard hits
@@ -17,7 +18,7 @@ import { findMemberByEmail } from "@/lib/airtable";
 //       On Hold / Exited) — frontend points the user at login or support.
 
 const ResumeSchema = z.object({
-  email: z.string().email(),
+  email: emailField,
 });
 
 /**

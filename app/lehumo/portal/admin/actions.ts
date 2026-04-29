@@ -19,6 +19,7 @@ import {
   MONTH_NAMES,
   MEMBER_STATUS,
   KYC_STATUS,
+  emailField,
   formatMemberNumber,
   todayDate,
   type LehumoMember,
@@ -228,7 +229,7 @@ const SourceValues = [
 
 const AdminCreateMemberSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Invalid email"),
+  email: emailField,
   phone: z.string().min(10, "Phone is required"),
   source: z.enum(SourceValues),
   idType: z.enum(["sa_id", "passport"]).optional(),

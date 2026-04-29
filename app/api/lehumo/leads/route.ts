@@ -6,6 +6,7 @@ import {
   type LeadPlanInterest,
   type LeadSource,
 } from "@/lib/airtable-leads";
+import { emailField } from "@/lib/definitions";
 
 const SOURCES: [LeadSource, ...LeadSource[]] = [
   "Onboarding — Step 1",
@@ -23,7 +24,7 @@ const PLANS: [LeadPlanInterest, ...LeadPlanInterest[]] = [
 
 const BodySchema = z.object({
   fullName: z.string().min(2, "Please enter your full name").max(200),
-  email: z.string().email("Please enter a valid email"),
+  email: emailField,
   phone: z.string().max(40).optional().or(z.literal("")),
   source: z.enum(SOURCES),
   referredByName: z.string().max(200).optional().or(z.literal("")),

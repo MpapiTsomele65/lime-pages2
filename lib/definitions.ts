@@ -1,5 +1,57 @@
 import { z } from "zod";
 
+import { validateEmail } from "@/lib/email-validation";
+
+/**
+ * Reusable Zod email field with typo-aware validation.
+ *
+ * Wraps `validateEmail` (lib/email-validation.ts) so every form schema
+ * gets the same dictionary-based typo blocking. The user-facing message
+ * surfaces the suggested correction directly (e.g. `"Did you mean
+ * lond.kwinda@gmail.com?"`) — that copy then renders in the wizard's
+ * inline error and in the API's 400 response details.
+ *
+ * Why `superRefine` instead of `.email().refine(...)`: we want a single
+ * gate that handles syntax + typo correction, returning the most
+ * actionable message. Stacking `.email()` first would surface
+ * `"Invalid email"` before our suggestion ever runs.
+ */
+export const emailField = z
+  .string()
+  .trim()
+  .min(1, "Email is required")
+  .superRefine((val, ctx) => {
+    const result = validateEmail(val);
+    if (!result.ok) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.reason ?? "Please enter a valid email address",
+      });
+    }
+  });
+
+/**
+ * Optional flavour of `emailField` for fields like beneficiary email
+ * where the user can leave the box blank but, if they fill it, we
+ * still want to catch typos. Empty string ("") and undefined both
+ * pass; anything non-empty goes through the same typo dictionary.
+ */
+export const optionalEmailField = z
+  .string()
+  .trim()
+  .max(200, "Email is too long")
+  .optional()
+  .superRefine((val, ctx) => {
+    if (!val) return;
+    const result = validateEmail(val);
+    if (!result.ok) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.reason ?? "Please enter a valid email address",
+      });
+    }
+  });
+
 // ─── Airtable Field IDs ─────────────────────────────────────────────
 export const AIRTABLE_FIELDS = {
   fullName: "fldHKLMVnWZXIAqSd",
@@ -485,7 +537,7 @@ export interface SessionPayload {
 
 // ─── Zod Schemas ────────────────────────────────────────────────────
 export const LoginFormSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: emailField,
   memberNumber: z
     .union([z.string(), z.number()])
     .transform((v) => parseMemberNumber(v))
@@ -496,7 +548,7 @@ export const LoginFormSchema = z.object({
 
 export const OnboardingFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Please enter a valid email address"),
+  email: emailField,
   phone: z.string().min(10, "Please enter a valid phone number"),
   source: z.enum(["Google", "Instagram", "Referral", "WhatsApp", "Direct"]),
   intent: z.string().optional(),
@@ -513,7 +565,7 @@ export const OnboardingFormSchema = z.object({
 });
 
 export const PaystackInitSchema = z.object({
-  email: z.string().email(),
+  email: emailField,
   memberRecordId: z.string().startsWith("rec"),
   plan: z.enum(["basic", "standard", "vip"]).optional(),
 });
@@ -550,13 +602,7 @@ export const BeneficiaryFormSchema = z
       .max(40, "Phone is too long")
       .optional()
       .or(z.literal("")),
-    email: z
-      .string()
-      .trim()
-      .email("Enter a valid email")
-      .max(200, "Email is too long")
-      .optional()
-      .or(z.literal("")),
+    email: optionalEmailField.or(z.literal("")),
     address: z
       .string()
       .trim()

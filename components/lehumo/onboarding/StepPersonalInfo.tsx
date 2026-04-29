@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
+import { validateEmail } from "@/lib/email-validation";
+
 interface PersonalInfoData {
   fullName: string;
   email: string;
@@ -46,6 +48,60 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
   const [intent, setIntent] = useState(defaultValues?.intent ?? "");
   const [commitment, setCommitment] = useState(defaultValues?.commitment ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  /**
+   * Live "Did you mean …?" suggestion. Set on blur from validateEmail()
+   * when the typed domain matches our typo dictionary (`.con`,
+   * `gmial.com`, `mwed.co.za`, etc). One-click apply via the button
+   * below the email field. Shown alongside an inline error so the user
+   * still sees that the form won't submit until they fix it.
+   */
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
+
+  /**
+   * Run the typo check on blur. Keystroke validation is too noisy
+   * (errors appear before the user has finished typing). On blur the
+   * user has paused — perfect moment to surface a suggestion.
+   */
+  function handleEmailBlur() {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setEmailSuggestion(null);
+      return;
+    }
+    const result = validateEmail(trimmed);
+    if (!result.ok && result.suggestion) {
+      setEmailSuggestion(result.suggestion);
+      setErrors((prev) => ({
+        ...prev,
+        email: result.reason ?? "Please check your email address",
+      }));
+    } else if (!result.ok) {
+      setEmailSuggestion(null);
+      setErrors((prev) => ({
+        ...prev,
+        email: result.reason ?? "Please enter a valid email address",
+      }));
+    } else {
+      setEmailSuggestion(null);
+      setErrors((prev) => {
+        if (!prev.email) return prev;
+        const next = { ...prev };
+        delete next.email;
+        return next;
+      });
+    }
+  }
+
+  /** One-click "Use this" handler — accepts the suggested correction. */
+  function applyEmailSuggestion() {
+    if (!emailSuggestion) return;
+    setEmail(emailSuggestion);
+    setEmailSuggestion(null);
+    setErrors((prev) => {
+      const { email: _removed, ...rest } = prev;
+      return rest;
+    });
+  }
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
@@ -56,8 +112,14 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
 
     if (!email.trim()) {
       newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Please enter a valid email address";
+    } else {
+      // Single source of truth — same dictionary the server uses, so
+      // client + server can never disagree on what's a typo.
+      const result = validateEmail(email);
+      if (!result.ok) {
+        newErrors.email = result.reason ?? "Please enter a valid email address";
+        if (result.suggestion) setEmailSuggestion(result.suggestion);
+      }
     }
 
     if (!phone.trim()) {
@@ -83,7 +145,7 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
     if (validate()) {
       onNext({
         fullName: fullName.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         phone: phone.trim(),
         // Source is no longer asked in the UI — default kept so downstream
         // (Airtable Source column, onboarding schema) stays untouched.
@@ -135,13 +197,33 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
         <input
           id="email"
           type="email"
+          autoComplete="email"
+          inputMode="email"
           placeholder="thabo@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            // Stale suggestion clears as soon as the user resumes typing —
+            // they may be fixing it themselves.
+            if (emailSuggestion) setEmailSuggestion(null);
+          }}
+          onBlur={handleEmailBlur}
           className={`${inputClasses} ${errors.email ? "border-red-500/50" : ""}`}
         />
         {errors.email && (
           <p className="text-red-400 text-xs mt-1.5">{errors.email}</p>
+        )}
+        {emailSuggestion && (
+          <button
+            type="button"
+            onClick={applyEmailSuggestion}
+            className="mt-2 inline-flex items-center gap-2 rounded-full border border-lime/40 bg-lime/10 px-3.5 py-1.5 text-xs font-semibold text-lime hover:bg-lime/20 hover:-translate-y-0.5 transition-all cursor-pointer"
+          >
+            <span aria-hidden>↩</span>
+            <span>
+              Use <span className="font-bold">{emailSuggestion}</span>
+            </span>
+          </button>
         )}
       </div>
 
