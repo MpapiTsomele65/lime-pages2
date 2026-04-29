@@ -40,7 +40,7 @@ export function KycStatusTracker({ status }: KycStatusTrackerProps) {
   return (
     <div className="bg-[#0F2040] rounded-[20px] border border-white/[0.06] p-6 h-full">
       <h2 className="text-lg font-semibold text-white mb-6">
-        KYC Verification
+        Verify your identity
       </h2>
 
       {/* Progress bar */}
