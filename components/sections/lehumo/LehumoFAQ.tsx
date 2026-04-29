@@ -13,6 +13,19 @@ interface FaqItem {
 }
 
 /**
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ STATUS: FROZEN — DO NOT EXTEND WITHOUT EXPLICIT REQUEST.        │
+ * │                                                                 │
+ * │ This list is considered complete. When new info-session         │
+ * │ transcripts, Gemini meeting notes, or other source docs are     │
+ * │ shared with the assistant, do NOT mine them for additional FAQ  │
+ * │ entries unless Mpapi specifically asks for the FAQ to be        │
+ * │ extended. Reading a transcript ≠ permission to add Q&A.         │
+ * │                                                                 │
+ * │ Edits to existing entries (typo / clarification) are fine. New  │
+ * │ entries require a direct ask like "add an FAQ about X."         │
+ * └─────────────────────────────────────────────────────────────────┘
+ *
  * Recurring questions distilled from the two prospective-member info
  * sessions (21 & 23 April 2026). Phrased in the founder's voice; copy
  * trimmed to what was actually clarified on the calls — no aspirational
