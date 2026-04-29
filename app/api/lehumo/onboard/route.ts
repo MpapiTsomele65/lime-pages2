@@ -13,14 +13,61 @@ import {
 } from "@/lib/definitions";
 import { sendWelcomeEmail } from "@/lib/email";
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const parsed = OnboardingFormSchema.safeParse(body);
+/**
+ * Stages of the onboard flow. We update `stage` before each `await` so
+ * the outer catch knows exactly which call failed when something throws
+ * — instead of returning an opaque "Internal server error" that gives
+ * support no clue whether Airtable lookup, member-number assignment,
+ * record creation, or anything else was the culprit.
+ *
+ * The stage code is mirrored in the 500 response (`code` field) and
+ * the server log line, both keyed by the same short request id, so
+ * users can quote the ref when reporting a failure and we can grep
+ * Vercel logs to see exactly which step blew up.
+ */
+type Stage =
+  | "parse_body"
+  | "validate_input"
+  | "lookup_existing"
+  | "update_existing"
+  | "assign_member_number"
+  | "create_member";
 
+export async function POST(request: NextRequest) {
+  // Short request id (8 hex chars) — log-friendly, user-quotable. Long
+  // enough to be unique within the support window, short enough that a
+  // member can read it back over WhatsApp without typos.
+  const requestId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().slice(0, 8)
+      : Math.random().toString(36).slice(2, 10);
+
+  let stage: Stage = "parse_body";
+
+  try {
+    stage = "parse_body";
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      // Malformed JSON is a client error, not a server fault — surface
+      // a 400 instead of letting it tumble into the 500 path.
+      return NextResponse.json(
+        { error: "Invalid JSON body", code: "BAD_JSON", requestId },
+        { status: 400 },
+      );
+    }
+
+    stage = "validate_input";
+    const parsed = OnboardingFormSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
+        {
+          error: "Invalid input",
+          details: parsed.error.flatten().fieldErrors,
+          code: "INVALID_INPUT",
+          requestId,
+        },
         { status: 400 },
       );
     }
@@ -54,6 +101,7 @@ export async function POST(request: NextRequest) {
     if (sourceOfFunds) noteParts.push(`Source of Funds: ${sourceOfFunds}`);
     const notesValue = noteParts.length > 0 ? noteParts.join(" | ") : "";
 
+    stage = "lookup_existing";
     const existing = await findMemberByEmail(email);
 
     if (existing) {
@@ -70,6 +118,7 @@ export async function POST(request: NextRequest) {
             error: "Already onboarded",
             code: "ALREADY_ONBOARDED",
             status: existing.status,
+            requestId,
           },
           { status: 409 },
         );
@@ -96,16 +145,24 @@ export async function POST(request: NextRequest) {
         updateFields[AIRTABLE_FIELDS.residentialAddress] = residentialAddress;
       }
 
+      stage = "update_existing";
       const updated = await updateMember(existing.id, updateFields);
 
       // Welcome email only on the first transition into Onboarding —
       // resumed members already received it, no need to spam.
+      // Detached on purpose: a Resend hiccup (or a missing API key) must
+      // not roll back a successful Airtable update. The async function's
+      // own .catch handles any rejection, including a sync throw from
+      // getResend() when RESEND_API_KEY is unset — async functions
+      // convert sync throws into rejected promises by definition.
       if (existing.status === "Prospect") {
         sendWelcomeEmail({
           to: updated.email,
           fullName: updated.fullName,
           memberNumber: updated.memberNumber,
-        }).catch((err) => console.error("Welcome email failed:", err));
+        }).catch((err) =>
+          console.error(`[onboard][${requestId}] welcome email failed:`, err),
+        );
       }
 
       return NextResponse.json({
@@ -113,11 +170,15 @@ export async function POST(request: NextRequest) {
         memberNumber: updated.memberNumber,
         email: updated.email,
         resumed: existing.status === "Onboarding",
+        requestId,
       });
     }
 
-    // New member
+    // ── New member ──
+    stage = "assign_member_number";
     const memberNumber = await getNextMemberNumber();
+
+    stage = "create_member";
     const record = await createMember({
       fullName,
       email,
@@ -133,22 +194,46 @@ export async function POST(request: NextRequest) {
       residentialAddress,
     });
 
-    // Send welcome email (non-blocking)
+    // Send welcome email (non-blocking — see note above on existing-member path).
     sendWelcomeEmail({
       to: record.email,
       fullName: record.fullName,
       memberNumber: record.memberNumber,
-    }).catch((err) => console.error("Welcome email failed:", err));
+    }).catch((err) =>
+      console.error(`[onboard][${requestId}] welcome email failed:`, err),
+    );
 
     return NextResponse.json({
       memberId: record.id,
       memberNumber: record.memberNumber,
       email: record.email,
+      requestId,
     });
   } catch (error) {
-    console.error("Onboard error:", error);
+    // Single source of truth for 500 reporting. Both halves matter:
+    //   - The console line is what we grep in Vercel function logs.
+    //     It carries the requestId, the failing stage, the error class,
+    //     and the underlying message (which often includes the Airtable
+    //     status code + body — invaluable for diagnosing prod issues).
+    //   - The JSON response gives the user a quotable ref + a stage code
+    //     so support / dev can correlate without needing the underlying
+    //     message (which can leak internal column ids and is too noisy
+    //     to put in a user-facing string).
+    const message = error instanceof Error ? error.message : String(error);
+    const errorClass = error instanceof Error ? error.constructor.name : "UnknownError";
+
+    console.error(
+      `[onboard][${requestId}] failed at stage="${stage}" class="${errorClass}": ${message}`,
+      error,
+    );
+
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: `Something went wrong creating your account. Please try again — if it keeps happening, email lehumo@limepages.co.za with ref ${requestId} and we'll get you sorted.`,
+        code: `STAGE_${stage.toUpperCase()}_FAILED`,
+        stage,
+        requestId,
+      },
       { status: 500 },
     );
   }

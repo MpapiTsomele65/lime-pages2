@@ -207,20 +207,58 @@ export function OnboardingWizard() {
           }),
         });
 
+        // Parse the body once — the response carries different shapes
+        // for success ({ memberId, memberNumber, ... }) vs failure
+        // ({ error, code, stage, requestId }), but we want the failure
+        // metadata for analytics regardless of which branch we land on.
+        const result: Record<string, unknown> = await res
+          .json()
+          .catch(() => ({}));
+
         if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || "Failed to create your account.");
+          // Surface the failure to PostHog/GA4/Meta with the same
+          // {stage, code, requestId} the API returned. Lets us see
+          // which stage of /api/lehumo/onboard is actually breaking
+          // in production, not just a global failure rate.
+          trackEvent("onboarding_failed", {
+            stage: typeof result.stage === "string" ? result.stage : "unknown",
+            code: typeof result.code === "string" ? result.code : "UNKNOWN",
+            requestId:
+              typeof result.requestId === "string" ? result.requestId : "unknown",
+            httpStatus: res.status,
+          });
+          throw new Error(
+            (typeof result.error === "string" && result.error) ||
+              "Failed to create your account.",
+          );
         }
 
-        const result = await res.json();
         setFormData((prev) => ({
           ...prev,
           ...data,
-          memberId: result.memberId,
-          memberNumber: result.memberNumber,
+          memberId:
+            typeof result.memberId === "string" ? result.memberId : undefined,
+          memberNumber:
+            typeof result.memberNumber === "number"
+              ? result.memberNumber
+              : undefined,
         }));
         setCurrentStep(4);
       } catch (err) {
+        // Network failures (offline, CORS, fetch reject) end up here
+        // without the stage/requestId metadata — fire a separate event
+        // so we can distinguish "API returned 500" from "request never
+        // reached the API". Both surface to the user as a banner.
+        if (
+          err instanceof TypeError ||
+          (err instanceof Error && /fetch|network/i.test(err.message))
+        ) {
+          trackEvent("onboarding_failed", {
+            stage: "client_network",
+            code: "NETWORK_ERROR",
+            requestId: "n/a",
+          });
+        }
         setError(
           err instanceof Error ? err.message : "Something went wrong. Please try again."
         );
