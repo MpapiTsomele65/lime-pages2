@@ -12,6 +12,30 @@ function getResend() {
 const FROM_ADDRESS = "Lehumo <lehumo@limepages.co.za>";
 
 /**
+ * Site URL used as the base for all portal links inside transactional
+ * emails.
+ *
+ * `NEXT_PUBLIC_SITE_URL` on Vercel currently has a literal trailing
+ * "\n" stored in the env value (the variable was set with a stray
+ * escape sequence at some point). Without sanitization the templated
+ * URL becomes `https://www.limepages.co.za\n/lehumo/portal/login` and
+ * the link in the email is broken — clicking it hits a 404.
+ *
+ * Strip backslash-n, real newlines, surrounding whitespace, and a
+ * trailing slash so we get a clean origin to interpolate into URLs.
+ * Once the env var is corrected on Vercel this becomes a no-op, but
+ * leaving it in place is cheap insurance against future env-var typos.
+ */
+function siteUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  return raw
+    .replace(/\\n/g, "")
+    .replace(/[\r\n]+/g, "")
+    .trim()
+    .replace(/\/$/, "");
+}
+
+/**
  * Admin mailbox that gets a BCC on every member-facing transactional
  * send. Two purposes:
  *   1. Audit trail — the lehumo@limepages.co.za inbox becomes a
@@ -36,7 +60,7 @@ export async function sendWelcomeEmail(params: {
   // which renders the KycDocumentsCard for any member with KYC pending.
   // So this single link covers "continue onboarding" + "upload docs"
   // without needing a separate deep link.
-  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
 
   const resend = getResend();
 
@@ -192,7 +216,7 @@ export async function sendPaymentSuccessEmail(params: {
 }) {
   const { to, fullName, memberNumber, amountZar, month } = params;
   const firstName = fullName.split(" ")[0];
-  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
   const formattedAmount = `R${amountZar.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const resend = getResend();
@@ -302,7 +326,7 @@ export async function sendMemberNumberEmail(params: {
 }) {
   const { to, fullName, memberNumber } = params;
   const firstName = fullName.split(" ")[0];
-  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
 
   const resend = getResend();
 
@@ -407,7 +431,7 @@ export async function sendKycReceivedEmail(params: {
 }) {
   const { to, fullName, memberNumber } = params;
   const firstName = fullName.split(" ")[0];
-  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
 
   const resend = getResend();
 
@@ -499,7 +523,7 @@ export async function sendKycVerifiedEmail(params: {
 }) {
   const { to, fullName, memberNumber } = params;
   const firstName = fullName.split(" ")[0];
-  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
 
   const resend = getResend();
 

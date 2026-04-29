@@ -85,10 +85,19 @@ export async function POST(request: NextRequest) {
     const amount = (plan && getAmountForPlan(plan)) || 100000;
 
     stage = "initialize_transaction";
+    // NEXT_PUBLIC_SITE_URL on Vercel has a literal trailing "\n" baked
+    // into the value — without this sanitization the callback comes
+    // back as `https://www.limepages.co.za\n/lehumo/onboard?step=confirm`
+    // and Paystack's redirect 404s. Same defensive scrub as lib/email.ts.
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "")
+      .replace(/\\n/g, "")
+      .replace(/[\r\n]+/g, "")
+      .trim()
+      .replace(/\/$/, "");
     const result = await initializeTransaction({
       email,
       amount,
-      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/onboard?step=confirm`,
+      callbackUrl: `${siteUrl}/lehumo/onboard?step=confirm`,
       metadata: {
         memberRecordId,
         plan: plan || "unknown",
