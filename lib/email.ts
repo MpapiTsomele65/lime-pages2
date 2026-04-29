@@ -11,6 +11,19 @@ function getResend() {
 
 const FROM_ADDRESS = "Lehumo <lehumo@limepages.co.za>";
 
+/**
+ * Admin mailbox that gets a BCC on every member-facing transactional
+ * send. Two purposes:
+ *   1. Audit trail — the lehumo@limepages.co.za inbox becomes a
+ *      timestamped log of who got which email when (search by member
+ *      name / number / date), so support can answer "did Londani get
+ *      her welcome?" without diving into Resend logs.
+ *   2. Render check — admins see exactly what the member sees and can
+ *      catch broken templates fast (especially during the soft launch
+ *      while copy + CTAs are still settling).
+ */
+const ADMIN_BCC = "lehumo@limepages.co.za";
+
 /* ─── Welcome email after onboarding ─── */
 export async function sendWelcomeEmail(params: {
   to: string;
@@ -19,6 +32,10 @@ export async function sendWelcomeEmail(params: {
 }) {
   const { to, fullName, memberNumber } = params;
   const firstName = fullName.split(" ")[0];
+  // Portal login URL — landing page after sign-in is the dashboard,
+  // which renders the KycDocumentsCard for any member with KYC pending.
+  // So this single link covers "continue onboarding" + "upload docs"
+  // without needing a separate deep link.
   const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/lehumo/portal/login`;
 
   const resend = getResend();
@@ -26,6 +43,7 @@ export async function sendWelcomeEmail(params: {
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
+    bcc: ADMIN_BCC,
     subject: `Welcome to Lehumo, ${firstName}! Your Member ID is ${formatMemberNumber(memberNumber)}`,
     html: `
 <!DOCTYPE html>
@@ -89,10 +107,17 @@ export async function sendWelcomeEmail(params: {
               <!-- CTA Button -->
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="padding:8px 0 24px;">
+                  <td align="center" style="padding:8px 0 8px;">
                     <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
-                      Sign In to Your Portal &rarr;
+                      Continue Your Onboarding &rarr;
                     </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding:0 0 24px;">
+                    <p style="font-size:12px;color:rgba(255,255,255,0.45);margin:0;line-height:1.5;">
+                      Sign in to upload your KYC documents and complete your registration.
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -105,8 +130,8 @@ export async function sendWelcomeEmail(params: {
                     <span style="display:inline-block;width:24px;height:24px;background:rgba(70,205,207,0.15);border-radius:8px;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#46CDCF;margin-right:12px;">1</span>
                   </td>
                   <td style="padding:8px 0;">
-                    <div style="font-size:14px;font-weight:600;color:#ffffff;">Submit Your KYC Documents</div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">SA ID + Proof of Address via email or WhatsApp</div>
+                    <div style="font-size:14px;font-weight:600;color:#ffffff;">Upload Your KYC Documents</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">SA ID + Proof of Address \u2014 <a href="${portalUrl}" style="color:#46CDCF;text-decoration:underline;">upload them in your portal</a></div>
                   </td>
                 </tr>
                 <tr>
@@ -115,7 +140,7 @@ export async function sendWelcomeEmail(params: {
                   </td>
                   <td style="padding:8px 0;">
                     <div style="font-size:14px;font-weight:600;color:#ffffff;">Make Your First Contribution</div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">R1,000 via Paystack in your portal</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">R19.90 monthly via Paystack \u2014 set up in your portal</div>
                   </td>
                 </tr>
                 <tr>
