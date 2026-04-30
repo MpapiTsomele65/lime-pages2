@@ -198,6 +198,250 @@ export const ID_TYPE_CHOICE_ID_TO_NAME: Record<string, string> = {
   sel2aXQ83h42dEBkU: "Passport",
 };
 
+// ─── Contributions table ────────────────────────────────────────────
+// Linked table (one row per member per month) introduced for the 60-month
+// trust lifecycle (Jun 2026 → May 2031). Replaces the legacy 12-boolean-
+// column model on the Members table — that shape couldn't track the same
+// month across multiple years and had no room for payment metadata
+// (amount, source, payment ref, reconciliation).
+//
+// Rollout is phased:
+//   Phase 1 (this commit) — schema + helper layer, no UI cutover
+//   Phase 2 — backfill script for the 24 existing members
+//   Phase 3 — PaymentCard / ContributionGrid / admin views read here
+//   Phase 4 — drop the old MONTH_FIELDS columns
+//
+// Until Phase 3 lands, the legacy MONTH_FIELDS shape above remains the
+// source of truth for member-facing UI.
+
+/** Airtable table ID for the Contributions table. Lives on the same
+ *  base as Members (`AIRTABLE_BASE_ID`). */
+export const CONTRIBUTIONS_TABLE_ID = "tblN9IO7pgfaMRE2f";
+
+/**
+ * Field IDs on the Contributions table. Stable across schema changes,
+ * unlike field names — always reference these in Airtable API calls.
+ */
+export const CONTRIBUTION_FIELDS = {
+  /** Primary field. Format `{MemberNumber}-{YYYY-MM}`, e.g. `Leh24-2026-06`.
+   *  Application-enforced uniqueness — code checks for an existing row
+   *  before insert. Stable string (not a record link) so the row is
+   *  identifiable in Airtable's URL bar. */
+  contributionKey: "fld5vgc8uPzS3D1OC",
+  /** Linked Members record. Despite the multipleRecordLinks type
+   *  (Airtable's name for the underlying field), code treats this as
+   *  a single-record link — exactly one Member per contribution. */
+  member: "fldKGx8GF9NvZVJv4",
+  /** Contribution month in `YYYY-MM` format (e.g. `2026-06`). The
+   *  month this contribution applies to, NOT when it was paid. */
+  period: "fld9SjijA21ggawwc",
+  /** Lifecycle state — see CONTRIBUTION_STATUS for values. */
+  status: "fldDeMFt8xSGCsmKW",
+  /** What the contribution was supposed to be (ZAR). */
+  amountExpected: "fld5WEu1E82NPOmXh",
+  /** What actually came in (ZAR). May differ from expected for
+   *  over/underpayments. Empty until Status=Paid. */
+  amountReceived: "fldTpMqqIHhDMFdaC",
+  /** Where the money came from — see CONTRIBUTION_SOURCE for values. */
+  source: "fld1QhFn8dpmzvV4x",
+  /** External payment identifier (Paystack ref, EFT ref, receipt number).
+   *  Used for admin reconciliation against bank statements. */
+  paymentReference: "fldevQ6zDpF2RZoz0",
+  /** Date the money hit the trust account (ISO YYYY-MM-DD, SAST
+   *  calendar date). Empty until Status=Paid. */
+  paymentDate: "fld6u2P7x8Yp2D7ka",
+  /** Plan tier at the time of contribution — Standard / Premium / Custom. */
+  plan: "fldZrTkkJF3s5dKcF",
+  /** Admin has independently verified this row against bank statement /
+   *  Paystack dashboard. Gates the monthly close — only reconciled rows
+   *  count toward "real" community pool totals. */
+  reconciled: "fld7twUQVNz2KY0Xw",
+  /** Email of the admin who reconciled. App-set, not free-text. */
+  reconciledBy: "fldmMiICNnxITqYB3",
+  /** Timestamp when reconciliation happened (Africa/Johannesburg). */
+  reconciledAt: "fldT4TqQttgGqyL3j",
+  /** Admin free-form notes (partial payment context, waiver reasons,
+   *  follow-up reminders). */
+  notes: "fld4cMZtEB8urU3vA",
+  /** When the row was inserted (Africa/Johannesburg). App-set on insert.
+   *  Distinct from Payment Date — a row exists from the moment the
+   *  schedule is generated; payment lands later. */
+  createdAt: "fldv6CUkhglxUqi1E",
+  /** Last write timestamp (Africa/Johannesburg). App must update on
+   *  every PATCH. Pairs with reconciledAt as the audit trail. */
+  updatedAt: "fldoFUnyYgGeLORly",
+} as const;
+
+/**
+ * Lifecycle states for a contribution row. Default on insert is `Pending`.
+ *
+ *   Pending    — expected but not yet paid.
+ *   Paid       — money received & matched to the period.
+ *   Failed     — Paystack/EFT attempt failed (member needs to retry).
+ *   Refunded   — paid then returned (charge-back, error correction).
+ *   Waived     — admin granted a free month (illness, hardship).
+ */
+export const CONTRIBUTION_STATUS = {
+  pending: "Pending",
+  paid: "Paid",
+  failed: "Failed",
+  refunded: "Refunded",
+  waived: "Waived",
+} as const;
+
+export type ContributionStatus =
+  (typeof CONTRIBUTION_STATUS)[keyof typeof CONTRIBUTION_STATUS];
+
+/**
+ * Airtable choice IDs for Contribution Status. Resolved via resolveSelect
+ * when reading rows back with returnFieldsByFieldId=true.
+ */
+export const CONTRIBUTION_STATUS_CHOICE_ID_TO_NAME: Record<string, string> = {
+  selO3FY0OQyRWKJBM: "Pending",
+  selqtCdmKRWe1uzEv: "Paid",
+  selv3vQn17lwZDold: "Failed",
+  sel1BaovnHsJQ7Z3O: "Refunded",
+  selspjsrfCtAxyNLx: "Waived",
+};
+
+/**
+ * Where the money came from. Drives the Source column on the admin
+ * reconciliation view.
+ *
+ *   Paystack       — automated card debit (default for the frictionless flow).
+ *   EFT            — manual bank transfer initiated by member.
+ *   Cash           — physical cash handover.
+ *   Card (Manual)  — card payment captured outside the Paystack flow.
+ *   Adjustment     — admin journal entry (correction).
+ *   Waiver         — no money expected (paired with Status=Waived).
+ */
+export const CONTRIBUTION_SOURCE = {
+  paystack: "Paystack",
+  eft: "EFT",
+  cash: "Cash",
+  cardManual: "Card (Manual)",
+  adjustment: "Adjustment",
+  waiver: "Waiver",
+} as const;
+
+export type ContributionSource =
+  (typeof CONTRIBUTION_SOURCE)[keyof typeof CONTRIBUTION_SOURCE];
+
+export const CONTRIBUTION_SOURCE_CHOICE_ID_TO_NAME: Record<string, string> = {
+  selUPbk3uFUptFBmp: "Paystack",
+  sel8UD0sd688Q51CZ: "EFT",
+  selJyjHx18Ff3B8Iy: "Cash",
+  selHS6bPvCFHfsdDH: "Card (Manual)",
+  selTxG90ta8Cd3nc9: "Adjustment",
+  selzDpetuJGwlf5yR: "Waiver",
+};
+
+/** Lehumo plan tiers. Reflects the member's plan AT THE TIME of the
+ *  contribution — members can switch plans across periods, so we keep
+ *  this on the contribution row rather than only the member row. */
+export const CONTRIBUTION_PLAN = {
+  standard: "Standard",
+  premium: "Premium",
+  custom: "Custom",
+} as const;
+
+export type ContributionPlan =
+  (typeof CONTRIBUTION_PLAN)[keyof typeof CONTRIBUTION_PLAN];
+
+export const CONTRIBUTION_PLAN_CHOICE_ID_TO_NAME: Record<string, string> = {
+  selxLc1xRmXQAvKOT: "Standard",
+  selBRkz14qmSLxbdt: "Premium",
+  selUdqH3ve7K7zVzF: "Custom",
+};
+
+/**
+ * Resolved Contribution row as the app sees it (post-parseContribution).
+ *
+ * `member` is the Airtable record ID of the linked Members row, not the
+ * full member object — call getMemberById separately if you need the
+ * member's name/email/etc. This keeps the Contribution shape thin and
+ * lets callers decide when to pay the round-trip cost of joining.
+ */
+export interface LehumoContribution {
+  /** Airtable record ID of the contribution row. */
+  id: string;
+  /** Composite key — `{memberNumber}-{period}`, e.g. `Leh24-2026-06`. */
+  contributionKey: string;
+  /** Airtable record ID of the linked Members row. */
+  memberId: string;
+  /** YYYY-MM, the period this contribution applies to. */
+  period: string;
+  status: ContributionStatus;
+  amountExpected: number | null;
+  amountReceived: number | null;
+  source: ContributionSource | null;
+  paymentReference: string;
+  /** YYYY-MM-DD, when money hit the trust account. */
+  paymentDate: string | null;
+  plan: ContributionPlan | null;
+  reconciled: boolean;
+  reconciledBy: string;
+  /** ISO 8601 datetime in Africa/Johannesburg. */
+  reconciledAt: string | null;
+  notes: string;
+  /** ISO 8601 datetime when the row was inserted. */
+  createdAt: string | null;
+  /** ISO 8601 datetime of the last write. */
+  updatedAt: string | null;
+}
+
+/**
+ * Generate the canonical contribution key for a (member, period) pair.
+ *
+ * Format: `{MemberNumber}-{YYYY-MM}`, e.g. `Leh24-2026-06`. The same key
+ * shape is enforced as the primary field on the Contributions table so
+ * duplicates surface immediately in Airtable's UI.
+ */
+export function buildContributionKey(
+  memberNumber: number,
+  period: string,
+): string {
+  return `${formatMemberNumber(memberNumber)}-${period}`;
+}
+
+/**
+ * Validate a period string (YYYY-MM, 01-12). Helper for guarding API
+ * boundaries — Zod schemas can wrap this. Returns the cleaned period
+ * or null if invalid.
+ */
+export function parseContributionPeriod(value: string): string | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(value.trim());
+  if (!m) return null;
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  return `${m[1]}-${m[2]}`;
+}
+
+/**
+ * Generate the 60 contribution periods for a Lehumo membership.
+ *
+ * Lehumo collects from `start` (typically 1 Jun 2026) for `count`
+ * consecutive months (typically 60 = 5 years). Returns periods as
+ * `YYYY-MM` strings in chronological order — feed straight into
+ * buildContributionKey or Airtable inserts.
+ */
+export function generateContributionPeriods(
+  start: { year: number; month: number },
+  count = 60,
+): string[] {
+  const periods: string[] = [];
+  let { year, month } = start;
+  for (let i = 0; i < count; i++) {
+    periods.push(`${year}-${String(month).padStart(2, "0")}`);
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+  }
+  return periods;
+}
+
 /**
  * Beneficiary relationship choices (Beneficiary Relationship singleSelect).
  * Order intentionally mirrors the most common SA next-of-kin patterns so the
