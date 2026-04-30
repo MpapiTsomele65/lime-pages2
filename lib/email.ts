@@ -2,6 +2,7 @@ import "server-only";
 
 import { Resend } from "resend";
 import { formatMemberNumber } from "./definitions";
+import { siteUrl } from "./site-url";
 
 function getResend() {
   const key = process.env.RESEND_API_KEY;
@@ -10,30 +11,6 @@ function getResend() {
 }
 
 const FROM_ADDRESS = "Lehumo <lehumo@limepages.co.za>";
-
-/**
- * Site URL used as the base for all portal links inside transactional
- * emails.
- *
- * `NEXT_PUBLIC_SITE_URL` on Vercel currently has a literal trailing
- * "\n" stored in the env value (the variable was set with a stray
- * escape sequence at some point). Without sanitization the templated
- * URL becomes `https://www.limepages.co.za\n/lehumo/portal/login` and
- * the link in the email is broken — clicking it hits a 404.
- *
- * Strip backslash-n, real newlines, surrounding whitespace, and a
- * trailing slash so we get a clean origin to interpolate into URLs.
- * Once the env var is corrected on Vercel this becomes a no-op, but
- * leaving it in place is cheap insurance against future env-var typos.
- */
-function siteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  return raw
-    .replace(/\\n/g, "")
-    .replace(/[\r\n]+/g, "")
-    .trim()
-    .replace(/\/$/, "");
-}
 
 /**
  * Admin mailbox that gets a BCC on every member-facing transactional
