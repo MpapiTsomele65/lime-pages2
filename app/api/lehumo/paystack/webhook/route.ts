@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
     if (payload.event === "charge.success") {
       const memberRecordId = payload.data?.metadata?.memberRecordId as string;
       const amount = (payload.data?.amount as number) ?? 0;
+      const paystackRef = (payload.data?.reference as string) ?? "";
+      // `paid_at` is ISO 8601 from Paystack, e.g. "2026-06-01T08:13:42.000Z".
+      const paidAtIso = (payload.data?.paid_at as string) ?? "";
 
       if (memberRecordId) {
         const month = getCurrentMonth();
@@ -37,7 +40,16 @@ export async function POST(request: NextRequest) {
         const memberBefore = await getMemberById(memberRecordId);
         const wasAlreadyActive = memberBefore?.status === "Active";
 
-        await checkMonthPayment(memberRecordId, month);
+        await checkMonthPayment(memberRecordId, month, {
+          // Paystack amount comes back in kobo; convert to ZAR for the
+          // new Contributions table's Amount Received column.
+          amountReceived: amount / 100,
+          source: "Paystack",
+          paymentReference: paystackRef,
+          paymentDate: paidAtIso ? paidAtIso.slice(0, 10) : undefined,
+          memberId: memberBefore?.id,
+          memberNumber: memberBefore?.memberNumber,
+        });
         await setMemberActive(memberRecordId);
 
         if (memberBefore && !wasAlreadyActive) {

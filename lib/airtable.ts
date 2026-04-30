@@ -10,6 +10,8 @@ import {
   ID_TYPE_CHOICE_ID_TO_NAME,
   RELATIONSHIP_CHOICE_ID_TO_NAME,
   LOAN_TYPE_CHOICE_ID_TO_NAME,
+  CONTRIBUTION_SOURCE,
+  formatMemberNumber,
   idTypeToAirtable,
   todayDate,
   type LehumoMember,
@@ -21,6 +23,17 @@ import {
   type BeneficiaryRelationship,
   type ActiveLoanType,
 } from "./definitions";
+import { isNewContributionsEnabled } from "./feature-flags";
+import {
+  listAllContributions,
+  listContributionsForMember,
+  markPeriodPaidForMember,
+} from "./contributions";
+import {
+  getSastYear,
+  groupContributionsByMemberPrefix,
+  projectToLegacyContributions,
+} from "./member-contributions-view";
 
 // ─── Config ─────────────────────────────────────────────────────────
 function getBaseUrl() {
@@ -179,7 +192,7 @@ export async function findMemberByEmail(
 
   const data = await res.json();
   if (!data.records || data.records.length === 0) return null;
-  return parseRecord(data.records[0]);
+  return hydrateContributionsFromNewTable(parseRecord(data.records[0]));
 }
 
 export async function findMemberByEmailAndNumber(
@@ -200,7 +213,38 @@ export async function findMemberByEmailAndNumber(
 
   const data = await res.json();
   if (!data.records || data.records.length === 0) return null;
-  return parseRecord(data.records[0]);
+  return hydrateContributionsFromNewTable(parseRecord(data.records[0]));
+}
+
+/**
+ * If the LEHUMO_USE_NEW_CONTRIBUTIONS flag is on, replace `member.contributions`
+ * (which `parseRecord` populated from the legacy MONTH_FIELDS columns) with
+ * a fresh projection of the current SAST year's rows from the Contributions
+ * linked table.
+ *
+ * Bails early when the flag is off — the legacy shape is the right answer
+ * by default, and the projection round trip costs an Airtable call.
+ *
+ * Best-effort: if the new-table fetch fails (rate limit, network), we log
+ * and fall back to the legacy shape rather than break the dashboard.
+ */
+async function hydrateContributionsFromNewTable(
+  member: LehumoMember,
+): Promise<LehumoMember> {
+  if (!isNewContributionsEnabled()) return member;
+  try {
+    const rows = await listContributionsForMember(member.memberNumber);
+    return {
+      ...member,
+      contributions: projectToLegacyContributions(rows, getSastYear()),
+    };
+  } catch (err) {
+    console.error(
+      `hydrateContributionsFromNewTable failed for member ${member.memberNumber} — falling back to legacy shape:`,
+      err,
+    );
+    return member;
+  }
 }
 
 export async function getMemberById(
@@ -214,7 +258,8 @@ export async function getMemberById(
   }
 
   const record = await res.json();
-  return parseRecord(record);
+  const member = parseRecord(record);
+  return hydrateContributionsFromNewTable(member);
 }
 
 export async function getNextMemberNumber(): Promise<number> {
@@ -312,14 +357,93 @@ export async function updateMember(
   return parseRecord(record);
 }
 
+/**
+ * Mark a member's contribution paid for a given month.
+ *
+ * Dual-write during the Path B cutover: this always updates the legacy
+ * MONTH_FIELDS column (so the existing UI keeps working with the flag
+ * off), and ALSO upserts/marks-Paid the corresponding row in the new
+ * Contributions linked table. The new-table write is best-effort — a
+ * failure logs and continues so a Paystack webhook never gets stuck on
+ * an Airtable rate-limit blip.
+ *
+ * `period` is required to write the new-table row (since the legacy
+ * shape can't disambiguate years). Defaults to the current SAST year
+ * + the passed `month`.
+ *
+ * Once Phase 5 lands and Paystack fires the webhook directly, this
+ * helper will delegate writes purely to the new table; the legacy
+ * column write goes away.
+ */
 export async function checkMonthPayment(
   recordId: string,
   month: string,
+  options?: {
+    /** YYYY-MM. Defaults to {currentSastYear}-{monthOfYear}. */
+    period?: string;
+    /** Required for new-table upsert. The Members.id stored on the
+     *  contribution row's Member link. Pass when known to avoid an
+     *  extra round trip; otherwise we'll fetch the member by ID. */
+    memberId?: string;
+    /** Required for new-table upsert. Contribution Key prefix is
+     *  `Leh##` — pass to skip the member lookup. */
+    memberNumber?: number;
+    /** Defaults to R1,000 (Standard plan). */
+    amountReceived?: number;
+    /** Defaults to "Adjustment" so admin manual ticks don't masquerade
+     *  as Paystack debits. Paystack-driven calls should pass "Paystack". */
+    source?: typeof CONTRIBUTION_SOURCE[keyof typeof CONTRIBUTION_SOURCE];
+    /** Paystack reference / EFT ref / receipt number. Empty string by
+     *  default — admins can fill it in via the reconciliation view. */
+    paymentReference?: string;
+    /** YYYY-MM-DD. Defaults to today (SAST). */
+    paymentDate?: string;
+  },
 ): Promise<void> {
   const fieldId = MONTH_FIELDS[month];
   if (!fieldId) throw new Error(`Invalid month: ${month}`);
 
+  // ── Legacy write — still source of truth for the UI when the flag
+  //    is off. Keep this even after the flag flips on (Phase 4) so a
+  //    rollback via the env var is non-destructive. ──
   await updateMember(recordId, { [fieldId]: true });
+
+  // ── New-table write — best-effort, async w.r.t. correctness. The
+  //    legacy write above is what the UI shows today; if this fails
+  //    the next backfill run will catch the gap. ──
+  try {
+    const monthIdx = MONTH_NAMES.indexOf(month);
+    if (monthIdx < 0) return;
+    const period =
+      options?.period ??
+      `${getSastYear()}-${String(monthIdx + 1).padStart(2, "0")}`;
+
+    let memberId = options?.memberId;
+    let memberNumber = options?.memberNumber;
+    if (!memberId || !memberNumber) {
+      const member = await getMemberById(recordId);
+      if (!member) {
+        throw new Error(`member ${recordId} not found for new-table write`);
+      }
+      memberId = member.id;
+      memberNumber = member.memberNumber;
+    }
+
+    await markPeriodPaidForMember({
+      memberId,
+      memberNumber,
+      period,
+      amountReceived: options?.amountReceived ?? 1000,
+      source: options?.source ?? CONTRIBUTION_SOURCE.adjustment,
+      paymentReference: options?.paymentReference ?? "",
+      paymentDate: options?.paymentDate,
+    });
+  } catch (err) {
+    console.error(
+      `checkMonthPayment new-table dual-write failed (member ${recordId}, month ${month}):`,
+      err,
+    );
+  }
 }
 
 export async function setMemberActive(recordId: string): Promise<void> {
@@ -528,10 +652,17 @@ function loadInterestConfig(currentMonthIndex: number): {
 /**
  * Fetch all members (paginated) and aggregate pool-wide metrics for the
  * member dashboard. Runs server-side — do not call from the client.
+ *
+ * When the LEHUMO_USE_NEW_CONTRIBUTIONS flag is on, member contribution
+ * data is sourced from the Contributions linked table instead of the
+ * legacy MONTH_FIELDS columns. To avoid an N+1 fetch (1 list call + N
+ * per-member contribution calls), we run ONE bulk read of the entire
+ * Contributions table and group by member-number prefix in memory.
  */
 export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
   const baseUrl = getBaseUrl();
   const headers = getHeaders();
+  const useNew = isNewContributionsEnabled();
 
   const allRecords: LehumoMember[] = [];
   let offset: string | undefined;
@@ -553,6 +684,30 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
     }
     offset = data.offset;
   } while (offset);
+
+  // ── Optional bulk hydration from new table ──
+  // ONE list call covers the whole Contributions table (~1,500 rows
+  // for 25 members × 60 periods). Group by `Leh##` prefix and project
+  // each member's rows to the legacy shape so the aggregation below
+  // stays unchanged.
+  if (useNew) {
+    try {
+      const allContribs = await listAllContributions();
+      const byPrefix = groupContributionsByMemberPrefix(allContribs);
+      const year = getSastYear();
+      for (const m of allRecords) {
+        // formatMemberNumber returns "Leh##" — exactly the prefix the
+        // grouping helper keys on.
+        const rows = byPrefix.get(formatMemberNumber(m.memberNumber)) ?? [];
+        m.contributions = projectToLegacyContributions(rows, year);
+      }
+    } catch (err) {
+      console.error(
+        "getCommunityPoolStats new-table bulk hydration failed — falling back to legacy shape:",
+        err,
+      );
+    }
+  }
 
   const now = new Date();
   const currentMonthIndex = now.getMonth();

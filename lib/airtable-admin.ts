@@ -2,17 +2,34 @@ import "server-only";
 
 import {
   AIRTABLE_FIELDS,
+  CONTRIBUTION_SOURCE,
+  CONTRIBUTION_STATUS,
   MONTH_FIELDS,
   MONTH_NAMES,
   STATUS_CHOICE_ID_TO_NAME,
   KYC_CHOICE_ID_TO_NAME,
   SOURCE_CHOICE_ID_TO_NAME,
   ID_TYPE_CHOICE_ID_TO_NAME,
+  buildContributionKey,
+  formatMemberNumber,
+  parseContributionPeriod,
   type AirtableAttachment,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
 } from "./definitions";
+import {
+  getContributionByKey,
+  listAllContributions,
+  markPeriodPaidForMember,
+  updateContribution,
+} from "./contributions";
+import { isNewContributionsEnabled } from "./feature-flags";
+import {
+  getSastYear,
+  groupContributionsByMemberPrefix,
+  projectToLegacyContributions,
+} from "./member-contributions-view";
 
 // ─── Config (duplicated from lib/airtable.ts to keep this file standalone) ──
 
@@ -141,6 +158,29 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
   } while (offset);
 
   out.sort((a, b) => a.memberNumber - b.memberNumber);
+
+  // ── Bulk hydration from the new Contributions table when the flag
+  //    is on. One full-table read for ~1,500 rows beats ~25 per-member
+  //    fetches against Airtable's 5 req/sec rate limit. Best-effort:
+  //    failures fall back to the legacy MONTH_FIELDS shape that
+  //    parseRecord already populated. ──
+  if (isNewContributionsEnabled()) {
+    try {
+      const allContribs = await listAllContributions();
+      const byPrefix = groupContributionsByMemberPrefix(allContribs);
+      const year = getSastYear();
+      for (const m of out) {
+        const rows = byPrefix.get(formatMemberNumber(m.memberNumber)) ?? [];
+        m.contributions = projectToLegacyContributions(rows, year);
+      }
+    } catch (err) {
+      console.error(
+        "listAllMembers new-table bulk hydration failed — falling back to legacy shape:",
+        err,
+      );
+    }
+  }
+
   return out;
 }
 
@@ -170,6 +210,14 @@ export async function adminUpdateMember(
 /**
  * Toggle a single month's contribution checkbox for one member.
  * `paid: true` marks the month paid, `false` un-marks it.
+ *
+ * Dual-write during the Path B cutover: always writes the legacy
+ * MONTH_FIELDS column; additionally syncs the corresponding row in the
+ * new Contributions linked table when the row exists. Untick (`paid:
+ * false`) demotes the row's Status from `Paid` back to `Pending`,
+ * leaving payment metadata in place so admins can see the audit trail
+ * of "this was marked paid then reversed". Best-effort — failures log
+ * and let the legacy column write stand.
  */
 export async function setMonthPayment(
   recordId: string,
@@ -178,5 +226,48 @@ export async function setMonthPayment(
 ): Promise<LehumoMember> {
   const fieldId = MONTH_FIELDS[month];
   if (!fieldId) throw new Error(`Invalid month: ${month}`);
-  return adminUpdateMember(recordId, { [fieldId]: paid });
+
+  const member = await adminUpdateMember(recordId, { [fieldId]: paid });
+
+  // ── New-table sync ──
+  // Resolve the SAST-current period for the given month-of-year. Admin
+  // ticks come from the year-agnostic legacy UI, so we map to the
+  // current year — Phase 4 will replace this with a period-aware admin
+  // view that doesn't need the projection.
+  try {
+    const monthIdx = MONTH_NAMES.indexOf(month);
+    if (monthIdx < 0) return member;
+    const period = parseContributionPeriod(
+      `${getSastYear()}-${String(monthIdx + 1).padStart(2, "0")}`,
+    );
+    if (!period) return member;
+
+    if (paid) {
+      await markPeriodPaidForMember({
+        memberId: member.id,
+        memberNumber: member.memberNumber,
+        period,
+        amountReceived: 1000,
+        source: CONTRIBUTION_SOURCE.adjustment,
+        paymentReference: "",
+        notes: "Admin-marked paid via legacy month toggle",
+      });
+    } else {
+      const key = buildContributionKey(member.memberNumber, period);
+      const row = await getContributionByKey(key);
+      if (row && row.status === CONTRIBUTION_STATUS.paid) {
+        await updateContribution(row.id, {
+          status: CONTRIBUTION_STATUS.pending,
+          notes: "Admin-untick via legacy month toggle",
+        });
+      }
+    }
+  } catch (err) {
+    console.error(
+      `setMonthPayment new-table dual-write failed (member ${recordId}, month ${month}, paid=${paid}):`,
+      err,
+    );
+  }
+
+  return member;
 }

@@ -233,6 +233,26 @@ export async function listContributionsForMember(
 }
 
 /**
+ * List ALL contributions across the table — one paginated read.
+ *
+ * Use for the bulk admin path (member list with progress, community
+ * pool stats) where N+1 per-member fetches would blow Airtable's
+ * 5 req/sec rate limit. With 25 members × 60 periods, the table is
+ * ~1,500 rows — comfortably within Airtable's 100-rows-per-page limit
+ * over 15 round trips.
+ *
+ * The per-member view should still use `listContributionsForMember`
+ * for cache-friendliness and clarity.
+ */
+export async function listAllContributions(): Promise<LehumoContribution[]> {
+  const url =
+    `${getContribUrl()}?` +
+    `sort%5B0%5D%5Bfield%5D=Contribution+Key&sort%5B0%5D%5Bdirection%5D=asc` +
+    `&pageSize=100&returnFieldsByFieldId=true`;
+  return fetchAllPages(url);
+}
+
+/**
  * List all contributions for a given period (e.g. all `2026-06` rows).
  * Powers the admin reconciliation view — one period at a time keeps the
  * page-size manageable for 90+ members.
@@ -532,6 +552,63 @@ export async function reconcileContribution(
     reconciled: true,
     reconciledBy: adminEmail,
     reconciledAt: nowSastIso(),
+  });
+}
+
+/**
+ * Convenience wrapper for the dual-write path: given a member and a
+ * period, ensure a Contribution row exists for that pair and mark it
+ * Paid in one logical operation.
+ *
+ * Used by `checkMonthPayment` and the Paystack webhook to land payments
+ * on the new table while the legacy MONTH_FIELDS columns are still the
+ * source of truth for the UI. After Phase 4 cuts the UI over to the
+ * new shape, this becomes the canonical write path; the legacy column
+ * write goes away in Phase 5.
+ *
+ * Idempotent: re-running with the same params is a no-op once the row
+ * is already Paid (the second update just bumps `Updated At`).
+ *
+ * Period semantics: pass the SAST-current period (e.g. `2026-06`) when
+ * the legacy code did `member.contributions[Jun] = true`. Year is
+ * required since the new table tracks 60 months across 5 years.
+ */
+export async function markPeriodPaidForMember(params: {
+  memberId: string;
+  memberNumber: number;
+  period: string;
+  amountReceived: number;
+  source: ContributionSource;
+  paymentReference: string;
+  paymentDate?: string;
+  notes?: string;
+}): Promise<LehumoContribution> {
+  const period = parseContributionPeriod(params.period);
+  if (!period) {
+    throw new Error(`Invalid period — expected YYYY-MM, got "${params.period}"`);
+  }
+  const key = buildContributionKey(params.memberNumber, period);
+
+  let row = await getContributionByKey(key);
+  if (!row) {
+    // Row doesn't exist — create it as Pending first, then mark Paid.
+    // This handles the edge case where a member onboards AFTER the
+    // backfill ran but BEFORE Phase 5 wires generateMemberSchedule into
+    // the onboarding action. Idempotent enough that we don't need a
+    // dedicated upsert primitive.
+    row = await createContribution({
+      memberId: params.memberId,
+      memberNumber: params.memberNumber,
+      period,
+    });
+  }
+
+  return markContributionPaid(row.id, {
+    amountReceived: params.amountReceived,
+    source: params.source,
+    paymentReference: params.paymentReference,
+    paymentDate: params.paymentDate,
+    notes: params.notes,
   });
 }
 

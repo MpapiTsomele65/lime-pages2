@@ -53,7 +53,15 @@ export async function GET(request: NextRequest) {
     const wasAlreadyActive = memberBefore?.status === "Active";
 
     if (memberRecordId) {
-      await checkMonthPayment(memberRecordId, month);
+      await checkMonthPayment(memberRecordId, month, {
+        // Paystack amount returns in kobo (cents); convert to ZAR for
+        // the new Contributions table's Amount Received column.
+        amountReceived: result.amount / 100,
+        source: "Paystack",
+        paymentReference: reference,
+        memberId: memberBefore?.id,
+        memberNumber: memberBefore?.memberNumber,
+      });
       await setMemberActive(memberRecordId);
     }
 
