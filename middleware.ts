@@ -22,7 +22,9 @@ export async function middleware(request: NextRequest) {
       const response = NextResponse.redirect(
         new URL("/lehumo/portal/login", request.url),
       );
-      response.cookies.delete("lehumo_session");
+      // Match createSession's path="/" so the delete actually clears
+      // the cookie instead of leaving a stale one at the old path.
+      response.cookies.delete({ name: "lehumo_session", path: "/" });
       return response;
     }
 
