@@ -46,8 +46,17 @@ const ALLOWED_MIME = [
  */
 export async function POST(request: NextRequest) {
   let stage: string = "init";
+  // Diagnostic: log every hit on this route with the event type so
+  // we can correlate token-mint vs upload-completed in Vercel logs.
+  // The 99%-loop bug means this route is being hit dozens of times
+  // per attempted upload — we need to see WHICH events are firing
+  // and whether the upload-completed callback is reaching us at all.
+  const reqId = `${Date.now()}:${Math.random().toString(16).slice(2, 8)}`;
   try {
     const body = (await request.json()) as HandleUploadBody;
+    console.log(
+      `[admin kyc-upload ${reqId}] event=${body.type} ua=${request.headers.get("user-agent")?.slice(0, 80) ?? "-"}`,
+    );
 
     const json = await handleUpload({
       body,
@@ -182,11 +191,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log(`[admin kyc-upload ${reqId}] handleUpload OK`);
     return NextResponse.json(json);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(
-      `Admin KYC upload error [stage=${stage}]:`,
+      `Admin KYC upload error [${reqId}] [stage=${stage}]:`,
       message,
       error instanceof Error ? error.stack : undefined,
     );
