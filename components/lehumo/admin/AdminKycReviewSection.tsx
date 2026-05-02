@@ -74,14 +74,27 @@ const ALLOWED_MIME = new Set([
 const MAX_BYTES = 10 * 1024 * 1024;
 
 /**
- * Members appearing in the review queue: anyone whose KYC isn't yet
- * Complete and who hasn't exited the program. We deliberately include
- * "Docs Requested" so admins can see who hasn't submitted yet — useful
- * for chase-up emails — alongside the active "In Progress" review pile.
+ * Awaiting-review pile: anyone whose KYC isn't yet Complete and who
+ * hasn't exited the program. We deliberately include "Docs Requested"
+ * so admins can see who hasn't submitted yet — useful for chase-up
+ * emails — alongside the active "In Progress" review pile.
  */
-function isInReviewQueue(m: LehumoMember): boolean {
+function isAwaitingReview(m: LehumoMember): boolean {
   if (m.status === "Exited") return false;
   return m.kycStatus === "In Progress" || m.kycStatus === "Docs Requested";
+}
+
+/**
+ * Verified pile: members with completed KYC. Shown beneath the
+ * awaiting-review pile so admins keep a visible audit trail of recent
+ * approvals (instead of verified members "disappearing" the moment
+ * they're approved). Read-only by default — the only action is
+ * "Request resubmission" which flips kycStatus back to Docs Requested
+ * if a mistake needs correcting.
+ */
+function isVerified(m: LehumoMember): boolean {
+  if (m.status === "Exited") return false;
+  return m.kycStatus === "Complete";
 }
 
 export function AdminKycReviewSection({
@@ -109,7 +122,21 @@ export function AdminKycReviewSection({
   const [pendingConfirm, setPendingConfirm] =
     useState<PendingConfirm | null>(null);
 
-  const queue = useMemo(() => members.filter(isInReviewQueue), [members]);
+  const queue = useMemo(() => members.filter(isAwaitingReview), [members]);
+  // Verified members, most-recently-verified first. We sort by
+  // kycVerifiedAt descending — the date string is YYYY-MM-DD so a
+  // localeCompare on the raw value works as a chronological sort.
+  // Members without a verifiedAt (legacy data, manually flipped in
+  // Airtable) sort to the bottom.
+  const verified = useMemo(
+    () =>
+      members.filter(isVerified).sort((a, b) => {
+        const aDate = a.kycVerifiedAt ?? "";
+        const bDate = b.kycVerifiedAt ?? "";
+        return bDate.localeCompare(aDate);
+      }),
+    [members],
+  );
 
   const applyMemberUpdate = useCallback((updated: LehumoMember) => {
     startTransition(() => {
@@ -146,12 +173,27 @@ export function AdminKycReviewSection({
         <div>
           <h2 className="text-lg font-semibold text-[#0B0B0B]">KYC Review</h2>
           <p className="text-xs text-[#6B7280] mt-0.5">
-            Members awaiting document review or chase-up.
+            Members awaiting document review, with recent approvals
+            visible at the bottom for audit.
           </p>
         </div>
-        <span className="inline-flex items-center rounded-full bg-[#0B1933]/[0.06] px-2.5 py-1 text-[11px] font-bold text-[#0B1933]">
-          {queue.length} {queue.length === 1 ? "member" : "members"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center rounded-full bg-[#0B1933]/[0.06] px-2.5 py-1 text-[11px] font-bold text-[#0B1933]"
+            title="Awaiting review (Docs Requested + In Progress)"
+          >
+            {queue.length} pending
+          </span>
+          {verified.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-[#B8FF00]/15 px-2.5 py-1 text-[11px] font-bold text-[#0B1933]"
+              title="Verified KYC — kept visible for audit"
+            >
+              <ShieldCheck className="h-3 w-3" />
+              {verified.length} verified
+            </span>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -160,8 +202,10 @@ export function AdminKycReviewSection({
         </div>
       )}
 
-      {/* Empty state */}
-      {queue.length === 0 ? (
+      {/* Empty state — only when BOTH lists are empty. If we have any
+          verified members, we still want the audit trail visible even
+          on a "no pending review" day. */}
+      {queue.length === 0 && verified.length === 0 ? (
         <div className="px-5 py-12 text-center">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#B8FF00]/15 text-[#0B1933] mb-3">
             <ShieldCheck className="h-5 w-5" />
@@ -172,57 +216,120 @@ export function AdminKycReviewSection({
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-[#E5E7EB]">
-          {queue.map((member) => (
-            <KycReviewRow
-              key={member.id}
-              member={member}
-              busyKey={busyKey}
-              onApprove={() =>
-                runAction(`${member.id}:approve`, () =>
-                  adminApproveKyc(member.id),
-                )
-              }
-              onReject={() =>
-                runAction(`${member.id}:reject`, () =>
-                  adminRequestKycResubmission(member.id),
-                )
-              }
-              onClearSlot={(slot) => {
-                // Route every destructive Remove through the
-                // confirmation dialog. The Airtable PATCH only fires
-                // if the admin clicks Confirm; Cancel / Esc / outside-
-                // click drops the action entirely.
-                const slotLabel =
-                  slot === "id" ? "ID Document" : "Proof of Address";
-                setPendingConfirm({
-                  title: `Remove ${slotLabel}?`,
-                  description: (
-                    <>
-                      This deletes the file from{" "}
-                      <span className="text-white font-medium">
-                        {member.fullName || "this member"}
-                      </span>
-                      &apos;s record. Other onboarding data (ID type,
-                      address, beneficiary, contributions) is preserved.
-                      Re-uploading is a one-click fix if this was the
-                      wrong action.
-                    </>
-                  ),
-                  confirmLabel: "Remove",
-                  onConfirm: () =>
-                    runAction(`${member.id}:clear:${slot}`, () =>
-                      adminClearKycAttachment(member.id, slot),
-                    ),
-                });
-              }}
-              onRefresh={() => router.refresh()}
-              onMemberUpdate={applyMemberUpdate}
-              onUploadError={setError}
-              setBusyKey={setBusyKey}
-            />
-          ))}
-        </ul>
+        <>
+          {/* Awaiting Review group — the active work pile. Empty
+              sub-state when we only have verified members keeps the
+              section honest about its current state. */}
+          {queue.length > 0 ? (
+            <ul className="divide-y divide-[#E5E7EB]">
+              {queue.map((member) => (
+                <KycReviewRow
+                  key={member.id}
+                  member={member}
+                  busyKey={busyKey}
+                  onApprove={() =>
+                    runAction(`${member.id}:approve`, () =>
+                      adminApproveKyc(member.id),
+                    )
+                  }
+                  onReject={() =>
+                    runAction(`${member.id}:reject`, () =>
+                      adminRequestKycResubmission(member.id),
+                    )
+                  }
+                  onClearSlot={(slot) => {
+                    // Route every destructive Remove through the
+                    // confirmation dialog. The Airtable PATCH only
+                    // fires if the admin clicks Confirm; Cancel / Esc
+                    // / outside-click drops the action entirely.
+                    const slotLabel =
+                      slot === "id" ? "ID Document" : "Proof of Address";
+                    setPendingConfirm({
+                      title: `Remove ${slotLabel}?`,
+                      description: (
+                        <>
+                          This deletes the file from{" "}
+                          <span className="text-white font-medium">
+                            {member.fullName || "this member"}
+                          </span>
+                          &apos;s record. Other onboarding data (ID type,
+                          address, beneficiary, contributions) is
+                          preserved. Re-uploading is a one-click fix if
+                          this was the wrong action.
+                        </>
+                      ),
+                      confirmLabel: "Remove",
+                      onConfirm: () =>
+                        runAction(`${member.id}:clear:${slot}`, () =>
+                          adminClearKycAttachment(member.id, slot),
+                        ),
+                    });
+                  }}
+                  onRefresh={() => router.refresh()}
+                  onMemberUpdate={applyMemberUpdate}
+                  onUploadError={setError}
+                  setBusyKey={setBusyKey}
+                />
+              ))}
+            </ul>
+          ) : (
+            <div className="px-5 py-8 text-center">
+              <p className="text-xs text-[#6B7280]">
+                No members awaiting review.{" "}
+                <span className="text-[#9CA3AF]">
+                  Verified members are listed below.
+                </span>
+              </p>
+            </div>
+          )}
+
+          {/* Verified group — visible audit trail. Subtle visual
+              separator + grey background sub-header makes the split
+              obvious without competing with the active work above. */}
+          {verified.length > 0 && (
+            <>
+              <div className="flex items-center justify-between gap-2 border-y border-[#E5E7EB] bg-[#F8F9FA] px-5 py-2.5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[#0B1933]" />
+                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#0B1933]">
+                    Verified
+                  </h3>
+                  <span className="text-[11px] text-[#6B7280]">
+                    {verified.length}{" "}
+                    {verified.length === 1 ? "member" : "members"}
+                  </span>
+                </div>
+                <span className="text-[10px] text-[#9CA3AF]">
+                  Most recent first
+                </span>
+              </div>
+              <ul className="divide-y divide-[#E5E7EB]">
+                {verified.map((member) => (
+                  <KycReviewRow
+                    key={member.id}
+                    member={member}
+                    busyKey={busyKey}
+                    // No-op handlers for the actions the verified-row
+                    // variant doesn't render. Kept as required props
+                    // to avoid making them optional and breaking the
+                    // active-row code path's exhaustive checks.
+                    onApprove={() => {}}
+                    onReject={() =>
+                      runAction(`${member.id}:reject`, () =>
+                        adminRequestKycResubmission(member.id),
+                      )
+                    }
+                    onClearSlot={() => {}}
+                    onRefresh={() => router.refresh()}
+                    onMemberUpdate={applyMemberUpdate}
+                    onUploadError={setError}
+                    setBusyKey={setBusyKey}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </>
       )}
 
       {/* Destructive-action confirmation dialog — backs every Remove
@@ -294,8 +401,20 @@ function KycReviewRow({
   const anyPresent = idPresent || poaPresent;
   const submittedCount = (idPresent ? 1 : 0) + (poaPresent ? 1 : 0);
 
+  // Verified rows render in a simplified read-only form: docs as
+  // View-only (no Replace / Remove), no Approve button (already
+  // approved), and "Re-open KYC" as the sole action lever in case a
+  // verification turns out to have been a mistake. Visually muted
+  // (subtle background tint) so the active review pile keeps visual
+  // priority above.
+  const isVerifiedRow = member.kycStatus === "Complete";
+
   return (
-    <li className="px-5 py-4">
+    <li
+      className={`px-5 py-4 ${
+        isVerifiedRow ? "bg-[#FAFBFC]" : ""
+      }`}
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         {/* Left: identity */}
         <div className="min-w-0 flex-1">
@@ -308,9 +427,10 @@ function KycReviewRow({
             </span>
             <KycStatusPill status={member.kycStatus} />
             {/* Partial-submission badge — only render when 0 or 1 of 2
-                docs are uploaded. Once both land we drop the chip so the
-                row's KycStatusPill carries the rest of the lifecycle. */}
-            {submittedCount < 2 && (
+                docs are uploaded AND we're not in the verified group.
+                Verified rows have already passed approval (possibly via
+                admin override) so the partial chip would just add noise. */}
+            {!isVerifiedRow && submittedCount < 2 && (
               <span
                 className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   submittedCount === 0
@@ -353,6 +473,16 @@ function KycReviewRow({
                 value={formatDate(member.kycSubmittedAt)}
               />
             )}
+            {/* Surface the verification date in the verified-row
+                variant so admins can see when each approval landed
+                without needing to dig into Airtable. Most-recent-first
+                ordering of the group makes this the audit trail. */}
+            {isVerifiedRow && member.kycVerifiedAt && (
+              <Field
+                label="Verified"
+                value={formatDate(member.kycVerifiedAt)}
+              />
+            )}
           </dl>
         </div>
 
@@ -366,6 +496,7 @@ function KycReviewRow({
             busy={idBusy}
             clearing={idClearing}
             disabled={anyBusy}
+            readOnly={isVerifiedRow}
             onRefresh={onRefresh}
             onMemberUpdate={onMemberUpdate}
             onError={onUploadError}
@@ -380,6 +511,7 @@ function KycReviewRow({
             busy={poaBusy}
             clearing={poaClearing}
             disabled={anyBusy}
+            readOnly={isVerifiedRow}
             onRefresh={onRefresh}
             onMemberUpdate={onMemberUpdate}
             onError={onUploadError}
@@ -387,37 +519,50 @@ function KycReviewRow({
             setBusyKey={setBusyKey}
           />
 
-          {/* Approve / reject actions */}
+          {/* Action buttons. Branch on row variant:
+              - Awaiting review → Approve (primary) + Request resubmission
+              - Verified → Re-open KYC only (single safety lever; the
+                Approve button would be a no-op and the per-slot
+                Replace / Remove are gated by the readOnly flag above)
+              The Re-open lever reuses adminRequestKycResubmission which
+              flips kycStatus back to "Docs Requested" — same Airtable
+              path as the awaiting-review reject button. */}
           <div className="flex items-center gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onApprove}
-              disabled={anyBusy || !anyPresent}
-              title={
-                bothPresent
-                  ? "Approve KYC and stamp verified date"
-                  : anyPresent
-                    ? "Approve with partial submission — admin override (member is missing one document)"
-                    : "Upload at least one document before approving"
-              }
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                bothPresent
-                  ? "bg-[#B8FF00] text-[#0B1933] hover:bg-[#a8ef00]"
-                  : "bg-[#46CDCF] text-white hover:bg-[#3aa9ab]"
-              }`}
-            >
-              {approving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Check className="h-3.5 w-3.5" />
-              )}
-              {bothPresent ? "Approve" : "Approve (1 of 2)"}
-            </button>
+            {!isVerifiedRow && (
+              <button
+                type="button"
+                onClick={onApprove}
+                disabled={anyBusy || !anyPresent}
+                title={
+                  bothPresent
+                    ? "Approve KYC and stamp verified date"
+                    : anyPresent
+                      ? "Approve with partial submission — admin override (member is missing one document)"
+                      : "Upload at least one document before approving"
+                }
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  bothPresent
+                    ? "bg-[#B8FF00] text-[#0B1933] hover:bg-[#a8ef00]"
+                    : "bg-[#46CDCF] text-white hover:bg-[#3aa9ab]"
+                }`}
+              >
+                {approving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
+                {bothPresent ? "Approve" : "Approve (1 of 2)"}
+              </button>
+            )}
             <button
               type="button"
               onClick={onReject}
               disabled={anyBusy}
-              title="Flip back to Docs Requested so the member can re-upload"
+              title={
+                isVerifiedRow
+                  ? "Re-open KYC — flips status back to Docs Requested so the docs can be re-reviewed"
+                  : "Flip back to Docs Requested so the member can re-upload"
+              }
               className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-semibold text-[#0B0B0B] hover:border-[#0B1933]/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {rejecting ? (
@@ -425,7 +570,7 @@ function KycReviewRow({
               ) : (
                 <RotateCcw className="h-3.5 w-3.5" />
               )}
-              Request resubmission
+              {isVerifiedRow ? "Re-open KYC" : "Request resubmission"}
             </button>
           </div>
         </div>
@@ -484,17 +629,23 @@ function formatDate(iso: string): string {
 }
 
 function KycStatusPill({ status }: { status: string }) {
+  // Green pill for Complete so the verified group reads as "approved"
+  // at a glance. Teal for In Progress (active review). Amber for
+  // Docs Requested (awaiting member action). Grey fallback for any
+  // other state Airtable might surface.
   const colour =
-    status === "In Progress"
-      ? "bg-[#46CDCF]/15 text-[#0B1933]"
-      : status === "Docs Requested"
-        ? "bg-[#FEF3C7] text-[#92400E]"
-        : "bg-[#F8F9FA] text-[#6B7280] border border-[#E5E7EB]";
+    status === "Complete"
+      ? "bg-[#B8FF00]/20 text-[#0B1933] border border-[#B8FF00]/40"
+      : status === "In Progress"
+        ? "bg-[#46CDCF]/15 text-[#0B1933]"
+        : status === "Docs Requested"
+          ? "bg-[#FEF3C7] text-[#92400E]"
+          : "bg-[#F8F9FA] text-[#6B7280] border border-[#E5E7EB]";
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${colour}`}
     >
-      {status}
+      {status === "Complete" ? "Verified" : status}
     </span>
   );
 }
@@ -511,6 +662,13 @@ interface DocSlotProps {
   busy: boolean;
   clearing: boolean;
   disabled: boolean;
+  /** When true, render the slot in a sealed read-only mode: View link
+   *  is preserved (admins still need to inspect verified docs) but
+   *  Replace and Remove are hidden, as is the empty-slot upload
+   *  affordance. Used for verified-row slots where the documents are
+   *  considered final until the row is explicitly re-opened via the
+   *  "Re-open KYC" button. */
+  readOnly?: boolean;
   /** Triggers a soft router.refresh() on the admin page after the
    *  Blob upload + server-side Airtable PATCH have settled. Used by
    *  the @vercel/blob direct path — handleUpload's onUploadCompleted
@@ -537,6 +695,7 @@ function DocSlot({
   busy,
   clearing,
   disabled,
+  readOnly = false,
   onRefresh,
   onMemberUpdate,
   onError,
@@ -782,50 +941,82 @@ function DocSlot({
         >
           View <ExternalLink className="h-3 w-3" />
         </a>
-        <button
-          type="button"
-          onClick={pick}
-          disabled={disabled}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#6B7280] hover:text-[#0B1933] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          title="Replace this document on the member's behalf"
-        >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RotateCcw className="h-3 w-3" />
-          )}
-          Replace
-        </button>
-        <button
-          type="button"
-          // Confirmation is handled by the parent's ConfirmDialog —
-          // clicking Remove queues the action; the styled modal asks
-          // "Are you sure?" with focus on Cancel by default.
-          onClick={onClear}
-          disabled={disabled}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9CA3AF] hover:text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          title="Delete this attachment without changing other onboarding data — for wrong-file or wrong-member uploads"
-        >
-          {clearing ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Trash2 className="h-3 w-3" />
-          )}
-          Remove
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT_ATTR}
-          className="hidden"
-          onChange={handleChange}
-        />
+        {/* Replace + Remove are sealed off in read-only mode (verified
+            rows). View remains so admins can still inspect the doc;
+            mutations require explicitly Re-opening the KYC first. */}
+        {!readOnly && (
+          <>
+            <button
+              type="button"
+              onClick={pick}
+              disabled={disabled}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#6B7280] hover:text-[#0B1933] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              title="Replace this document on the member's behalf"
+            >
+              {busy ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RotateCcw className="h-3 w-3" />
+              )}
+              Replace
+            </button>
+            <button
+              type="button"
+              // Confirmation is handled by the parent's ConfirmDialog
+              // — clicking Remove queues the action; the styled modal
+              // asks "Are you sure?" with focus on Cancel by default.
+              onClick={onClear}
+              disabled={disabled}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9CA3AF] hover:text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              title="Delete this attachment without changing other onboarding data — for wrong-file or wrong-member uploads"
+            >
+              {clearing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Trash2 className="h-3 w-3" />
+              )}
+              Remove
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept={ACCEPT_ATTR}
+              className="hidden"
+              onChange={handleChange}
+            />
+          </>
+        )}
       </div>
     );
   }
 
   // Empty state — admin can upload on the member's behalf (e.g. when
-  // docs were emailed to lehumo@limepages.co.za).
+  // docs were emailed to lehumo@limepages.co.za). Read-only verified
+  // rows shouldn't have empty slots in practice (they passed approval
+  // with both docs, or via partial-submission admin override which
+  // already locks the slot). In the override case, render a muted
+  // placeholder rather than the upload affordance — an admin who needs
+  // to fill the missing slot must Re-open KYC first.
+  if (readOnly) {
+    return (
+      <div
+        className={`${baseClasses} border-dashed border-[#E5E7EB] flex items-center gap-3`}
+      >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white border border-[#E5E7EB] text-[#9CA3AF]">
+          <AlertCircle className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] uppercase tracking-wider text-[#9CA3AF]">
+            {label}
+          </p>
+          <p className="text-xs text-[#9CA3AF]">
+            Not on file · approved without this document
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
