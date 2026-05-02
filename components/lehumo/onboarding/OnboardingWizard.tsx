@@ -6,16 +6,20 @@ import { AnimatePresence, motion } from "framer-motion";
 import { StepPersonalInfo } from "./StepPersonalInfo";
 import { StepPlanSelection } from "./StepPlanSelection";
 import { StepKycDocs } from "./StepKycDocs";
-import { StepPayment } from "./StepPayment";
 import { StepConfirmation } from "./StepConfirmation";
 import { trackEvent } from "@/lib/analytics";
 
+// 4-step onboarding (May 2026): payment ceremony was lifted out of the
+// wizard and into the member portal. Members commit a plan tier here,
+// upload KYC, and land on confirmation; the actual debit-order setup
+// (or first EFT) happens later inside the portal once their KYC has
+// been verified by an admin. Friendlier for SA users who are wary of
+// handing card details to a brand-new entity at first contact.
 const STEPS = [
   { number: 1, label: "Personal Info" },
   { number: 2, label: "Select Plan" },
   { number: 3, label: "About you & funds" },
-  { number: 4, label: "Payment" },
-  { number: 5, label: "Confirmation" },
+  { number: 4, label: "Confirmation" },
 ] as const;
 
 interface FormData {
@@ -49,12 +53,17 @@ export function OnboardingWizard() {
   const [error, setError] = useState<string | null>(null);
 
   // Auto-jump to confirmation step if URL has ?step=confirm&reference=xxx
+  // Used by the Paystack callback path — when a member completes their
+  // first contribution from the portal's SetUpPaymentsCard, Paystack
+  // redirects them back here with a reference so the confirmation step
+  // can verify and render a success state. Confirmation is now step 4
+  // (was step 5 before payment was lifted out of the wizard).
   useEffect(() => {
     const step = searchParams.get("step");
     const reference = searchParams.get("reference");
     if (step === "confirm" && reference) {
       setFormData((prev) => ({ ...prev, reference }));
-      setCurrentStep(5);
+      setCurrentStep(4);
     }
   }, [searchParams]);
 
@@ -70,7 +79,7 @@ export function OnboardingWizard() {
         setFormData((prev) => ({ ...prev, ...data }));
       }
       setError(null);
-      setCurrentStep((prev) => Math.min(prev + 1, 5));
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
     },
     []
   );
@@ -131,6 +140,10 @@ export function OnboardingWizard() {
         });
 
         if (res.ok) {
+          // Returning Onboarding-status member — they've already done
+          // KYC + plan selection. Land them on confirmation directly so
+          // they get a clear "your application is in, set up payments
+          // from the portal" message rather than re-walking the wizard.
           const resume = await res.json();
           setFormData((prev) => ({
             ...prev,
@@ -386,18 +399,6 @@ export function OnboardingWizard() {
               />
             )}
             {currentStep === 4 && (
-              <StepPayment
-                memberId={formData.memberId ?? ""}
-                memberNumber={formData.memberNumber}
-                plan={formData.plan ?? "standard"}
-                fullName={formData.fullName ?? ""}
-                email={formData.email ?? ""}
-                resumed={formData.resumed ?? false}
-                onNext={(data) => handleNext(data)}
-                onSkip={() => handleNext()}
-              />
-            )}
-            {currentStep === 5 && (
               <StepConfirmation
                 formData={{
                   fullName: formData.fullName ?? "",

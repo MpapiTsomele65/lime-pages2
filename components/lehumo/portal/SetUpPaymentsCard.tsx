@@ -1,0 +1,426 @@
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Check, Clock, Copy, CreditCard } from "lucide-react";
+
+import {
+  formatMemberNumber,
+  type MemberPlan,
+} from "@/lib/definitions";
+
+interface SetUpPaymentsCardProps {
+  /** Member's chosen plan tier (basic / standard / vip). Falls back to
+   *  "standard" when the field hasn't been parsed out of notes yet —
+   *  legacy members onboarded before plan capture, or notes that don't
+   *  match the regex. Standard is the recommended default tier. */
+  plan: MemberPlan;
+  memberId: string;
+  /** Used to address the member in the welcome line + as the
+   *  identifier on the Paystack init payload. */
+  email: string;
+  fullName: string;
+  /** Used to build the EFT reference — `LHM-007-FIRSTNAME` — so manual
+   *  EFTs can be reconciled without ambiguity. */
+  memberNumber?: number;
+}
+
+const PLAN_DETAILS: Record<
+  MemberPlan,
+  { name: string; monthly: string; fee: string | null; payment: string }
+> = {
+  basic: {
+    name: "Basic",
+    monthly: "R1,000/month",
+    fee: null,
+    payment: "Manual EFT",
+  },
+  standard: {
+    name: "Standard",
+    monthly: "R1,019.90/month",
+    fee: "R19.90 collection fee",
+    payment: "Automated Debit Order",
+  },
+  vip: {
+    name: "VIP",
+    monthly: "R1,099/month",
+    fee: "R99 platform fee",
+    payment: "Automated Debit Order",
+  },
+};
+
+const BANK_DETAILS = {
+  bank: "Capitec Business",
+  accountName: "Lime Pages (Pty) Ltd",
+  accountNumber: "1054737347",
+  branchCode: "470010",
+  accountType: "Current / Cheque",
+  swift: "CABLZAJJ",
+};
+
+/**
+ * First-payment setup card on the member portal.
+ *
+ * Shown only when:
+ *   - Member's KYC has been verified (kycStatus === "Complete"), AND
+ *   - No contributions are on file yet (i.e., they haven't paid their
+ *     first month).
+ *
+ * Once the first contribution lands — by Paystack debit-order success
+ * webhook for standard/vip, or by admin reconciliation for basic — the
+ * gate flips closed and PaymentCard takes over for the per-month
+ * payment cadence.
+ *
+ * This is the post-onboarding equivalent of the old StepPayment wizard
+ * step. The wizard was simplified in May 2026 to drop bank-detail
+ * capture from the signup ceremony — members commit a plan during
+ * onboarding, but the actual payment configuration happens here on
+ * the portal once they trust the platform enough to hand over card
+ * details.
+ */
+export function SetUpPaymentsCard({
+  plan,
+  memberId,
+  email,
+  fullName,
+  memberNumber,
+}: SetUpPaymentsCardProps) {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isStartingPaystack, setIsStartingPaystack] = useState(false);
+  const [paystackError, setPaystackError] = useState<string | null>(null);
+
+  const planInfo = PLAN_DETAILS[plan];
+  const isBasic = plan === "basic";
+  const isStandard = plan === "standard";
+  const isVip = plan === "vip";
+
+  // EFT reference: LHM-007-FIRSTNAME. Mirrors the wizard's StepPayment
+  // pattern so admins reconciling EFTs see the same shape members got
+  // during onboarding's old payment step. The member-number prefix +
+  // first name combo is unique enough across a 30-90 person founding
+  // cohort to disambiguate transfers without exposing more PII.
+  const firstName = fullName.split(" ")[0] || "MEMBER";
+  const eftReference = memberNumber
+    ? `LHM-${formatMemberNumber(memberNumber).replace("Leh", "").padStart(3, "0")}-${firstName.toUpperCase()}`
+    : `LHM-${firstName.toUpperCase()}`;
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(label);
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  }
+
+  /**
+   * Start the Paystack debit-order setup ceremony. Calls our /init route
+   * which mints a Paystack subscription URL, then redirects the browser
+   * off-site. Paystack handles card tokenisation + first charge in one
+   * hosted page, then bounces back to /lehumo/onboard?step=confirm with
+   * a verification reference. The wizard's StepConfirmation handles that
+   * callback and shows the post-payment success state.
+   */
+  async function handleStandardSubscribe() {
+    setIsStartingPaystack(true);
+    setPaystackError(null);
+    try {
+      const res = await fetch("/api/lehumo/paystack/init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          memberRecordId: memberId,
+          plan,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.authorization_url) {
+        throw new Error(
+          data.error ||
+            "Could not start payment setup. Please try again or email lehumo@limepages.co.za.",
+        );
+      }
+      window.location.href = data.authorization_url;
+    } catch (err) {
+      setPaystackError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong starting your payment setup.",
+      );
+      setIsStartingPaystack(false);
+    }
+  }
+
+  return (
+    <motion.div
+      id="set-up-payments"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="scroll-mt-24 rounded-2xl border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.06] via-white/[0.02] to-transparent overflow-hidden"
+    >
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-white/[0.06]">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#B8FF00]">
+              Action Required
+            </p>
+            <h2 className="text-lg font-semibold text-white mt-1">
+              Set up your monthly contribution
+            </h2>
+            <p className="text-xs text-white/50 mt-1.5 max-w-md leading-relaxed">
+              Your KYC is verified — last step is configuring your first
+              contribution. Once this is done, payments run automatically.
+            </p>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-[#B8FF00]/15 px-2.5 py-1 text-[11px] font-bold text-[#B8FF00]">
+            {planInfo.name} · {planInfo.monthly}
+          </span>
+        </div>
+      </div>
+
+      {/* Plan summary line */}
+      <div className="px-6 py-4 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between flex-wrap gap-2">
+        <div className="text-xs text-white/55">
+          via{" "}
+          <span className="text-white/80 font-semibold">{planInfo.payment}</span>
+          {planInfo.fee ? (
+            <span className="text-white/40"> · {planInfo.fee}</span>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Body — variant per plan */}
+      <div className="p-6 space-y-5">
+        {/* ── Basic: EFT bank details ── */}
+        {isBasic && (
+          <>
+            <div className="rounded-xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+              <div className="px-5 py-3 border-b border-white/[0.06] bg-[#B8FF00]/[0.04]">
+                <p className="text-sm font-bold text-[#B8FF00]">
+                  EFT Bank Details
+                </p>
+                <p className="text-[11px] text-white/40 mt-0.5">
+                  Transfer R1,000 to the account below on the 1st of each month
+                </p>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                {[
+                  { label: "Bank", value: BANK_DETAILS.bank },
+                  { label: "Account Name", value: BANK_DETAILS.accountName },
+                  {
+                    label: "Account Number",
+                    value: BANK_DETAILS.accountNumber,
+                  },
+                  { label: "Branch Code", value: BANK_DETAILS.branchCode },
+                  { label: "Account Type", value: BANK_DETAILS.accountType },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-[10px] text-white/35 font-medium uppercase tracking-wide">
+                        {row.label}
+                      </p>
+                      <p className="text-sm text-white font-semibold">
+                        {row.value}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(row.value, row.label)}
+                      className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+                      aria-label={`Copy ${row.label}`}
+                    >
+                      {copiedField === row.label ? (
+                        <Check className="w-4 h-4 text-[#B8FF00]" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-white/30" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+
+                {/* EFT reference — surface it loudly because it's the
+                    only mechanism admins have to reconcile your transfer
+                    against your member record. */}
+                <div className="mt-2 pt-3 border-t border-white/[0.08]">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] text-[#B8FF00]/70 font-bold uppercase tracking-wide">
+                        Your Payment Reference
+                      </p>
+                      <p className="text-base text-[#B8FF00] font-extrabold tracking-wide">
+                        {eftReference}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyToClipboard(eftReference, "reference")
+                      }
+                      className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+                      aria-label="Copy reference"
+                    >
+                      {copiedField === "reference" ? (
+                        <Check className="w-4 h-4 text-[#B8FF00]" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-white/30" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-white/35 mt-1">
+                    Always use this reference so we can match your payment
+                    to your account. Without it, reconciliation can take
+                    several days.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-white/45 leading-relaxed">
+              Once your transfer reflects, an admin will mark it received
+              within 24 hours and your member status flips to{" "}
+              <span className="text-white/70 font-semibold">Active</span>.
+            </p>
+          </>
+        )}
+
+        {/* ── Standard: Paystack debit order setup ── */}
+        {isStandard && (
+          <>
+            <div className="rounded-xl bg-white/[0.04] border border-[#46CDCF]/20 overflow-hidden">
+              <div className="px-5 py-3 border-b border-white/[0.06] bg-[#46CDCF]/[0.05]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#46CDCF]/15 flex items-center justify-center">
+                    <CreditCard className="w-4 h-4 text-[#46CDCF]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#46CDCF]">
+                      Paystack debit order
+                    </p>
+                    <p className="text-[11px] text-white/40 mt-0.5">
+                      Set it once — auto-debit R1,019.90 every month
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-sm text-white/70 leading-relaxed">
+                  Click below to set up your debit order on Paystack&apos;s
+                  secure checkout. Your first R1,019.90 contribution is
+                  charged today, and Paystack auto-debits the same amount on
+                  the same date every month after that.
+                </p>
+                <ul className="mt-4 space-y-2">
+                  <li className="flex items-start gap-2.5 text-xs text-white/55">
+                    <Check
+                      className="w-3.5 h-3.5 text-[#46CDCF] shrink-0 mt-0.5"
+                      strokeWidth={2.5}
+                    />
+                    <span>
+                      Paystack-secured — Lime Pages never sees your card
+                      details
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-white/55">
+                    <Check
+                      className="w-3.5 h-3.5 text-[#46CDCF] shrink-0 mt-0.5"
+                      strokeWidth={2.5}
+                    />
+                    <span>Cancel or change cards anytime from this portal</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-white/55">
+                    <Check
+                      className="w-3.5 h-3.5 text-[#46CDCF] shrink-0 mt-0.5"
+                      strokeWidth={2.5}
+                    />
+                    <span>
+                      R1,000 invested + R19.90 collection fee — fully
+                      transparent
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            {paystackError && (
+              <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+                {paystackError}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleStandardSubscribe}
+              disabled={isStartingPaystack}
+              className="w-full sm:w-auto bg-[#B8FF00] text-[#0B1933] font-bold rounded-full px-8 py-3.5 text-sm transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none flex items-center justify-center gap-2"
+            >
+              {isStartingPaystack ? (
+                <>
+                  <svg
+                    className="w-4 h-4 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  Redirecting to Paystack…
+                </>
+              ) : (
+                <>Subscribe — R1,019.90/month</>
+              )}
+            </button>
+          </>
+        )}
+
+        {/* ── VIP: coming soon placeholder ── */}
+        {isVip && (
+          <div className="rounded-xl bg-white/[0.04] border border-[#A855F7]/25 overflow-hidden">
+            <div className="px-5 py-3 border-b border-white/[0.06] bg-[#A855F7]/[0.06]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#A855F7]/15 flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-[#A855F7]" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#A855F7]">
+                    VIP plan — coming soon
+                  </p>
+                  <p className="text-[11px] text-white/40 mt-0.5">
+                    Inner-circle launch in a few weeks
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-4 text-sm text-white/65 leading-relaxed">
+              Your VIP spot is reserved. We&apos;re finalising the inner-circle
+              benefits (private WhatsApp group, Lime Connect listing,
+              leadership access) and we&apos;ll email you the moment VIP
+              enrolment is live — typically within 2–3 weeks. If you
+              prefer, you can switch to{" "}
+              <span className="text-[#46CDCF] font-semibold">Standard</span>{" "}
+              for immediate auto-debit setup — email{" "}
+              <a
+                href="mailto:lehumo@limepages.co.za"
+                className="text-[#46CDCF] hover:underline"
+              >
+                lehumo@limepages.co.za
+              </a>
+              .
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}

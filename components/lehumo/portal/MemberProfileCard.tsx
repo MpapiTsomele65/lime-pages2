@@ -1,7 +1,12 @@
 "use client";
 
-import { User, Mail, Phone, Hash, Globe } from "lucide-react";
-import { formatMemberNumber, type LehumoMember, type MemberStatus } from "@/lib/definitions";
+import { User, Mail, Phone, Hash, Globe, Wallet } from "lucide-react";
+import {
+  formatMemberNumber,
+  type LehumoMember,
+  type MemberPlan,
+  type MemberStatus,
+} from "@/lib/definitions";
 
 interface MemberProfileCardProps {
   member: LehumoMember;
@@ -13,6 +18,15 @@ const STATUS_STYLES: Record<MemberStatus, string> = {
   "On Hold": "bg-yellow-400/15 text-yellow-400",
   Exited: "bg-red-400/15 text-red-400",
   Prospect: "bg-white/10 text-white/60",
+};
+
+// Display copy for the three plan tiers. Renders tier name + monthly
+// total so members see what they signed up for at-a-glance. Mirrors
+// the SetUpPaymentsCard breakdown so the two surfaces stay consistent.
+const PLAN_DISPLAY: Record<MemberPlan, string> = {
+  basic: "Basic · R1,000/month",
+  standard: "Standard · R1,019.90/month",
+  vip: "VIP · R1,099/month",
 };
 
 export function MemberProfileCard({ member }: MemberProfileCardProps) {
@@ -49,6 +63,16 @@ export function MemberProfileCard({ member }: MemberProfileCardProps) {
         <ProfileRow icon={<Globe className="h-4 w-4" />} label="Source">
           {member.source || "N/A"}
         </ProfileRow>
+
+        {/* Plan tier — only shown when parseable from notes. Members
+            onboarded before plan capture, or whose notes have been
+            cleared, fall through to the row not rendering at all
+            rather than showing a misleading default. */}
+        {member.plan && (
+          <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Plan">
+            {PLAN_DISPLAY[member.plan]}
+          </ProfileRow>
+        )}
       </div>
     </div>
   );

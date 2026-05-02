@@ -23,23 +23,20 @@ export function StepConfirmation({
   skippedPayment,
 }: StepConfirmationProps) {
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verified, setVerified] = useState(false);
   const [memberNumber, setMemberNumber] = useState<number | undefined>(initialMemberNumber);
   const [error, setError] = useState<string | null>(null);
 
   const isBasicPlan = plan === "basic";
   const isEftReference = formData.reference?.startsWith("EFT-");
 
-  // Determine if we need to verify via Paystack
+  // Determine if we need to verify via Paystack — only when a real
+  // Paystack reference is present (not an EFT pseudo-reference) and
+  // payment wasn't skipped.
   const needsPaystackVerification =
     formData.reference && !isEftReference && !skippedPayment;
 
   useEffect(() => {
-    // Skip verification for Basic/EFT plan or if payment was skipped
-    if (!needsPaystackVerification) {
-      setVerified(true);
-      return;
-    }
+    if (!needsPaystackVerification) return;
 
     async function verifyPayment() {
       setIsVerifying(true);
@@ -52,7 +49,6 @@ export function StepConfirmation({
         }
         const data = await res.json();
         setMemberNumber(data.memberNumber);
-        setVerified(true);
       } catch (err) {
         setError(
           err instanceof Error
@@ -67,46 +63,67 @@ export function StepConfirmation({
     verifyPayment();
   }, [formData.reference, needsPaystackVerification]);
 
-  // Dynamic next-steps based on plan + payment status
-  const NEXT_STEPS = [
-    {
-      number: 1,
-      title: "Submit KYC Documents",
-      description:
-        "Send your SA ID/passport and proof of address via WhatsApp or email to lehumo@limepages.co.za.",
-    },
-    ...(isBasicPlan
-      ? [
-          {
-            number: 2,
-            title: "Make Your First EFT Payment",
-            description:
-              "Transfer R1,000 to the Lime Pages bank account using your unique reference. Payments are due on the 1st of each month.",
-          },
-        ]
-      : skippedPayment
-        ? [
-            {
-              number: 2,
-              title: "We'll Email You When Debit Orders Go Live",
-              description:
-                "We're finalising our payment provider verification. Watch your inbox over the next 2–3 weeks — you'll be among the first to activate.",
-            },
-          ]
-        : []),
-    {
-      number: isBasicPlan || skippedPayment ? 3 : 2,
-      title: "Join the WhatsApp Group",
-      description:
-        "Get added to the Lehumo members WhatsApp group for updates and community.",
-    },
-    {
-      number: isBasicPlan || skippedPayment ? 4 : 3,
-      title: "Attend Your First Meeting",
-      description:
-        "Join the monthly member meeting to meet the team and fellow members.",
-    },
-  ];
+  // Dynamic next-steps. Two flows land here:
+  //
+  //   1. Fresh onboarding completion (no `reference`): wizard finished
+  //      Steps 1–3, member committed a plan + captured ID metadata.
+  //      They have NOT uploaded KYC docs or set up payments yet — both
+  //      happen on the portal. Steps walk them toward portal login.
+  //
+  //   2. First-payment Paystack callback (has `reference`): member
+  //      already onboarded, then set up debit order from portal,
+  //      Paystack redirected back here. Their first contribution has
+  //      just been verified and the member is now Active. Steps focus
+  //      on community onboarding.
+  const isPostPayment = !!formData.reference;
+  const NEXT_STEPS = isPostPayment
+    ? [
+        {
+          number: 1,
+          title: "Your First Contribution Is In",
+          description:
+            "We've credited your account. Your debit order will run on the same day each month going forward — change cards or pause anytime from your portal.",
+        },
+        {
+          number: 2,
+          title: "Track Progress In The Portal",
+          description:
+            "Your member portal shows monthly contribution status, emergency-access eligibility, and your beneficiary record.",
+        },
+        {
+          number: 3,
+          title: "Join The WhatsApp Group",
+          description:
+            "We'll add you to the Lehumo members WhatsApp group for updates, monthly meetings, and community.",
+        },
+      ]
+    : [
+        {
+          number: 1,
+          title: "Watch Your Inbox For The Welcome Email",
+          description:
+            "Confirmation of your application is on its way to your email. Check spam if you don't see it within an hour.",
+        },
+        {
+          number: 2,
+          title: "Log In To Upload KYC Documents",
+          description:
+            "Sign into your member portal to upload a copy of your ID and proof of address. Admin verifies within 24 hours.",
+        },
+        {
+          number: 3,
+          title: "Set Up Your Monthly Contribution",
+          description: isBasicPlan
+            ? "Once KYC is approved, the portal shows the EFT details + your unique reference for your first R1,000 transfer."
+            : "Once KYC is approved, the portal lets you set up your Paystack debit order in two clicks — first contribution and recurring billing in one ceremony.",
+        },
+        {
+          number: 4,
+          title: "Join The WhatsApp Group + First Meeting",
+          description:
+            "After verification we'll add you to the Lehumo members WhatsApp group and invite you to the next monthly meeting.",
+        },
+      ];
 
   if (isVerifying) {
     return (
@@ -211,8 +228,9 @@ export function StepConfirmation({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          Welcome to Lehumo
-          {formData.fullName ? `, ${formData.fullName.split(" ")[0]}` : ""}!
+          {isPostPayment
+            ? `Welcome${formData.fullName ? `, ${formData.fullName.split(" ")[0]}` : ""}!`
+            : `Application In${formData.fullName ? `, ${formData.fullName.split(" ")[0]}` : ""}`}
         </motion.h2>
 
         {memberNumber && (
@@ -232,11 +250,9 @@ export function StepConfirmation({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
         >
-          {skippedPayment
-            ? "Your founding-member spot is reserved. We'll email you as soon as debit order setup is live."
-            : isBasicPlan
-              ? "Your membership account has been created. Make your first EFT payment to activate your investment."
-              : "Your membership has been confirmed. Here is what happens next on your journey to building generational wealth."}
+          {isPostPayment
+            ? "Your first contribution is credited and your membership is active. Your monthly debit order will run from now on."
+            : "Your application is in. We'll review your submission within 24 hours. The next steps below happen on your member portal — sign in once your KYC is verified."}
         </motion.p>
       </div>
 

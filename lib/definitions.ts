@@ -599,6 +599,46 @@ export interface LehumoMember {
   activeLoanBalance?: number;
   activeLoanIssuedAt?: string; // YYYY-MM-DD (Airtable date-only field)
   activeLoanType?: ActiveLoanType | "";
+  // ── Plan tier captured during onboarding Step 2 (basic / standard / vip).
+  //    Stored in the notes blob as "Plan: <tier>" pending a dedicated
+  //    Airtable column; parseRecord extracts it on read so portal + admin
+  //    UI can display the chosen tier and the SetUpPaymentsCard can route
+  //    to the correct payment ceremony (manual EFT for basic, Paystack
+  //    debit-order for standard, hold for VIP).
+  plan?: MemberPlan;
+}
+
+/**
+ * Plan tiers a member chooses during Step 2 of onboarding. Distinct from
+ * the Contributions-table `ContributionPlan` enum (Standard/Premium/
+ * Custom) — those are per-row admin classifications. This is the
+ * member's standing tier:
+ *   - `basic`   — R1,000/month, manual EFT
+ *   - `standard`— R1,019.90/month (R1,000 + R19.90 fee), Paystack debit order
+ *   - `vip`     — R1,099/month (R1,000 + R99 fee), Paystack + inner-circle perks
+ */
+export type MemberPlan = "basic" | "standard" | "vip";
+
+/**
+ * Pull the member's plan tier out of the free-text `notes` field. Notes
+ * are stored as pipe-delimited segments by the onboard route, e.g.:
+ *   "Intent: Ready to join | Commitment: R1 000 | Plan: standard | Source of Funds: Salary"
+ *
+ * We pluck the `Plan: <tier>` segment and validate it against the
+ * MemberPlan enum so a typo or stale value falls through to undefined
+ * rather than rendering "Plan: garble" in the UI. Used by both
+ * parseRecord variants (member + admin) so portal + admin surfaces
+ * see the same canonical plan.
+ */
+export function extractPlanFromNotes(notes: string): MemberPlan | undefined {
+  if (!notes) return undefined;
+  const match = /(?:^|\|)\s*Plan:\s*([a-z]+)/i.exec(notes);
+  if (!match) return undefined;
+  const candidate = match[1].toLowerCase();
+  if (candidate === "basic" || candidate === "standard" || candidate === "vip") {
+    return candidate;
+  }
+  return undefined;
 }
 
 /**

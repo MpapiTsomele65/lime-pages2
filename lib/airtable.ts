@@ -10,6 +10,7 @@ import {
   RELATIONSHIP_CHOICE_ID_TO_NAME,
   LOAN_TYPE_CHOICE_ID_TO_NAME,
   CONTRIBUTION_SOURCE,
+  extractPlanFromNotes,
   formatMemberNumber,
   idTypeToAirtable,
   todayDate,
@@ -126,6 +127,10 @@ export function parseRecord(record: any): LehumoMember {
     ),
     notes: f[AIRTABLE_FIELDS.notes] || "",
     contributions,
+    // Plan tier — derived from the notes blob (see extractPlanFromNotes).
+    // Falls through to undefined for legacy members onboarded before
+    // Step 2 was added or whose notes have been cleared.
+    plan: extractPlanFromNotes(f[AIRTABLE_FIELDS.notes] || ""),
     // ── KYC fields (Tier 2A) — all optional, populated post-onboarding ──
     idType: resolveSelect(
       f[AIRTABLE_FIELDS.idType],

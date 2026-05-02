@@ -12,6 +12,7 @@ import { KycStatusTracker } from "./KycStatusTracker";
 import { KycDocumentsCard } from "./KycDocumentsCard";
 import { BeneficiaryCard } from "./BeneficiaryCard";
 import { PaymentCard } from "./PaymentCard";
+import { SetUpPaymentsCard } from "./SetUpPaymentsCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
 import { CompletenessMeter } from "./CompletenessMeter";
 import { EmergencyAccessCard } from "./EmergencyAccessCard";
@@ -60,6 +61,25 @@ export function DashboardOverview({
         0,
       )
     : Object.values(member.contributions).filter(Boolean).length * 1000;
+
+  // Has the member made their first payment? Same dual-source-of-truth
+  // pattern: prefer the rich Contributions table when available, fall
+  // back to the 12-month boolean projection. Drives the SetUpPaymentsCard
+  // → PaymentCard transition — the setup card retires the moment any
+  // contribution lands (Paystack debit, manual EFT reconciled by admin,
+  // anything counted).
+  const hasFirstContribution = member.contributionRows
+    ? member.contributionRows.some((row) => row.status === "Paid")
+    : Object.values(member.contributions).some(Boolean);
+
+  // Show the post-onboarding payment-setup ceremony only when the
+  // member has actually been verified AND hasn't paid yet. Before KYC
+  // verification, asking for card details is premature — the flow
+  // gates payment behind admin approval per the May 2026 onboarding
+  // redesign.
+  const needsPaymentSetup =
+    member.kycStatus === "Complete" && !hasFirstContribution;
+  const memberPlan = member.plan ?? "standard";
 
   return (
     <div className="space-y-8">
@@ -116,19 +136,40 @@ export function DashboardOverview({
         </motion.div>
       )}
 
+      {/* Set-up-payments card — first-payment ceremony for verified
+          members. Shown ABOVE the regular dashboard grid because it's
+          the highest-priority action a freshly-onboarded member has,
+          and it has to compete with nothing else for attention. Once
+          the first contribution lands, this card retires and the
+          ContributionReminderCard + PaymentCard take over below. */}
+      {needsPaymentSetup && (
+        <SetUpPaymentsCard
+          plan={memberPlan}
+          memberId={member.id}
+          email={member.email}
+          fullName={member.fullName}
+          memberNumber={member.memberNumber}
+        />
+      )}
+
       {/* Current-month contribution reminder. Sits high so the most
           common monthly action is one tap away. Renders nothing when
           the member has paid all 12 months (PaymentCard already shows
           the celebration state in that case) — and renders a quiet
-          confirmation chip when this month is already paid. */}
-      <ContributionReminderCard
-        contributions={member.contributions}
-        contributionRows={member.contributionRows}
-        currentMonth={currentMonth}
-        currentPeriod={currentPeriod}
-        daysLeftInMonth={daysLeftInMonth}
-        beforeLaunch={beforeLaunch}
-      />
+          confirmation chip when this month is already paid.
+          Also suppressed during the SetUpPaymentsCard phase so we
+          don't give a member two competing "pay" prompts pre-first-
+          contribution. */}
+      {!needsPaymentSetup && (
+        <ContributionReminderCard
+          contributions={member.contributions}
+          contributionRows={member.contributionRows}
+          currentMonth={currentMonth}
+          currentPeriod={currentPeriod}
+          daysLeftInMonth={daysLeftInMonth}
+          beforeLaunch={beforeLaunch}
+        />
+      )}
 
       {/* Community pool overview */}
       {communityStats && (
@@ -165,22 +206,29 @@ export function DashboardOverview({
           <KycStatusTracker status={member.kycStatus} />
         </motion.div>
 
-        <motion.div
-          id="payment"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-          className="scroll-mt-24"
-        >
-          <PaymentCard
-            contributions={member.contributions}
-            contributionRows={member.contributionRows}
-            currentPeriod={currentPeriod}
-            email={member.email}
-            memberId={member.id}
-            beforeLaunch={beforeLaunch}
-          />
-        </motion.div>
+        {/* Per-month PaymentCard — suppressed during the first-payment
+            setup phase so members see the SetUpPaymentsCard at the top
+            without a second pay-now affordance below. Once the first
+            contribution lands, this card returns and handles every
+            subsequent month's status in its rich 60-period view. */}
+        {!needsPaymentSetup && (
+          <motion.div
+            id="payment"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+            className="scroll-mt-24"
+          >
+            <PaymentCard
+              contributions={member.contributions}
+              contributionRows={member.contributionRows}
+              currentPeriod={currentPeriod}
+              email={member.email}
+              memberId={member.id}
+              beforeLaunch={beforeLaunch}
+            />
+          </motion.div>
+        )}
       </div>
 
       {/* Emergency Access — surfaces the member's 20% self-loan position.
