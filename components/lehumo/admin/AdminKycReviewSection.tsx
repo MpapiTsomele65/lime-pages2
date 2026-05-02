@@ -28,9 +28,26 @@ import {
   type AdminActionResult,
 } from "@/app/lehumo/portal/admin/actions";
 import { compressImage } from "@/lib/compress-image";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface AdminKycReviewSectionProps {
   initialMembers: LehumoMember[];
+}
+
+/**
+ * Holds the state for an in-flight destructive admin action that's
+ * waiting on a confirmation dialog. The shape is generic so future
+ * destructive actions (member deletion, status reversion, etc) can
+ * funnel through the same dialog without a per-action redesign.
+ */
+interface PendingConfirm {
+  title: string;
+  description: React.ReactNode;
+  confirmLabel: string;
+  /** Action to fire when the admin clicks Confirm. The state is
+   *  cleared (dialog closes) before the action runs so a slow
+   *  Airtable PATCH doesn't leave the dialog hanging open. */
+  onConfirm: () => void;
 }
 
 const ACCEPT_ATTR = "image/jpeg,image/png,image/heic,image/heif,application/pdf";
@@ -74,6 +91,15 @@ export function AdminKycReviewSection({
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  // Confirmation dialog state — every Remove action funnels through
+  // this so a misclick on a phone or trackpad doesn't immediately
+  // wipe a KYC attachment. The action is held in `pendingConfirm`
+  // until the admin clicks the destructive Confirm button (which
+  // then runs the action), or Cancel / Esc / outside-click which
+  // drops the dialog without firing.
+  const [pendingConfirm, setPendingConfirm] =
+    useState<PendingConfirm | null>(null);
 
   const queue = useMemo(() => members.filter(isInReviewQueue), [members]);
 
@@ -154,11 +180,34 @@ export function AdminKycReviewSection({
                   adminRequestKycResubmission(member.id),
                 )
               }
-              onClearSlot={(slot) =>
-                runAction(`${member.id}:clear:${slot}`, () =>
-                  adminClearKycAttachment(member.id, slot),
-                )
-              }
+              onClearSlot={(slot) => {
+                // Route every destructive Remove through the
+                // confirmation dialog. The Airtable PATCH only fires
+                // if the admin clicks Confirm; Cancel / Esc / outside-
+                // click drops the action entirely.
+                const slotLabel =
+                  slot === "id" ? "ID Document" : "Proof of Address";
+                setPendingConfirm({
+                  title: `Remove ${slotLabel}?`,
+                  description: (
+                    <>
+                      This deletes the file from{" "}
+                      <span className="text-white font-medium">
+                        {member.fullName || "this member"}
+                      </span>
+                      &apos;s record. Other onboarding data (ID type,
+                      address, beneficiary, contributions) is preserved.
+                      Re-uploading is a one-click fix if this was the
+                      wrong action.
+                    </>
+                  ),
+                  confirmLabel: "Remove",
+                  onConfirm: () =>
+                    runAction(`${member.id}:clear:${slot}`, () =>
+                      adminClearKycAttachment(member.id, slot),
+                    ),
+                });
+              }}
               onRefresh={() => router.refresh()}
               onUploadError={setError}
               setBusyKey={setBusyKey}
@@ -166,6 +215,25 @@ export function AdminKycReviewSection({
           ))}
         </ul>
       )}
+
+      {/* Destructive-action confirmation dialog — backs every Remove
+          (and future member-deletion / status-reversion) flow. Lives
+          at the section root so a single instance covers every row. */}
+      <ConfirmDialog
+        open={pendingConfirm !== null}
+        title={pendingConfirm?.title ?? ""}
+        description={pendingConfirm?.description}
+        confirmLabel={pendingConfirm?.confirmLabel ?? "Confirm"}
+        destructive
+        onConfirm={() => {
+          // Snapshot + clear before firing so the dialog can't be
+          // double-clicked into running the action twice.
+          const action = pendingConfirm?.onConfirm;
+          setPendingConfirm(null);
+          action?.();
+        }}
+        onCancel={() => setPendingConfirm(null)}
+      />
     </section>
   );
 }
@@ -569,20 +637,10 @@ function DocSlot({
         </button>
         <button
           type="button"
-          onClick={() => {
-            // Confirm before destroying — wrong-member uploads are
-            // exactly the case this button exists for, but a misclick
-            // on a verified member's doc shouldn't be a one-click
-            // operation. Native confirm() is fine here; no need for a
-            // bespoke modal in the admin tooling.
-            if (
-              window.confirm(
-                `Remove this ${label} attachment? Other onboarding data is preserved.`,
-              )
-            ) {
-              onClear();
-            }
-          }}
+          // Confirmation is handled by the parent's ConfirmDialog —
+          // clicking Remove queues the action; the styled modal asks
+          // "Are you sure?" with focus on Cancel by default.
+          onClick={onClear}
           disabled={disabled}
           className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9CA3AF] hover:text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           title="Delete this attachment without changing other onboarding data — for wrong-file or wrong-member uploads"
