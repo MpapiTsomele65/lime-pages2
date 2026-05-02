@@ -9,7 +9,7 @@ import { AIRTABLE_FIELDS } from "@/lib/definitions";
  *
  * Lets a member change their plan tier (basic / standard / vip)
  * before they've made their first contribution. Use case: someone
- * picked Standard during onboarding, sees the R19.90 collection fee
+ * picked Standard during onboarding, sees the 2% service fee
  * on the SetUpPaymentsCard, decides they'd rather DIY via EFT to
  * save the fee. Or a Basic-plan member wants the convenience of
  * automated debit and switches to Standard.

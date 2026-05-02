@@ -68,9 +68,9 @@ const plans = [
     name: "Standard",
     price: "R1,000",
     priceSuffix: "/month",
-    priceNote: "R1,019.90 total monthly debit",
-    planFee: "+ R19.90 collection fee",
-    planFeeAmount: "R19.90",
+    priceNote: "R1,020 total monthly debit",
+    planFee: "+ 2% service fee",
+    planFeeAmount: "2%",
     tagline: "Set it and forget it",
     color: "teal",
     borderColor: "border-teal/30",
@@ -89,7 +89,7 @@ const plans = [
     features: [
       "Automated via Paystack — never miss a payment",
       "Earlier emergency loan access at 6 months",
-      "R19.90/mo fee — transparent, no hidden costs",
+      "2% service fee — transparent, no hidden costs",
     ],
     notIncluded: [
       "WhatsApp VIP group",
@@ -104,11 +104,9 @@ const plans = [
     name: "VIP",
     price: "R1,000",
     priceSuffix: "/month",
-    // Pricing is illustrative — final value prop is still being shaped, so
-    // we deliberately don't promise a debit total yet.
-    priceNote: "Tier in refinement · pricing indicative",
-    planFee: "+ R100 platform fee",
-    planFeeAmount: "R100",
+    priceNote: "R1,050 total monthly debit",
+    planFee: "+ 5% service fee",
+    planFeeAmount: "5%",
     tagline: "Inner circle — coming soon",
     color: "purple",
     borderColor: "border-[#A855F7]/30",

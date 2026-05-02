@@ -15,8 +15,8 @@ import type { MemberPlan } from "@/lib/definitions";
 // which is the recommended default tier.
 const PLAN_AMOUNTS_ZAR: Record<MemberPlan, number> = {
   basic: 1000,
-  standard: 1019.9,
-  vip: 1099,
+  standard: 1020, // R1,000 + 2% service fee
+  vip: 1050, // R1,000 + 5% service fee
 };
 
 // ─── SAST period helper ─────────────────────────────────────────────

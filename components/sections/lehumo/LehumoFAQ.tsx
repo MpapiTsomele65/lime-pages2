@@ -157,13 +157,13 @@ const FAQ: FaqItem[] = [
           zero fees — you transfer R1,000 manually each month, and emergency
           loan access unlocks at month 12.{" "}
           <span className="text-white font-semibold">Standard</span> adds a{" "}
-          <span className="text-lime font-semibold">R19.90/mo collection fee</span>{" "}
-          for the Paystack debit-order automation, portal hosting, KYC
-          processing and reconciliation — and unlocks emergency loan access
-          six months earlier (month 6).
+          <span className="text-lime font-semibold">2% service fee</span>{" "}
+          (~R20/month) for the Paystack debit-order automation, portal
+          hosting, KYC processing and reconciliation — and unlocks emergency
+          loan access six months earlier (month 6).
         </p>
         <p className="mt-3">
-          The <span className="text-white font-semibold">R100 VIP tier</span>{" "}
+          The <span className="text-white font-semibold">VIP tier (5% service fee, ~R50/month)</span>{" "}
           is still in refinement — value proposition isn&rsquo;t finalised
           yet, so it&rsquo;s flagged as <em>coming soon</em> on the plans
           page. The current thinking is private WhatsApp, Lime Connect

@@ -38,14 +38,14 @@ const PLAN_DETAILS: Record<
   },
   standard: {
     name: "Standard",
-    monthly: "R1,019.90/month",
-    fee: "R19.90 collection fee",
+    monthly: "R1,020/month",
+    fee: "2% service fee",
     payment: "Automated Debit Order",
   },
   vip: {
     name: "VIP",
-    monthly: "R1,099/month",
-    fee: "R99 platform fee",
+    monthly: "R1,050/month",
+    fee: "5% service fee",
     payment: "Automated Debit Order",
   },
 };
@@ -345,7 +345,7 @@ export function SetUpPaymentsCard({
                       Paystack debit order
                     </p>
                     <p className="text-[11px] text-white/40 mt-0.5">
-                      Set it once — auto-debit R1,019.90 every month
+                      Set it once — auto-debit R1,020 every month
                     </p>
                   </div>
                 </div>
@@ -353,7 +353,7 @@ export function SetUpPaymentsCard({
               <div className="px-5 py-4">
                 <p className="text-sm text-white/70 leading-relaxed">
                   Click below to set up your debit order on Paystack&apos;s
-                  secure checkout. Your first R1,019.90 contribution is
+                  secure checkout. Your first R1,020 contribution is
                   charged today, and Paystack auto-debits the same amount on
                   the same date every month after that.
                 </p>
@@ -381,7 +381,7 @@ export function SetUpPaymentsCard({
                       strokeWidth={2.5}
                     />
                     <span>
-                      R1,000 invested + R19.90 collection fee — fully
+                      R1,000 invested + 2% service fee — fully
                       transparent
                     </span>
                   </li>
@@ -423,7 +423,7 @@ export function SetUpPaymentsCard({
                   Redirecting to Paystack…
                 </>
               ) : (
-                <>Subscribe — R1,019.90/month</>
+                <>Subscribe — R1,020/month</>
               )}
             </button>
           </>
@@ -462,7 +462,7 @@ export function SetUpPaymentsCard({
         {/* ── Plan switcher footer ────────────────────────────────────
             Available pre-first-payment so members can change their
             mind — e.g. picked Standard during onboarding, sees the
-            R19.90 collection fee, decides Basic EFT is more their
+            2% service fee, decides Basic EFT is more their
             speed. Hides the option for the current plan. The server
             blocks switches once the first contribution lands and
             surfaces an email-the-admin path. */}
@@ -489,7 +489,7 @@ export function SetUpPaymentsCard({
                 disabled={isSwitchingPlan}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#46CDCF]/20 bg-[#46CDCF]/[0.05] px-3.5 py-1.5 text-xs font-semibold text-[#46CDCF] hover:bg-[#46CDCF]/[0.12] disabled:opacity-50 transition-colors"
               >
-                Switch to Standard · R1,019.90 debit
+                Switch to Standard · R1,020 debit
               </button>
             )}
           </div>

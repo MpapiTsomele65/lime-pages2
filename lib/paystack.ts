@@ -66,14 +66,22 @@ export async function initializeTransaction(params: {
 // ─── Plan Amount Resolution ─────────────────────────────────────────
 // Maps a Lehumo plan key to its kobo amount for `transaction/initialize`.
 // Must match the amount configured on the corresponding Paystack Plan.
-// Standard: R1,019.90 = 101,990 kobo (R1,000 contribution + R19.90 fee).
+//
+// Pricing (May 2026):
+//   - Standard: R1,020 = 102,000 kobo (R1,000 contribution + 2% service fee)
+//   - VIP:      R1,050 = 105,000 kobo (R1,000 contribution + 5% service fee)
+//
+// IMPORTANT: when these amounts are changed, the Paystack Plan
+// configured in the dashboard (and referenced via the
+// PAYSTACK_PLAN_CODE_STANDARD / PAYSTACK_PLAN_CODE_VIP env vars)
+// MUST be updated to match — Paystack rejects transactions where
+// the request amount differs from the plan's configured amount.
 export function getAmountForPlan(plan: string): number | null {
   switch (plan) {
     case "standard":
-      return 101990;
+      return 102000;
     case "vip":
-      // Coming soon — no amount configured yet.
-      return null;
+      return 105000;
     default:
       return null;
   }
