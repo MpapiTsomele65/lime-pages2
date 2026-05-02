@@ -9,6 +9,8 @@ import {
   KYC_CHOICE_ID_TO_NAME,
   SOURCE_CHOICE_ID_TO_NAME,
   ID_TYPE_CHOICE_ID_TO_NAME,
+  RELATIONSHIP_CHOICE_ID_TO_NAME,
+  LOAN_TYPE_CHOICE_ID_TO_NAME,
   buildContributionKey,
   formatMemberNumber,
   parseContributionPeriod,
@@ -16,6 +18,7 @@ import {
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
+  type BeneficiaryRelationship,
 } from "./definitions";
 import {
   getContributionByKey,
@@ -118,6 +121,36 @@ function parseRecord(record: any): LehumoMember {
     kycProofOfAddress: poaDoc && poaDoc.length > 0 ? poaDoc : undefined,
     kycSubmittedAt: f[AIRTABLE_FIELDS.kycSubmittedAt] || undefined,
     kycVerifiedAt: f[AIRTABLE_FIELDS.kycVerifiedAt] || undefined,
+    // ── Beneficiary / next-of-kin (mirror lib/airtable.ts:parseRecord) ──
+    // These were missing from this admin-side copy of parseRecord
+    // until May 2026; consequence was that the admin dashboard +
+    // member table both showed 0 beneficiaries on file even when the
+    // member-portal write had successfully landed in Airtable. Keep
+    // this block in lockstep with the canonical parseRecord — any
+    // schema column added there must be added here too.
+    beneficiaryFirstName: f[AIRTABLE_FIELDS.beneficiaryFirstName] || undefined,
+    beneficiarySurname: f[AIRTABLE_FIELDS.beneficiarySurname] || undefined,
+    beneficiaryRelationship: resolveSelect(
+      f[AIRTABLE_FIELDS.beneficiaryRelationship],
+      RELATIONSHIP_CHOICE_ID_TO_NAME,
+      "",
+    ) as BeneficiaryRelationship | "",
+    beneficiaryPhone: f[AIRTABLE_FIELDS.beneficiaryPhone] || undefined,
+    beneficiaryEmail: f[AIRTABLE_FIELDS.beneficiaryEmail] || undefined,
+    beneficiaryAddress: f[AIRTABLE_FIELDS.beneficiaryAddress] || undefined,
+    beneficiaryUpdatedAt:
+      f[AIRTABLE_FIELDS.beneficiaryUpdatedAt] || undefined,
+    // ── Active loan ledger (also missing from this copy until May 2026) ──
+    activeLoanBalance:
+      typeof f[AIRTABLE_FIELDS.activeLoanBalance] === "number"
+        ? (f[AIRTABLE_FIELDS.activeLoanBalance] as number)
+        : undefined,
+    activeLoanIssuedAt: f[AIRTABLE_FIELDS.activeLoanIssuedAt] || undefined,
+    activeLoanType: resolveSelect(
+      f[AIRTABLE_FIELDS.activeLoanType],
+      LOAN_TYPE_CHOICE_ID_TO_NAME,
+      "",
+    ) as "Self" | "P2P" | "",
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -155,97 +188,10 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
     for (const record of data.records ?? []) {
       out.push(parseRecord(record));
     }
-    // ── DIAGNOSTIC ──
-    // On the FIRST page only, find the most-populated member record
-    // and dump every field key + first ~50 chars of each value. The
-    // previous version sampled records[0] which landed on a sparse
-    // prospect with no beneficiary data — useless for diagnosing
-    // field-ID drift. The "richest" member (most populated keys) is
-    // far more likely to be Mpapi / Londani — both fully onboarded
-    // with KYC + beneficiary on file.
-    if (!offset && (data.records?.length ?? 0) > 0) {
-      const records = data.records as Array<{
-        id: string;
-        fields: Record<string, unknown>;
-      }>;
-      const richest = records.reduce((best, r) =>
-        Object.keys(r.fields ?? {}).length >
-        Object.keys(best.fields ?? {}).length
-          ? r
-          : best,
-      );
-      console.log(
-        `[listAllMembers] richest member ${richest.id} has ${Object.keys(richest.fields ?? {}).length} fields populated`,
-      );
-      console.log(
-        `[listAllMembers] richest member field IDs: ${JSON.stringify(
-          Object.keys(richest.fields ?? {}),
-        )}`,
-      );
-      console.log(
-        `[listAllMembers] richest member field values: ${Object.entries(
-          richest.fields ?? {},
-        )
-          .map(([k, v]) => {
-            const s = typeof v === "string" ? v : JSON.stringify(v);
-            return `${k}=${s.length > 50 ? `${s.slice(0, 50)}…` : s}`;
-          })
-          .join(" | ")}`,
-      );
-    }
     offset = data.offset;
   } while (offset);
 
   out.sort((a, b) => a.memberNumber - b.memberNumber);
-
-  // ── DIAGNOSTIC ─────────────────────────────────────────────
-  // Beneficiary count tracker — investigating a report that
-  // beneficiary data isn't surfacing in the admin dashboard.
-  // Previous logs confirmed Airtable IS returning the data with
-  // matching field IDs, yet the parsed `out` array shows 0/25.
-  // Something is dropping the field between parseRecord's read
-  // and our count check. This log dumps the parsed beneficiary
-  // fields for Mpapi specifically (member #1 and the richest
-  // record by field count) so we can see what parseRecord actually
-  // produced.
-  const totalMembers = out.length;
-  const withBeneficiary = out.filter(
-    (m) =>
-      Boolean(m.beneficiaryFirstName?.trim()) &&
-      Boolean(m.beneficiarySurname?.trim()),
-  ).length;
-  const sampleNamed = out.find(
-    (m) => m.beneficiaryFirstName || m.beneficiarySurname,
-  );
-  console.log(
-    `[listAllMembers] beneficiary diag: ${withBeneficiary}/${totalMembers} on file. ` +
-      `sample: ${
-        sampleNamed
-          ? `member#${sampleNamed.memberNumber} firstName=${JSON.stringify(sampleNamed.beneficiaryFirstName)} surname=${JSON.stringify(sampleNamed.beneficiarySurname)}`
-          : "(none populated)"
-      }`,
-  );
-  // Direct parsed-shape inspection: find Mpapi (or any member whose
-  // fullName starts with M) and dump the four beneficiary string
-  // fields off the parsed object. This proves whether parseRecord
-  // produced the right values for someone we know has data.
-  const mpapi = out.find((m) =>
-    m.fullName.toLowerCase().includes("mpapi"),
-  );
-  if (mpapi) {
-    console.log(
-      `[listAllMembers] parsed Mpapi (#${mpapi.memberNumber}, ${mpapi.id}): ` +
-        `firstName=${JSON.stringify(mpapi.beneficiaryFirstName)} ` +
-        `surname=${JSON.stringify(mpapi.beneficiarySurname)} ` +
-        `relationship=${JSON.stringify(mpapi.beneficiaryRelationship)} ` +
-        `phone=${JSON.stringify(mpapi.beneficiaryPhone)} ` +
-        `updatedAt=${JSON.stringify(mpapi.beneficiaryUpdatedAt)}`,
-    );
-  } else {
-    console.log(
-      "[listAllMembers] could not find a member named 'mpapi' in parsed list",
-    );
-  }
 
   // ── Bulk hydration from the Contributions table ──
   // One full-table read for ~1,500 rows beats ~25 per-member fetches
