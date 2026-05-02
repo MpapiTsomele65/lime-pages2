@@ -571,24 +571,35 @@ function DocSlot({
       setUploadedBytes(0);
       setTotalBytes(prepared.size);
 
+      // 90-second hard timeout via AbortSignal. The PUT to Vercel
+      // Blob has been hanging indefinitely on some networks (likely
+      // ISP-level filtering of blob.vercel-storage.com — South
+      // African mobile networks have a history of this). Without a
+      // timeout, the promise never resolves AND never rejects, so
+      // the user sees a spinner forever. With one, an aborted upload
+      // surfaces as a real error in the toast — actionable, not
+      // silent.
+      const abortCtrl = new AbortController();
+      let stalledTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
+        abortCtrl.abort(new Error("Upload timed out after 90 seconds"));
+      }, 90_000);
+
       try {
         // Direct browser → Vercel Blob upload, then server-side
         // onUploadCompleted patches Airtable. Bypasses the 4.5 MB
-        // Vercel function body cap entirely — admin can now upload
-        // the back-channel KYC docs members emailed in (typically
-        // 4–8 MB phone photos / bank statement PDFs).
+        // Vercel function body cap entirely.
         //
         // `multipart: false` keeps the upload as a single PUT.
         // @vercel/blob v2 auto-shards files >5 MB into multipart
         // chunks; the finalize step has produced infinite 99%-loop
-        // retries on certain files in our environment. Forcing
-        // single PUT trades a small amount of parallelism for a
-        // monotonic, predictable progress curve.
+        // retries on certain files. Forcing single PUT trades a
+        // bit of parallelism for monotonic progress.
         await upload(`kyc/${slot}/${Date.now()}-${prepared.name}`, prepared, {
           access: "public",
           handleUploadUrl: "/api/lehumo/portal/admin/kyc-upload",
           contentType: prepared.type,
           multipart: false,
+          abortSignal: abortCtrl.signal,
           clientPayload: JSON.stringify({
             memberId,
             slot,
@@ -598,6 +609,14 @@ function DocSlot({
             setProgress(Math.round(percentage));
             setUploadedBytes(loaded);
             setTotalBytes(total);
+            // Reset + re-arm the stall timer on each progress event.
+            // Bytes flowing = upload is healthy, so push the abort
+            // 90s further out. Catches both "never started" hangs
+            // and "started then froze" mid-upload stalls.
+            clearTimeout(stalledTimer);
+            stalledTimer = setTimeout(() => {
+              abortCtrl.abort(new Error("Upload timed out after 90 seconds"));
+            }, 90_000);
           },
         });
 
@@ -610,8 +629,21 @@ function DocSlot({
         await new Promise((resolve) => setTimeout(resolve, 1500));
         onRefresh();
       } catch (err) {
-        onError(err instanceof Error ? err.message : "Upload failed");
+        // Differentiate timeout / abort from other errors so the
+        // user sees actionable copy. Network-level hangs (ISP
+        // filtering, etc) hit this branch with the abort message.
+        const isAbort =
+          err instanceof Error &&
+          (err.name === "AbortError" || err.message.includes("timed out"));
+        if (isAbort) {
+          onError(
+            "Upload stalled — no bytes received in 90 seconds. The most common cause is your network blocking Vercel Blob storage. Try uploading from a different network (mobile hotspot often works), or in an incognito browser window to rule out extensions.",
+          );
+        } else {
+          onError(err instanceof Error ? err.message : "Upload failed");
+        }
       } finally {
+        clearTimeout(stalledTimer);
         setBusyKey(null);
         setProgress(null);
         setUploadedBytes(0);

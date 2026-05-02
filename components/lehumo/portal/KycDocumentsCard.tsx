@@ -111,6 +111,19 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
       setUploadedBytes(0);
       setTotalBytes(file.size);
 
+      // 90-second hard timeout via AbortSignal. The PUT to Vercel
+      // Blob has been hanging indefinitely on some networks (likely
+      // ISP-level filtering of blob.vercel-storage.com — South
+      // African mobile networks have a history of this). Without a
+      // timeout, the promise never resolves AND never rejects, so
+      // the user sees a spinner forever. With one, an aborted upload
+      // surfaces as a real error in the slot's error message —
+      // actionable, not silent.
+      const abortCtrl = new AbortController();
+      let stalledTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
+        abortCtrl.abort(new Error("Upload timed out after 90 seconds"));
+      }, 90_000);
+
       try {
         // Direct browser → Vercel Blob upload. Our route mints a
         // signed token, browser PUTs the file straight to Blob
@@ -128,6 +141,7 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
           handleUploadUrl: "/api/lehumo/portal/member/kyc-upload",
           contentType: file.type,
           multipart: false,
+          abortSignal: abortCtrl.signal,
           clientPayload: JSON.stringify({
             slot: slot.key,
             filename: file.name,
@@ -138,6 +152,13 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
             setProgress(Math.round(percentage));
             setUploadedBytes(loaded);
             setTotalBytes(total);
+            // Reset the stall timer on each progress event — if
+            // bytes are flowing, we don't want to abort just
+            // because the file is large or the connection is slow.
+            clearTimeout(stalledTimer);
+            stalledTimer = setTimeout(() => {
+              abortCtrl.abort(new Error("Upload timed out after 90 seconds"));
+            }, 90_000);
           },
         });
 
@@ -149,12 +170,27 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         onUploaded();
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? `Upload failed: ${err.message}`
-            : "Upload failed. Please try again.",
-        );
+        // Differentiate timeout / abort from other errors so the
+        // member sees actionable copy. Network-level hangs (ISP
+        // filtering of blob.vercel-storage.com, captive portals,
+        // overly-aggressive corporate proxies) hit this branch with
+        // the abort message.
+        const isAbort =
+          err instanceof Error &&
+          (err.name === "AbortError" || err.message.includes("timed out"));
+        if (isAbort) {
+          setError(
+            "Upload stalled — no progress for 90 seconds. This usually means your network is blocking our storage provider. Try a different network (mobile hotspot often works) or email the document to lehumo@limepages.co.za.",
+          );
+        } else {
+          setError(
+            err instanceof Error
+              ? `Upload failed: ${err.message}`
+              : "Upload failed. Please try again.",
+          );
+        }
       } finally {
+        clearTimeout(stalledTimer);
         setBusy(false);
         setProgress(null);
         setUploadedBytes(0);
