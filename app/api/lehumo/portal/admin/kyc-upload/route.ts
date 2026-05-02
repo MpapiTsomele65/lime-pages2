@@ -9,16 +9,13 @@ import {
   setMemberKyc,
 } from "@/lib/airtable";
 
-const MAX_BYTES = 10 * 1024 * 1024;
-
-const ALLOWED_MIME = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/heic",
-  "image/heif",
-  "application/pdf",
-] as const;
+// Size + content-type constraints used to live on the signed token
+// (allowedContentTypes / maximumSizeInBytes), but Vercel Blob's
+// strict-equality MIME check caused 99%-loop retries on PDFs that
+// sent slightly off content types (e.g. `application/pdf;charset=binary`).
+// The client already filters via the file picker `accept` attr, the
+// admin-session gate above protects the endpoint, and Airtable does
+// its own content-type filtering on attachment fields downstream.
 
 /**
  * Admin-on-behalf KYC upload — Vercel Blob direct-upload path.
@@ -75,9 +72,27 @@ export async function POST(request: NextRequest) {
         const existing = await getMemberByIdLite(memberId);
         if (!existing) throw new Error("Member not found");
 
+        // Diagnostic: log the token-mint context so we can correlate
+        // with onUploadCompleted (or its absence) in Vercel logs.
+        // Drop once the upload-loop bug is resolved.
+        console.log(
+          `[admin kyc-upload] token mint: pathname=${pathname} member=${existing.memberNumber} slot=${slot} filename="${filename}"`,
+        );
+
         return {
-          allowedContentTypes: [...ALLOWED_MIME],
-          maximumSizeInBytes: MAX_BYTES,
+          // No allowedContentTypes / maximumSizeInBytes for now — those
+          // were the prime suspects for the 99%-then-loop bug Londani
+          // hit on her 5.8 MB POA PDF. If the browser sends a content
+          // type that doesn't *exactly* match our allowlist (e.g.
+          // `application/pdf;charset=binary`), Vercel Blob rejects on
+          // finalize and the client retries, looping forever. Dropping
+          // these constraints relies on:
+          //   - admin-session gate above (only authenticated admins)
+          //   - file picker `accept` attr (UX-level only, but typical)
+          //   - Airtable's own content-type filtering on attachment
+          //     fields (it rejects non-document content)
+          // A future revision can re-add these with wildcards once
+          // we confirm what the browser actually sends.
           tokenPayload: JSON.stringify({
             memberId: existing.id,
             slot,
@@ -86,10 +101,19 @@ export async function POST(request: NextRequest) {
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // ⚠ This callback fires via webhook from Vercel Blob AFTER
+        // the upload PUT completes. If we throw, the client's
+        // upload() promise rejects and the @vercel/blob client may
+        // retry the entire upload — which is exactly the
+        // 99%-then-loop bug we're chasing. Wrap everything in
+        // try/catch so we always return cleanly.
+        console.log(
+          `[admin kyc-upload] onUploadCompleted: url=${blob.url} pathname=${blob.pathname} contentType=${blob.contentType ?? "(unset)"}`,
+        );
         try {
           if (!tokenPayload) {
             console.error(
-              "admin kyc-upload onUploadCompleted: no tokenPayload, blob orphaned at",
+              "[admin kyc-upload] onUploadCompleted: no tokenPayload, blob orphaned at",
               blob.url,
             );
             return;
@@ -106,6 +130,9 @@ export async function POST(request: NextRequest) {
             blob.url,
             filename,
           );
+          console.log(
+            `[admin kyc-upload] Airtable PATCH ok for member=${memberId} slot=${slot}`,
+          );
 
           // Same first-doc auto-flip as the member route — admin
           // uploads land in the queue identically.
@@ -117,18 +144,32 @@ export async function POST(request: NextRequest) {
               kycStatus: "In Progress",
               markSubmittedNow: true,
             });
+            console.log(
+              `[admin kyc-upload] kycStatus flipped to In Progress for member=${memberId}`,
+            );
           }
 
-          await del(blob.url).catch((err) =>
-            console.error(
-              `Admin Blob cleanup failed for ${blob.pathname}:`,
-              err,
-            ),
-          );
+          // Defer the Blob delete — Airtable fetches the URL
+          // asynchronously after our PATCH (it queues the download).
+          // Deleting too soon means Airtable can't fetch and the
+          // attachment stays empty. 30s gives Airtable ample time.
+          // If it never deletes (function ends first), the blob
+          // sits at near-zero cost on the free tier and gets
+          // garbage-collected by Airtable's storage policy or
+          // can be cleaned manually from the Vercel dashboard.
+          setTimeout(() => {
+            del(blob.url).catch((err) =>
+              console.error(
+                `[admin kyc-upload] Blob cleanup failed for ${blob.pathname}:`,
+                err,
+              ),
+            );
+          }, 30_000);
         } catch (err) {
           console.error(
-            "admin kyc-upload onUploadCompleted error:",
+            "[admin kyc-upload] onUploadCompleted error:",
             err instanceof Error ? err.message : String(err),
+            err instanceof Error ? err.stack : undefined,
           );
         }
       },
