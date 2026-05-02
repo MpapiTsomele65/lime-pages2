@@ -81,19 +81,32 @@ export function DashboardOverview({
     member.kycStatus === "Complete" && !hasFirstContribution;
   const memberPlan = member.plan ?? "standard";
 
+  // Apple's iOS easing curve. Adopted across every motion entry on
+  // the dashboard so the page reveal feels like a single coherent
+  // animation rather than a stack of slightly-different fades.
+  const iosEase = [0.32, 0.72, 0, 1] as const;
+
   return (
     <div className="space-y-8">
-      {/* Welcome header */}
+      {/* Welcome header — refined typography with tighter tracking
+          and subtler member chip. Apple uses semibold for most
+          display text; reserving font-extrabold for the rare
+          numeric showcase. */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.55, ease: iosEase }}
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
       >
-        <h1 className="text-2xl md:text-3xl font-bold text-white">
-          Welcome back, {firstName}
-        </h1>
-        <span className="inline-flex items-center self-start rounded-full bg-[#B8FF00]/10 px-3 py-1 text-xs font-medium text-[#B8FF00]">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35 mb-1.5">
+            Member Portal
+          </p>
+          <h1 className="text-[28px] md:text-[34px] font-semibold tracking-tight text-white leading-[1.1]">
+            Welcome back, {firstName}
+          </h1>
+        </div>
+        <span className="inline-flex items-center self-start rounded-full bg-[#B8FF00]/[0.12] border border-[#B8FF00]/20 px-3 py-1.5 text-[11px] font-semibold text-[#B8FF00] tracking-tight">
           Member {formatMemberNumber(member.memberNumber)}
         </span>
       </motion.div>
@@ -104,33 +117,42 @@ export function DashboardOverview({
           the matching card lower on the page. */}
       <CompletenessMeter member={member} />
 
-      {/* Admin banner — only visible to members whose email is in LEHUMO_ADMIN_EMAILS */}
+      {/* Admin banner — only visible to members whose email is in
+          LEHUMO_ADMIN_EMAILS. Refined to match the new card system:
+          larger radius, layered shadow, soft gradient surface, and
+          the subtle hover lift that signals tappability. */}
       {isAdmin && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          transition={{ duration: 0.45, ease: iosEase, delay: 0.05 }}
         >
           <Link
             href="/lehumo/portal/admin"
-            className="group flex items-center justify-between gap-4 rounded-2xl border border-[#B8FF00]/30 bg-gradient-to-r from-[#B8FF00]/[0.08] to-[#46CDCF]/[0.04] p-5 hover:border-[#B8FF00]/50 transition-colors"
+            className="group flex items-center justify-between gap-4 rounded-[24px] border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.10] via-[#46CDCF]/[0.04] to-transparent p-5 hover:border-[#B8FF00]/45 hover:-translate-y-[1px] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 0 rgba(255, 255, 255, 0.05), " +
+                "0 1px 2px 0 rgba(0, 0, 0, 0.2), " +
+                "0 8px 32px -8px rgba(184, 255, 0, 0.12)",
+            }}
           >
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#B8FF00]/15 text-[#B8FF00]">
-                <Shield className="h-5 w-5" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-gradient-to-br from-[#B8FF00]/[0.20] to-[#B8FF00]/[0.08] border border-[#B8FF00]/20 text-[#B8FF00]">
+                <Shield className="h-[18px] w-[18px]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-[14px] font-semibold text-white tracking-tight">
                   Admin Panel
                 </p>
-                <p className="text-xs text-white/50">
+                <p className="text-[12px] text-white/50 mt-0.5">
                   Manage members, contributions, and KYC status
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#B8FF00] group-hover:translate-x-0.5 transition-transform">
+            <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[#B8FF00] group-hover:translate-x-0.5 transition-transform duration-300">
               Open
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </div>
           </Link>
         </motion.div>
@@ -181,7 +203,7 @@ export function DashboardOverview({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+          transition={{ duration: 0.5, delay: 0.1, ease: iosEase }}
         >
           <MemberProfileCard member={member} />
         </motion.div>
@@ -189,7 +211,7 @@ export function DashboardOverview({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+          transition={{ duration: 0.5, delay: 0.2, ease: iosEase }}
         >
           <ContributionGrid
             contributions={member.contributions}
@@ -201,7 +223,7 @@ export function DashboardOverview({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+          transition={{ duration: 0.5, delay: 0.3, ease: iosEase }}
         >
           <KycStatusTracker status={member.kycStatus} />
         </motion.div>
@@ -216,7 +238,7 @@ export function DashboardOverview({
             id="payment"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.5, delay: 0.4, ease: iosEase }}
             className="scroll-mt-24"
           >
             <PaymentCard
@@ -242,7 +264,7 @@ export function DashboardOverview({
         id="emergency-access"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.45, ease: "easeOut" }}
+        transition={{ duration: 0.5, delay: 0.45, ease: iosEase }}
         className="scroll-mt-24"
       >
         <EmergencyAccessCard member={member} />
@@ -255,7 +277,7 @@ export function DashboardOverview({
         id="kyc-docs"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.5, delay: 0.5, ease: iosEase }}
         className="scroll-mt-24"
       >
         <KycDocumentsCard member={member} />
@@ -269,7 +291,7 @@ export function DashboardOverview({
         id="beneficiary"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.5, delay: 0.6, ease: iosEase }}
         className="scroll-mt-24"
       >
         <BeneficiaryCard member={member} />
