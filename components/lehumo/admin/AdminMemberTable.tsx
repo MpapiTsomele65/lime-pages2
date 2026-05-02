@@ -23,11 +23,13 @@ import {
   type KycStatus,
 } from "@/lib/definitions";
 import {
+  adminSetMemberBeneficiary,
   toggleMonthPayment,
   updateMemberKyc,
   updateMemberStatus,
   type AdminActionResult,
 } from "@/app/lehumo/portal/admin/actions";
+import { BeneficiaryDialog } from "@/components/lehumo/admin/BeneficiaryDialog";
 
 interface AdminMemberTableProps {
   initialMembers: LehumoMember[];
@@ -51,6 +53,14 @@ export function AdminMemberTable({
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  // Beneficiary dialog state — null when closed; member object when
+  // open (so the dialog can pre-fill from the row's current values).
+  // Using the FULL member from local state means the dialog re-opens
+  // pre-filled even after a recent save, since onSubmit pushes the
+  // updated member into `members` before closing.
+  const [beneficiaryEditing, setBeneficiaryEditing] =
+    useState<LehumoMember | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -242,13 +252,17 @@ export function AdminMemberTable({
                   />
                 </td>
 
-                {/* Beneficiary on-file indicator. Read-only — admins can't
-                    edit a member's next-of-kin from here, the member fills
-                    it in via their portal. Tooltip surfaces relationship
-                    + last-updated when present so an admin can sense-check
-                    without leaving the row. */}
+                {/* Beneficiary cell — now clickable. When a beneficiary
+                    is on file: shows name + relationship inline +
+                    "Updated" date as subtitle. Click to open the
+                    edit dialog. When empty: shows an "Add" button
+                    that opens the dialog blank. The admin-on-behalf
+                    write path fires through adminSetMemberBeneficiary. */}
                 <td className="px-3 py-3">
-                  <BeneficiaryCell member={m} />
+                  <BeneficiaryCell
+                    member={m}
+                    onEdit={() => setBeneficiaryEditing(m)}
+                  />
                 </td>
 
                 {/* Active loan indicator — surfaces outstanding balance,
@@ -312,46 +326,105 @@ export function AdminMemberTable({
           </tbody>
         </table>
       </div>
+
+      {/* Beneficiary edit / add dialog — single instance at the table
+          root. Cell click sets `beneficiaryEditing` to the member
+          object; onSubmit fires the admin server action and (on
+          success) merges the returned member into local state so the
+          row re-renders with the new beneficiary inline. */}
+      <BeneficiaryDialog
+        member={beneficiaryEditing}
+        onSubmit={async (member, fields) => {
+          const res = await adminSetMemberBeneficiary(member.id, fields);
+          if (!res.ok) {
+            return { ok: false, error: res.error };
+          }
+          const updated = res.member;
+          startTransition(() => {
+            setMembers((prev) =>
+              prev.map((m) => (m.id === updated.id ? updated : m)),
+            );
+          });
+          setBeneficiaryEditing(null);
+          return { ok: true };
+        }}
+        onCancel={() => setBeneficiaryEditing(null)}
+      />
     </section>
   );
 }
 
 /**
- * Read-only beneficiary indicator for the admin table.
+ * Beneficiary indicator + click-to-edit affordance for the admin
+ * table.
  *
- * Lime ✓ pill when a beneficiary is on file (with relationship + last-updated
- * surfaced via tooltip), muted "—" placeholder otherwise. Stays read-only —
- * the member is the only one who can edit their own next-of-kin (via the
- * portal). Admins surface it here so they can chase up the missing rows.
+ * Two states:
+ *   - On file → lime pill showing the beneficiary's name +
+ *     relationship inline, with "Updated DD MMM" subtitle and a
+ *     pencil affordance. Click anywhere on the cell opens the edit
+ *     dialog pre-filled with the existing values.
+ *   - Empty → muted dashed "Add" button. Click opens the dialog
+ *     blank for an admin-on-behalf entry (member emailed in their
+ *     next-of-kin, etc).
+ *
+ * The cell renders the same content for both states so the column
+ * width is stable regardless of populated/empty mix on screen.
  */
-function BeneficiaryCell({ member }: { member: LehumoMember }) {
+function BeneficiaryCell({
+  member,
+  onEdit,
+}: {
+  member: LehumoMember;
+  onEdit: () => void;
+}) {
   const onFile = hasBeneficiary(member);
 
   if (!onFile) {
     return (
-      <span
-        className="inline-flex items-center rounded-full border border-dashed border-[#E5E7EB] px-2 py-0.5 text-[11px] text-[#9CA3AF]"
-        title="No beneficiary on file"
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#E5E7EB] px-2 py-0.5 text-[11px] text-[#9CA3AF] hover:border-[#B8FF00]/50 hover:text-[#0B1933] hover:bg-[#B8FF00]/10 transition-colors"
+        title="Click to add the member's next-of-kin on their behalf"
       >
-        —
-      </span>
+        + Add
+      </button>
     );
   }
 
+  const fullName =
+    `${member.beneficiaryFirstName ?? ""} ${member.beneficiarySurname ?? ""}`.trim() ||
+    "—";
   const tooltipParts = [
-    `${member.beneficiaryFirstName} ${member.beneficiarySurname}`.trim(),
+    fullName,
     member.beneficiaryRelationship || null,
+    member.beneficiaryPhone ? `📞 ${member.beneficiaryPhone}` : null,
+    member.beneficiaryEmail ? `✉ ${member.beneficiaryEmail}` : null,
     member.beneficiaryUpdatedAt ? `Updated ${member.beneficiaryUpdatedAt}` : null,
   ].filter(Boolean);
 
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full bg-[#B8FF00]/15 px-2 py-0.5 text-[11px] font-medium text-[#0B1933]"
+    <button
+      type="button"
+      onClick={onEdit}
+      className="group inline-flex max-w-full flex-col items-start rounded-lg border border-transparent px-2 py-1 text-left hover:bg-[#B8FF00]/[0.08] hover:border-[#B8FF00]/30 transition-colors"
       title={tooltipParts.join(" · ")}
     >
-      <Check className="h-3 w-3" />
-      On file
-    </span>
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B1933]">
+        <Check className="h-3 w-3 text-[#0B1933]" />
+        <span className="truncate max-w-[140px]">{fullName}</span>
+        {member.beneficiaryRelationship && (
+          <span className="text-[10px] font-medium text-[#6B7280]">
+            · {member.beneficiaryRelationship}
+          </span>
+        )}
+      </span>
+      {member.beneficiaryUpdatedAt && (
+        <span className="text-[10px] text-[#9CA3AF] mt-0.5">
+          Updated {member.beneficiaryUpdatedAt}
+        </span>
+      )}
+    </button>
   );
 }
 

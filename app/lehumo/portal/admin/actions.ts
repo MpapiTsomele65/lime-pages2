@@ -12,6 +12,7 @@ import {
   findMemberByEmail,
   getMemberById,
   getNextMemberNumber,
+  setMemberBeneficiary,
 } from "@/lib/airtable";
 import { sendKycVerifiedEmail, sendWelcomeEmail } from "@/lib/email";
 import {
@@ -19,12 +20,14 @@ import {
   MONTH_NAMES,
   MEMBER_STATUS,
   KYC_STATUS,
+  BeneficiaryFormSchema,
   emailField,
   formatMemberNumber,
   todayDate,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
+  type BeneficiaryFormData,
 } from "@/lib/definitions";
 
 const StatusValues = Object.values(MEMBER_STATUS) as [string, ...string[]];
@@ -364,5 +367,60 @@ export async function adminCreateMember(
   } catch (err) {
     console.error("adminCreateMember error:", err);
     return { ok: false, error: "Could not create member. Check Airtable connectivity." };
+  }
+}
+
+/**
+ * Admin-on-behalf beneficiary write.
+ *
+ * Mirror of the member-portal POST /api/lehumo/portal/member/beneficiary
+ * route, gated on `getAdminSession()` instead of the member session.
+ *
+ * Use case: a member emails / phones in their next-of-kin details
+ * before they've onboarded onto the portal themselves, OR an admin is
+ * fixing a typo in a beneficiary record without making the member
+ * re-enter everything from their phone.
+ *
+ * Validation reuses BeneficiaryFormSchema so the rules are identical
+ * across both surfaces:
+ *   - firstName + surname + relationship required
+ *   - phone OR email OR address (at least one contact channel)
+ *   - emails must look like emails, etc.
+ *
+ * setMemberBeneficiary always stamps `beneficiaryUpdatedAt` so the
+ * "On file" pill reflects how stale the record is.
+ */
+export async function adminSetMemberBeneficiary(
+  recordId: string,
+  fields: BeneficiaryFormData,
+): Promise<AdminActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as AdminActionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  // Re-validate server-side. The client should have done this too, but
+  // never trust the wire — same defensive pattern as adminCreateMember.
+  const parsed = BeneficiaryFormSchema.safeParse(fields);
+  if (!parsed.success) {
+    const firstIssue =
+      parsed.error.issues[0]?.message ?? "Invalid beneficiary details";
+    return { ok: false, error: firstIssue };
+  }
+
+  try {
+    const member = await setMemberBeneficiary(recordId, {
+      firstName: parsed.data.firstName,
+      surname: parsed.data.surname,
+      relationship: parsed.data.relationship,
+      phone: parsed.data.phone,
+      email: parsed.data.email,
+      address: parsed.data.address,
+    });
+    return { ok: true, member };
+  } catch (err) {
+    console.error("adminSetMemberBeneficiary error:", err);
+    return { ok: false, error: "Could not save beneficiary. Try again." };
   }
 }
