@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CalendarClock, CreditCard, CheckCircle2 } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarClock,
+  CreditCard,
+  CheckCircle2,
+} from "lucide-react";
 import {
   CONTRIBUTION_MONTH_ORDER,
-  CONTRIBUTION_STATUS,
   type LehumoContribution,
 } from "@/lib/definitions";
-
-const TRUST_DURATION_MONTHS = 60;
+import { computeContributionLedger } from "@/lib/contribution-ledger";
 
 interface PaymentCardProps {
   contributions: Record<string, boolean>;
@@ -21,20 +24,17 @@ interface PaymentCardProps {
   beforeLaunch?: boolean;
   /**
    * Phase 4 — full 60-period contribution history. When provided, the
-   * card shows lifetime progress (X/60) with period-aware "Next due"
-   * (e.g. "Jun 2026" not just "Jun"), and surfaces the most recent paid
-   * contribution as a confirmation chip. When undefined (flag off, or
-   * fetch failed), falls back to the 12-month projected shape via the
-   * `contributions` prop above so the legacy UI keeps working.
+   * card shows the lifetime R60,000 goal, R-amount contributed,
+   * R-outstanding for arrears, and a R-based progress bar. Falls back
+   * to the 12-month projected shape via `contributions` when undefined.
    */
   contributionRows?: LehumoContribution[];
+  /** SAST current period (`YYYY-MM`). Required to compute the
+   *  "outstanding" arrears figure — without it we can't tell which
+   *  rows are "due so far". */
+  currentPeriod?: string;
 }
 
-/**
- * Format a YYYY-MM period as "MMM YYYY" (e.g. "Jun 2026"). Inline so the
- * client component doesn't pull in lib/member-contributions-view.ts (which
- * imports `server-only`).
- */
 const SHORT_MONTH_NAMES = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -45,6 +45,11 @@ function formatPeriodShort(period: string): string {
   const monthIdx = Number(m[2]) - 1;
   return `${SHORT_MONTH_NAMES[monthIdx] ?? "?"} ${m[1]}`;
 }
+function formatZAR(amount: number): string {
+  // en-ZA grouping — R60 000 not R60,000. Matches local convention so
+  // members see numbers the same way their bank statements show them.
+  return `R${amount.toLocaleString("en-ZA")}`;
+}
 
 export function PaymentCard({
   contributions,
@@ -52,56 +57,33 @@ export function PaymentCard({
   memberId,
   beforeLaunch = false,
   contributionRows,
+  currentPeriod,
 }: PaymentCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ── Derived data ──
-  // Prefer the rich shape (60-period awareness) when available; fall
-  // back to the 12-key projection for the flag-off path. Both branches
-  // produce the same {paidCount, totalCount, allPaid, nextLabel} ABI
-  // so the JSX below stays uniform.
-  const richShape = (contributionRows?.length ?? 0) > 0;
+  // Rich-shape branch is gated on having BOTH the rows and a currentPeriod
+  // — the ledger needs the period to draw the "due so far" line. Without
+  // it we'd misclassify everything as Outstanding.
+  const richShape =
+    (contributionRows?.length ?? 0) > 0 && Boolean(currentPeriod);
+  const ledger = richShape
+    ? computeContributionLedger(contributionRows!, currentPeriod!)
+    : null;
 
-  let paidCount: number;
-  let totalCount: number;
-  let nextDueLabel: string | null;
-  let lastPaidLabel: string | null;
-  let lastPaidAmount: number | null;
+  // Legacy-fallback derived data (flag off, or fetch failed).
+  const legacyPaidCount = Object.values(contributions).filter(Boolean).length;
+  const legacyAllPaid = legacyPaidCount === 12;
+  const legacyNextUnpaidMonth = CONTRIBUTION_MONTH_ORDER.find(
+    (month) => contributions[month] !== true,
+  );
 
-  if (richShape && contributionRows) {
-    // Sort defensively — the hydration path returns sorted, but caller
-    // could pass anything.
-    const sorted = [...contributionRows].sort((a, b) =>
-      a.period.localeCompare(b.period),
-    );
-    const paidRows = sorted.filter(
-      (c) => c.status === CONTRIBUTION_STATUS.paid,
-    );
-    paidCount = paidRows.length;
-    totalCount = sorted.length || TRUST_DURATION_MONTHS;
-    const nextUnpaid = sorted.find(
-      (c) => c.status !== CONTRIBUTION_STATUS.paid,
-    );
-    nextDueLabel = nextUnpaid ? formatPeriodShort(nextUnpaid.period) : null;
-    const lastPaid = paidRows[paidRows.length - 1] ?? null;
-    lastPaidLabel = lastPaid ? formatPeriodShort(lastPaid.period) : null;
-    lastPaidAmount = lastPaid?.amountReceived ?? null;
-  } else {
-    paidCount = Object.values(contributions).filter(Boolean).length;
-    totalCount = 12;
-    // Find the next unpaid month — using collection order (Jun → May), not
-    // calendar order. Otherwise pre-Jun members would see "Next due: Jan"
-    // even though Jan-May 2027 are *future* contributions, not arrears.
-    const nextUnpaidMonth = CONTRIBUTION_MONTH_ORDER.find(
-      (month) => contributions[month] !== true,
-    );
-    nextDueLabel = nextUnpaidMonth ?? null;
-    lastPaidLabel = null;
-    lastPaidAmount = null;
-  }
-
-  const allPaid = paidCount > 0 && paidCount === totalCount;
+  // Goal-attainment state — once lifetime goal is hit, switch to the
+  // celebration view (this is "all 60 contributions paid").
+  const allPaid = ledger
+    ? ledger.lifetimeGoal > 0 &&
+      ledger.lifetimeReceived >= ledger.lifetimeGoal
+    : legacyAllPaid;
 
   async function handlePayment() {
     setError("");
@@ -155,8 +137,9 @@ export function PaymentCard({
             Contributions begin 1 June 2026
           </h3>
           <p className="text-sm text-white/50 mt-1 max-w-xs">
-            Your first R1,000 contribution will be due then. We&rsquo;ll send a
-            reminder closer to the date — nothing to do for now.
+            Your R60,000 contribution goal builds at R1,000/month over 5
+            years. We&rsquo;ll send a reminder closer to the date — nothing
+            to do for now.
           </p>
         </motion.div>
       ) : allPaid ? (
@@ -166,69 +149,112 @@ export function PaymentCard({
           className="flex-1 flex flex-col items-center justify-center text-center py-4"
         >
           <CheckCircle2 className="h-12 w-12 text-[#B8FF00] mb-3" />
-          <h3 className="text-lg font-semibold text-white">All caught up!</h3>
+          <h3 className="text-lg font-semibold text-white">
+            Goal reached!
+          </h3>
           <p className="text-sm text-white/50 mt-1">
-            All {totalCount} monthly contributions have been paid. Thank you
-            for your commitment.
+            You&rsquo;ve completed your{" "}
+            {ledger ? formatZAR(ledger.lifetimeGoal) : "R60,000"} contribution
+            commitment to the trust. Thank you.
           </p>
         </motion.div>
-      ) : (
+      ) : ledger ? (
+        // ── Rich-shape goal-anchored layout ──────────────────────────
         <div className="flex-1 flex flex-col">
-          {/* Amount */}
-          <div className="flex items-baseline gap-1 mb-1">
-            <span className="text-3xl font-bold text-white">R1,000</span>
-            <span className="text-white/40 text-sm">/month</span>
-          </div>
-
-          {/* Next due — period-aware (Jun 2026) when rich shape is available,
-              falls back to month-only (Jun) for the legacy projection */}
-          {nextDueLabel && (
-            <p className="text-sm text-white/50 mb-2">
-              Next due:{" "}
-              <span className="text-[#46CDCF] font-medium">
-                {nextDueLabel}
+          {/* Hero — R-amount contributed of R-goal. The number that
+              answers "how am I doing toward the R60,000 commitment?" */}
+          <div className="mb-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-[#B8FF00]">
+                {formatZAR(ledger.lifetimeReceived)}
               </span>
-            </p>
-          )}
-
-          {/* Last paid — only surfaces with the rich shape, since the
-              projection can't tell us a payment date or amount.
-              Membership-level "you're on track" reassurance. */}
-          {lastPaidLabel && (
-            <p className="text-xs text-white/35 mb-6">
-              Last paid:{" "}
-              <span className="text-white/50">{lastPaidLabel}</span>
-              {lastPaidAmount !== null && lastPaidAmount > 0 && (
-                <>
-                  {" · "}
-                  <span className="text-white/50">
-                    R{lastPaidAmount.toLocaleString("en-ZA")}
-                  </span>
-                </>
-              )}
-            </p>
-          )}
-          {!lastPaidLabel && <div className="mb-4" />}
-
-          {/* Progress */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between text-xs text-white/40 mb-2">
-              <span>Progress</span>
-              <span>
-                {paidCount}/{totalCount} months
+              <span className="text-white/40 text-sm">
+                of {formatZAR(ledger.lifetimeGoal)} goal
               </span>
             </div>
+          </div>
+
+          {/* Progress — R-based percentage toward the goal */}
+          <div className="mt-4 mb-5">
             <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
               <div
                 className="h-full rounded-full bg-[#B8FF00] transition-all"
-                style={{ width: `${(paidCount / totalCount) * 100}%` }}
+                style={{
+                  width: `${ledger.lifetimeGoal > 0
+                    ? Math.min(
+                        100,
+                        (ledger.lifetimeReceived / ledger.lifetimeGoal) * 100,
+                      )
+                    : 0}%`,
+                }}
               />
             </div>
-            {/* Footnote — clarifies "X/60" is the trust lifetime, not a
-                12-month tally. Only shown for the rich shape. */}
-            {richShape && (
-              <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/30">
-                Across the 5-year trust ({totalCount} months total)
+            <p className="mt-1.5 text-[10px] uppercase tracking-[0.12em] text-white/30">
+              {ledger.lifetimeGoal > 0
+                ? Math.round(
+                    (ledger.lifetimeReceived / ledger.lifetimeGoal) * 100,
+                  )
+                : 0}
+              % of 5-year goal
+            </p>
+          </div>
+
+          {/* Outstanding — R-amount owed RIGHT NOW. Yellow alert if >0,
+              quiet "All caught up" chip if 0 (and at least one month is
+              due so far — pre-first-month it just stays hidden). */}
+          {ledger.monthsDue > 0 && ledger.outstanding > 0 ? (
+            <div className="mb-5 rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/[0.07] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-[#F59E0B] shrink-0" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#F59E0B]">
+                  Outstanding
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-baseline gap-2">
+                <span className="text-xl font-bold text-white">
+                  {formatZAR(ledger.outstanding)}
+                </span>
+                <span className="text-xs text-white/45">
+                  · {ledger.monthsOutstanding} month
+                  {ledger.monthsOutstanding === 1 ? "" : "s"} behind
+                </span>
+              </div>
+            </div>
+          ) : ledger.monthsDue > 0 ? (
+            <div className="mb-5 rounded-xl border border-[#B8FF00]/20 bg-[#B8FF00]/[0.04] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-[#B8FF00] shrink-0" />
+                <span className="text-sm font-semibold text-white">
+                  Up to date — no balance owed
+                </span>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Next due / Last paid — period-aware secondary detail */}
+          <div className="space-y-1.5 mb-5">
+            {ledger.nextDuePeriod && (
+              <p className="text-sm text-white/55">
+                Next due:{" "}
+                <span className="text-[#46CDCF] font-medium">
+                  {formatPeriodShort(ledger.nextDuePeriod)}
+                </span>
+              </p>
+            )}
+            {ledger.lastPaidPeriod && (
+              <p className="text-xs text-white/35">
+                Last paid:{" "}
+                <span className="text-white/50">
+                  {formatPeriodShort(ledger.lastPaidPeriod)}
+                </span>
+                {ledger.lastPaidAmount !== null && ledger.lastPaidAmount > 0 && (
+                  <>
+                    {" · "}
+                    <span className="text-white/50">
+                      {formatZAR(ledger.lastPaidAmount)}
+                    </span>
+                  </>
+                )}
               </p>
             )}
           </div>
@@ -241,6 +267,83 @@ export function PaymentCard({
           )}
 
           {/* Pay button */}
+          <div className="mt-auto">
+            <button
+              onClick={handlePayment}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#B8FF00] py-3 px-6 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <svg
+                    className="h-4 w-4 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4" />
+                  Make Payment
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Footnote — the "month count" framing as quiet supporting
+              detail, not the headline. Only shown for rich-shape members
+              so the 12-key fallback doesn't surface a misleading 60-count. */}
+          <p className="mt-3 text-[10px] uppercase tracking-[0.12em] text-white/25 text-center">
+            {ledger.monthsPaid} of {ledger.totalMonths} contributions paid · 5-year trust
+          </p>
+        </div>
+      ) : (
+        // ── Legacy fallback — flag off, or contributionRows missing ──
+        <div className="flex-1 flex flex-col">
+          <div className="flex items-baseline gap-1 mb-1">
+            <span className="text-3xl font-bold text-white">R1,000</span>
+            <span className="text-white/40 text-sm">/month</span>
+          </div>
+          {legacyNextUnpaidMonth && (
+            <p className="text-sm text-white/50 mb-6">
+              Next due:{" "}
+              <span className="text-[#46CDCF] font-medium">
+                {legacyNextUnpaidMonth}
+              </span>
+            </p>
+          )}
+          <div className="mb-6">
+            <div className="flex items-center justify-between text-xs text-white/40 mb-2">
+              <span>Progress</span>
+              <span>{legacyPaidCount}/12 months</span>
+            </div>
+            <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#B8FF00] transition-all"
+                style={{ width: `${(legacyPaidCount / 12) * 100}%` }}
+              />
+            </div>
+          </div>
+          {error && (
+            <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
           <div className="mt-auto">
             <button
               onClick={handlePayment}

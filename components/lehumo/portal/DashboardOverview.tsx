@@ -175,6 +175,7 @@ export function DashboardOverview({
           <PaymentCard
             contributions={member.contributions}
             contributionRows={member.contributionRows}
+            currentPeriod={currentPeriod}
             email={member.email}
             memberId={member.id}
             beforeLaunch={beforeLaunch}
