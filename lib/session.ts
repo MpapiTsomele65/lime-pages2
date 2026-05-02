@@ -49,6 +49,20 @@ export async function createSession(
   });
 
   const cookieStore = await cookies();
+
+  // Expire any stale cookie at the OLD narrow path. Members who
+  // logged in before the path-widening fix have a cookie at
+  // /lehumo/portal that browsers will keep sending alongside the
+  // new path="/" cookie. With two cookies of the same name on the
+  // same request, the more-specific path is sent first; the server's
+  // `cookies.get(name)` returns whichever the browser put first,
+  // which can be the stale one. Setting the old-path cookie to
+  // an empty value with maxAge:0 tells the browser to drop it.
+  cookieStore.set(COOKIE_NAME, "", {
+    path: "/lehumo/portal",
+    maxAge: 0,
+  });
+
   cookieStore.set(COOKIE_NAME, session, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

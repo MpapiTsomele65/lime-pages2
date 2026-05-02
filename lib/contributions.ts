@@ -235,11 +235,16 @@ export async function listContributionsForMember(
 /**
  * List ALL contributions across the table — one paginated read.
  *
- * Use for the bulk admin path (member list with progress, community
- * pool stats) where N+1 per-member fetches would blow Airtable's
- * 5 req/sec rate limit. With 25 members × 60 periods, the table is
- * ~1,500 rows — comfortably within Airtable's 100-rows-per-page limit
- * over 15 round trips.
+ * Use for the bulk admin path (member list with progress) where N+1
+ * per-member fetches would blow Airtable's 5 req/sec rate limit. With
+ * 25 members × 60 periods, the table is ~1,500 rows — comfortably
+ * within Airtable's 100-rows-per-page limit over 15 round trips.
+ *
+ * Hot paths that only need PAID-status rows (community pool stats,
+ * pool aggregation) should use `listPaidContributions` instead — it
+ * uses a Status=Paid filter that drops the read down to just the
+ * actual settled payments (0 pre-launch → 1 fast call; ramps with
+ * collections post-launch).
  *
  * The per-member view should still use `listContributionsForMember`
  * for cache-friendliness and clarity.
@@ -248,6 +253,30 @@ export async function listAllContributions(): Promise<LehumoContribution[]> {
   const url =
     `${getContribUrl()}?` +
     `sort%5B0%5D%5Bfield%5D=Contribution+Key&sort%5B0%5D%5Bdirection%5D=asc` +
+    `&pageSize=100&returnFieldsByFieldId=true`;
+  return fetchAllPages(url);
+}
+
+/**
+ * List only the contributions that have actually been paid.
+ *
+ * `filterByFormula={Status}='Paid'` — Airtable runs this server-side
+ * before pagination, so the read returns only settled rows. Pre-launch
+ * (no payments yet), this is one round trip with zero records.
+ * Post-launch, it scales linearly with collections instead of with the
+ * fixed 1,500-row schedule footprint.
+ *
+ * Powers `getCommunityPoolStats`'s monthlyContributors / totalContributed
+ * derivations — those only ever care about Paid rows, so the broader
+ * `listAllContributions` would be wasted bandwidth.
+ */
+export async function listPaidContributions(): Promise<LehumoContribution[]> {
+  const formula = encodeURIComponent(
+    `{Status}='${CONTRIBUTION_STATUS.paid}'`,
+  );
+  const url =
+    `${getContribUrl()}?filterByFormula=${formula}` +
+    `&sort%5B0%5D%5Bfield%5D=Contribution+Key&sort%5B0%5D%5Bdirection%5D=asc` +
     `&pageSize=100&returnFieldsByFieldId=true`;
   return fetchAllPages(url);
 }

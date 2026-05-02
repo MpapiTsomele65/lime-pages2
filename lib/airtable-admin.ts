@@ -20,6 +20,7 @@ import {
 import {
   getContributionByKey,
   listAllContributions,
+  listContributionsForMember,
   markPeriodPaidForMember,
   updateContribution,
 } from "./contributions";
@@ -224,12 +225,12 @@ async function getMemberByIdAdmin(
   }
   const member = parseRecord(await res.json());
 
-  // Hydrate this member's row from the Contributions table — same
-  // single-fetch pattern as listAllMembers's bulk path, scoped to one.
+  // Hydrate THIS member's contributions only — `listContributionsForMember`
+  // filters server-side by the contribution-key prefix so we read 60
+  // rows in a single page instead of paginating the full 1,500-row
+  // table just to discard 24 members worth.
   try {
-    const allContribs = await listAllContributions();
-    const byPrefix = groupContributionsByMemberPrefix(allContribs);
-    const rows = byPrefix.get(formatMemberNumber(member.memberNumber)) ?? [];
+    const rows = await listContributionsForMember(member.memberNumber);
     member.contributions = projectToLegacyContributions(rows, getSastYear());
     member.contributionRows = rows;
   } catch (err) {

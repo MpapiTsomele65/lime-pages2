@@ -23,8 +23,8 @@ import {
   type ActiveLoanType,
 } from "./definitions";
 import {
-  listAllContributions,
   listContributionsForMember,
+  listPaidContributions,
   markPeriodPaidForMember,
 } from "./contributions";
 import {
@@ -213,7 +213,11 @@ export async function findMemberByEmailAndNumber(
 
   const data = await res.json();
   if (!data.records || data.records.length === 0) return null;
-  return hydrateContributionsFromNewTable(parseRecord(data.records[0]));
+  // No hydration — login flow only needs id / email / memberNumber /
+  // fullName for createSession. The dashboard re-fetches with
+  // contributions hydrated on the next page render. Saves one Airtable
+  // round trip per login (the user's 60-row contribution list).
+  return parseRecord(data.records[0]);
 }
 
 /**
@@ -719,27 +723,34 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
     offset = data.offset;
   } while (offset);
 
-  // ── Bulk hydration from the Contributions table ──
-  // ONE list call covers the whole table (~1,500 rows for 25 members
-  // × 60 periods). Group by `Leh##` prefix and project each member's
-  // rows to the legacy shape so the aggregation below stays unchanged.
-  // Phase 5: this is the only data path — parseRecord no longer
-  // populates contributions from MONTH_FIELDS, so a hydration failure
-  // means members see empty history (logged for ops triage).
+  // ── Bulk hydration from the Contributions table — Paid rows only ──
+  // The aggregation below only counts Paid contributions (per-month
+  // contributor count, total ZAR), so we pull the Paid-filtered slice
+  // instead of the entire 1,500-row schedule. Pre-launch this returns
+  // zero rows in a single round trip; post-launch it scales with
+  // actual collections rather than the fixed schedule footprint —
+  // the difference between sub-second and ~5-second page renders on
+  // the dashboard. The logged-in member's full contributionRows still
+  // gets hydrated separately by `getMemberById` so PaymentCard /
+  // ContributionGrid Phase 4 visuals see the complete schedule.
   try {
-    const allContribs = await listAllContributions();
-    const byPrefix = groupContributionsByMemberPrefix(allContribs);
+    const paidContribs = await listPaidContributions();
+    const byPrefix = groupContributionsByMemberPrefix(paidContribs);
     const year = getSastYear();
     for (const m of allRecords) {
       // formatMemberNumber returns "Leh##" — exactly the prefix the
       // grouping helper keys on.
-      const rows = byPrefix.get(formatMemberNumber(m.memberNumber)) ?? [];
-      m.contributions = projectToLegacyContributions(rows, year);
-      m.contributionRows = rows;
+      const paidRows = byPrefix.get(formatMemberNumber(m.memberNumber)) ?? [];
+      m.contributions = projectToLegacyContributions(paidRows, year);
+      // Intentionally NOT setting m.contributionRows here — community
+      // pool stats only needs the projected boolean shape for its
+      // monthlyContributors aggregation. Phase 4 cards on the
+      // dashboard read the logged-in member's contributionRows from
+      // getMemberById's per-member hydration.
     }
   } catch (err) {
     console.error(
-      "getCommunityPoolStats bulk hydration failed:",
+      "getCommunityPoolStats Paid-rows hydration failed:",
       err,
     );
   }
