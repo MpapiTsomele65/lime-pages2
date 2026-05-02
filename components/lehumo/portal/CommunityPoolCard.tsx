@@ -89,9 +89,9 @@ export function CommunityPoolCard({ stats, myContributed }: CommunityPoolCardPro
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
       aria-label="Community pool overview"
-      className="bg-[#0F2040] rounded-[20px] border border-white/[0.06] p-5 sm:p-7"
+      className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-5 sm:p-7"
     >
       <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
         <div>

@@ -112,8 +112,8 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="rounded-2xl border border-white/[0.06] bg-[#0F2040] p-5 md:p-6"
+        transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
+        className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-5 md:p-7"
         aria-label="Emergency access — locked"
       >
         <div className="flex items-start gap-3 mb-4">
@@ -144,7 +144,7 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1], delay: 0.1 }}
             className="h-full rounded-full bg-gradient-to-r from-[#B8FF00] to-[#46CDCF]"
           />
         </div>
@@ -194,8 +194,8 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className={`rounded-2xl border ${accent.ring} bg-[#0F2040] p-5 md:p-6`}
+        transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
+        className={`rounded-[24px] border ${accent.ring} bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-5 md:p-7`}
         aria-label="Emergency access — active loan"
       >
         <div className="flex items-start gap-3 mb-4">
@@ -330,8 +330,8 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="rounded-2xl border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.05] to-[#0F2040] p-5 md:p-6"
+      transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
+      className="rounded-[24px] border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.06] via-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_8px_32px_-8px_rgba(184,255,0,0.10)] p-5 md:p-7"
       aria-label="Emergency access — available"
     >
       <div className="flex items-start gap-3 mb-4">

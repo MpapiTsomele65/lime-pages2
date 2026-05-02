@@ -121,7 +121,7 @@ export function PaymentCard({
   }
 
   return (
-    <div className="bg-[#0F2040] rounded-[20px] border border-white/[0.06] p-6 h-full flex flex-col">
+    <div className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-6 h-full flex flex-col">
       <h2 className="text-lg font-semibold text-white mb-6">
         Monthly Contribution
       </h2>

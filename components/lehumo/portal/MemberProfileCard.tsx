@@ -7,6 +7,7 @@ import {
   type MemberPlan,
   type MemberStatus,
 } from "@/lib/definitions";
+import { PortalCard } from "./PortalCard";
 
 interface MemberProfileCardProps {
   member: LehumoMember;
@@ -33,11 +34,13 @@ export function MemberProfileCard({ member }: MemberProfileCardProps) {
   const statusStyle = STATUS_STYLES[member.status] ?? STATUS_STYLES.Prospect;
 
   return (
-    <div className="bg-[#0F2040] rounded-[20px] border border-white/[0.06] p-6 h-full">
+    <PortalCard className="p-7 h-full">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-white">Member Profile</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-white">
+          Member Profile
+        </h2>
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle}`}
+          className={`inline-flex items-center rounded-full border border-white/[0.06] px-2.5 py-0.5 text-[11px] font-semibold tracking-tight ${statusStyle}`}
         >
           {member.status}
         </span>
@@ -74,7 +77,7 @@ export function MemberProfileCard({ member }: MemberProfileCardProps) {
           </ProfileRow>
         )}
       </div>
-    </div>
+    </PortalCard>
   );
 }
 

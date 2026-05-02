@@ -134,8 +134,8 @@ export function ContributionReminderCard({
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="rounded-2xl border border-[#46CDCF]/25 bg-[#46CDCF]/[0.04] p-5"
+        transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
+        className="rounded-[24px] border border-[#46CDCF]/25 bg-gradient-to-br from-[#46CDCF]/[0.06] via-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(70,205,207,0.12)] p-5 md:p-6"
         aria-label="Contribution schedule"
       >
         <div className="flex items-center gap-3">
@@ -202,8 +202,8 @@ export function ContributionReminderCard({
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="rounded-2xl border border-[#B8FF00]/20 bg-[#B8FF00]/[0.04] p-5"
+        transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
+        className="rounded-[24px] border border-[#B8FF00]/20 bg-gradient-to-br from-[#B8FF00]/[0.06] via-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(184,255,0,0.10)] p-5 md:p-6"
         aria-label="Contribution status"
       >
         <div className="flex items-center gap-3">
@@ -232,8 +232,8 @@ export function ContributionReminderCard({
   // ── Unpaid state — colour by urgency ───────────────────────────────
   const urgent = daysLeftInMonth <= 7;
   const containerClass = urgent
-    ? "rounded-2xl border border-[#F59E0B]/30 bg-gradient-to-r from-[#F59E0B]/[0.08] to-[#0F2040] p-5 md:p-6"
-    : "rounded-2xl border border-[#46CDCF]/25 bg-gradient-to-r from-[#46CDCF]/[0.06] to-[#0F2040] p-5 md:p-6";
+    ? "rounded-[24px] border border-[#F59E0B]/30 bg-gradient-to-br from-[#F59E0B]/[0.10] via-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_8px_32px_-8px_rgba(245,158,11,0.18)] p-5 md:p-6"
+    : "rounded-[24px] border border-[#46CDCF]/25 bg-gradient-to-br from-[#46CDCF]/[0.07] via-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_8px_32px_-8px_rgba(70,205,207,0.14)] p-5 md:p-6"
   const iconWrapClass = urgent
     ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F59E0B]/15 text-[#F59E0B]"
     : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#46CDCF]/15 text-[#46CDCF]";
@@ -253,7 +253,7 @@ export function ContributionReminderCard({
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
       className={containerClass}
       aria-label={`${monthFull} contribution reminder`}
     >

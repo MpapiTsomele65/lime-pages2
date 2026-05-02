@@ -143,7 +143,7 @@ export function ContributionGrid({
     const paidCount = Object.values(contributions).filter(Boolean).length;
     const totalContributed = paidCount * 1000;
     return (
-      <div className="bg-[#0F2040] rounded-[20px] border border-white/[0.06] p-6 h-full">
+      <div className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-6 h-full">
         <h2 className="text-lg font-semibold text-white mb-6">
           Contribution History
         </h2>
@@ -214,7 +214,7 @@ export function ContributionGrid({
     : null;
 
   return (
-    <div className="bg-[#0F2040] rounded-[20px] border border-white/[0.06] p-6 h-full">
+    <div className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-6 h-full">
       <div className="flex items-center justify-between mb-4 gap-3">
         <h2 className="text-lg font-semibold text-white">
           Contribution History

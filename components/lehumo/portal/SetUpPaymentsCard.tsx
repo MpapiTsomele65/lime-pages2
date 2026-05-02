@@ -198,10 +198,10 @@ export function SetUpPaymentsCard({
   return (
     <motion.div
       id="set-up-payments"
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="scroll-mt-24 rounded-2xl border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.06] via-white/[0.02] to-transparent overflow-hidden"
+      transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+      className="scroll-mt-24 rounded-[24px] border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.08] via-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(184,255,0,0.10),0_1px_2px_0_rgba(0,0,0,0.20),0_12px_40px_-8px_rgba(184,255,0,0.15)] overflow-hidden"
     >
       {/* Header */}
       <div className="px-6 py-5 border-b border-white/[0.06]">
