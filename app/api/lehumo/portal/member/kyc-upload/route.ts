@@ -17,9 +17,23 @@ import { sendKycReceivedEmail } from "@/lib/email";
 // attachment-size cap. We hold the cap at 10 MB which comfortably
 // covers a high-res phone photo or a multi-page bank-statement PDF
 // without inviting members to dump 100 MB scans into the queue.
-// Size + content-type constraints removed from the signed token to
-// dodge Vercel Blob's strict-equality MIME check (the 99%-loop bug).
-// See the admin route for the full rationale.
+// Match the admin route's broad MIME list — Vercel Blob requires
+// allowedContentTypes on the signed token, and any MIME variant the
+// browser might send needs to be present here for the upload to
+// finalize (strict-equality match). See the admin route for the
+// full per-MIME rationale.
+const ALLOWED_MIME = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "image/heic-sequence",
+  "image/heif-sequence",
+  "application/pdf",
+  "application/octet-stream",
+];
 
 /**
  * Member-portal KYC upload — Vercel Blob direct-upload path.
@@ -85,12 +99,10 @@ export async function POST(request: NextRequest) {
 
         // Token payload travels back to onUploadCompleted as an
         // opaque string — encode the bits we need to PATCH Airtable
-        // afterwards. No allowedContentTypes / maximumSizeInBytes
-        // here because Vercel Blob's strict-equality content-type
-        // check has caused 99%-loop retries on PDFs that didn't
-        // exactly match (e.g. `application/pdf;charset=binary`).
-        // See the admin route for the full context.
+        // afterwards. allowedContentTypes is required (omitting it
+        // makes Blob reject the PUT silently — see admin route).
         return {
+          allowedContentTypes: ALLOWED_MIME,
           tokenPayload: JSON.stringify({
             memberId: existing.id,
             memberEmail: existing.email,

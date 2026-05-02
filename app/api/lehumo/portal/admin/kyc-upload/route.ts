@@ -9,13 +9,27 @@ import {
   setMemberKyc,
 } from "@/lib/airtable";
 
-// Size + content-type constraints used to live on the signed token
-// (allowedContentTypes / maximumSizeInBytes), but Vercel Blob's
-// strict-equality MIME check caused 99%-loop retries on PDFs that
-// sent slightly off content types (e.g. `application/pdf;charset=binary`).
-// The client already filters via the file picker `accept` attr, the
-// admin-session gate above protects the endpoint, and Airtable does
-// its own content-type filtering on attachment fields downstream.
+// Comprehensive list of content-types we accept on the signed token —
+// covers the standard MIME for each accepted format AND the common
+// variants browsers send for the same file:
+//   • image/jpg + image/jpeg — Safari sometimes uses the former
+//   • image/heic-sequence — iOS HEIC bursts
+//   • application/octet-stream — fallback when sniffing fails
+// Keep this generous; Vercel Blob does strict-equality matching, so
+// missing a variant means the upload is rejected at finalize and the
+// @vercel/blob client retries forever.
+const ALLOWED_MIME = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "image/heic-sequence",
+  "image/heif-sequence",
+  "application/pdf",
+  "application/octet-stream",
+];
 
 /**
  * Admin-on-behalf KYC upload — Vercel Blob direct-upload path.
@@ -80,19 +94,12 @@ export async function POST(request: NextRequest) {
         );
 
         return {
-          // No allowedContentTypes / maximumSizeInBytes for now — those
-          // were the prime suspects for the 99%-then-loop bug Londani
-          // hit on her 5.8 MB POA PDF. If the browser sends a content
-          // type that doesn't *exactly* match our allowlist (e.g.
-          // `application/pdf;charset=binary`), Vercel Blob rejects on
-          // finalize and the client retries, looping forever. Dropping
-          // these constraints relies on:
-          //   - admin-session gate above (only authenticated admins)
-          //   - file picker `accept` attr (UX-level only, but typical)
-          //   - Airtable's own content-type filtering on attachment
-          //     fields (it rejects non-document content)
-          // A future revision can re-add these with wildcards once
-          // we confirm what the browser actually sends.
+          // allowedContentTypes is REQUIRED for Vercel Blob to mint a
+          // valid signed token — omitting it caused all uploads to
+          // hang at 0% (token issued but Blob rejected the PUT). Use
+          // the broad ALLOWED_MIME list which covers common browser
+          // variants for our supported formats.
+          allowedContentTypes: ALLOWED_MIME,
           tokenPayload: JSON.stringify({
             memberId: existing.id,
             slot,
