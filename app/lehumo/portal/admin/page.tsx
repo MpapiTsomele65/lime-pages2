@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/admin-auth";
 import { listAllMembers } from "@/lib/airtable-admin";
 import { AdminShell } from "@/components/lehumo/admin/AdminShell";
-import { AdminMemberTable } from "@/components/lehumo/admin/AdminMemberTable";
-import { AdminKycReviewSection } from "@/components/lehumo/admin/AdminKycReviewSection";
+import { AdminMembersClient } from "@/components/lehumo/admin/AdminMembersClient";
 import { AdminAddMemberCard } from "@/components/lehumo/admin/AdminAddMemberCard";
 import { AdminPoolTracker } from "@/components/lehumo/admin/AdminPoolTracker";
 import { AdminCommunityHealth } from "@/components/lehumo/admin/AdminCommunityHealth";
@@ -109,21 +108,21 @@ export default async function AdminDashboardPage() {
             them straight into the review queue below. */}
         <AdminAddMemberCard />
 
-        {/* KYC review queue — surfaces members waiting on document review
-            or chase-up. Sits above the member table so the most actionable
-            work is the first thing an admin sees on load.
-            `key={members.length}` forces a remount when AdminAddMemberCard
-            calls router.refresh() after a successful create — without it
-            the section's local useState would keep the stale member list. */}
-        <AdminKycReviewSection
-          key={`kyc-${members.length}`}
-          initialMembers={members}
-        />
+        {/* Single client wrapper that owns `members` state for both the
+            KYC review queue and the full member table. Lifting state
+            up makes row-level actions (KYC approve/reject, beneficiary
+            add/edit, status changes, contribution toggles) propagate
+            between the two sections in the same render — without
+            this, a beneficiary saved from the KYC row's block left
+            the AdminMemberTable's beneficiary cell still showing
+            "+ Add", inviting accidental overwrites.
 
-        {/* Member table — same key trick so a freshly-created member
-            shows up in the full table on the next render. */}
-        <AdminMemberTable
-          key={`table-${members.length}`}
+            `key={members.length}` re-mounts the wrapper whenever a
+            NEW member is added (AdminAddMemberCard → router.refresh
+            → fresh member list), giving the wrapper's useState a
+            chance to re-seed from the new initialMembers prop. */}
+        <AdminMembersClient
+          key={`members-${members.length}`}
           initialMembers={members}
           currentMonth={currentMonth}
         />

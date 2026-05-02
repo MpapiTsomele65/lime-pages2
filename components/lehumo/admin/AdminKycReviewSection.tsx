@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 import {
@@ -46,7 +46,15 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { BeneficiaryDialog } from "@/components/lehumo/admin/BeneficiaryDialog";
 
 interface AdminKycReviewSectionProps {
-  initialMembers: LehumoMember[];
+  /** Live member list, owned by the parent AdminMembersClient
+   *  wrapper so row-level actions in this section propagate to the
+   *  AdminMemberTable below (and vice versa) without a full page
+   *  reload. */
+  members: LehumoMember[];
+  /** Single setter shared with sibling sections — call with the
+   *  freshly-PATCHed member returned from any admin server action.
+   *  The wrapper splices it into the shared array by id. */
+  onMemberUpdate: (updated: LehumoMember) => void;
 }
 
 /**
@@ -105,20 +113,17 @@ function isVerified(m: LehumoMember): boolean {
 }
 
 export function AdminKycReviewSection({
-  initialMembers,
+  members,
+  onMemberUpdate,
 }: AdminKycReviewSectionProps) {
-  // We hold the FULL member list locally so individual rows can update
-  // optimistically after approve / reject / clear — and so once a
-  // member's KYC is approved they drop off the queue automatically.
-  // Uploads use router.refresh() instead of optimistic merging because
-  // the Blob direct-upload path's onUploadCompleted runs server-side
-  // after the client's upload promise resolves; we don't get the
-  // updated member back synchronously.
+  // The member list now lives one level up in AdminMembersClient so
+  // updates from this section (KYC approve/reject/clear, beneficiary
+  // edits) and the sibling AdminMemberTable (status changes, month
+  // toggles) stay in sync within a session. We just consume the
+  // shared array + setter via props.
   const router = useRouter();
-  const [members, setMembers] = useState<LehumoMember[]>(initialMembers);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
 
   // Confirmation dialog state — every Remove action funnels through
   // this so a misclick on a phone or trackpad doesn't immediately
@@ -152,33 +157,28 @@ export function AdminKycReviewSection({
     [members],
   );
 
-  const applyMemberUpdate = useCallback((updated: LehumoMember) => {
-    startTransition(() => {
-      setMembers((prev) =>
-        prev.map((m) => (m.id === updated.id ? updated : m)),
-      );
-    });
-  }, []);
-
-  async function runAction(
-    key: string,
-    action: () => Promise<AdminActionResult>,
-  ) {
-    setBusyKey(key);
-    setError(null);
-    try {
-      const res = await action();
-      if (!res.ok) {
-        setError(res.error);
-        return;
+  // Wrap the shared onMemberUpdate in this section's runAction
+  // pattern (manage busyKey + error toast) so the existing call
+  // sites don't need touching.
+  const runAction = useCallback(
+    async (key: string, action: () => Promise<AdminActionResult>) => {
+      setBusyKey(key);
+      setError(null);
+      try {
+        const res = await action();
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        onMemberUpdate(res.member);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      } finally {
+        setBusyKey(null);
       }
-      applyMemberUpdate(res.member);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setBusyKey(null);
-    }
-  }
+    },
+    [onMemberUpdate],
+  );
 
   return (
     <section className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
@@ -280,7 +280,7 @@ export function AdminKycReviewSection({
                     });
                   }}
                   onRefresh={() => router.refresh()}
-                  onMemberUpdate={applyMemberUpdate}
+                  onMemberUpdate={onMemberUpdate}
                   onEditBeneficiary={() => setBeneficiaryEditing(member)}
                   onUploadError={setError}
                   setBusyKey={setBusyKey}
@@ -336,7 +336,7 @@ export function AdminKycReviewSection({
                     }
                     onClearSlot={() => {}}
                     onRefresh={() => router.refresh()}
-                    onMemberUpdate={applyMemberUpdate}
+                    onMemberUpdate={onMemberUpdate}
                     onEditBeneficiary={() => setBeneficiaryEditing(member)}
                     onUploadError={setError}
                     setBusyKey={setBusyKey}
@@ -369,9 +369,10 @@ export function AdminKycReviewSection({
 
       {/* Beneficiary edit/add dialog — single instance at the section
           root; shared by every row's BeneficiaryBlock. On success we
-          merge the returned member into local state via
-          applyMemberUpdate AND call router.refresh() so the parallel
-          AdminMemberTable's beneficiary cell stays in sync. */}
+          merge the returned member into the parent AdminMembersClient's
+          shared state via onMemberUpdate, which propagates the update
+          to the sibling AdminMemberTable in the same render — no
+          router.refresh() needed because the state is now lifted. */}
       <BeneficiaryDialog
         member={beneficiaryEditing}
         onSubmit={async (member, fields) => {
@@ -379,8 +380,7 @@ export function AdminKycReviewSection({
           if (!res.ok) {
             return { ok: false, error: res.error };
           }
-          applyMemberUpdate(res.member);
-          router.refresh();
+          onMemberUpdate(res.member);
           setBeneficiaryEditing(null);
           return { ok: true };
         }}

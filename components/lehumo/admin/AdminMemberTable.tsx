@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import {
   Check,
   Loader2,
@@ -32,15 +32,24 @@ import {
 import { BeneficiaryDialog } from "@/components/lehumo/admin/BeneficiaryDialog";
 
 interface AdminMemberTableProps {
-  initialMembers: LehumoMember[];
+  /** Live member list, owned by the parent AdminMembersClient
+   *  wrapper so row-level actions (status changes, KYC flips,
+   *  contribution toggles, beneficiary edits) propagate to the
+   *  AdminKycReviewSection above (and vice versa) without a page
+   *  reload. */
+  members: LehumoMember[];
+  /** Single setter shared with the sibling KYC section. Call with
+   *  the freshly-PATCHed member returned from any admin server
+   *  action; the wrapper splices it into the shared array by id. */
+  onMemberUpdate: (updated: LehumoMember) => void;
   currentMonth: string;
 }
 
 export function AdminMemberTable({
-  initialMembers,
+  members,
+  onMemberUpdate,
   currentMonth,
 }: AdminMemberTableProps) {
-  const [members, setMembers] = useState<LehumoMember[]>(initialMembers);
   const [query, setQuery] = useState("");
   // "Missing beneficiary only" filter — surfaces members an admin needs to
   // chase up. Excludes Exited members from the missing set since their
@@ -52,13 +61,12 @@ export function AdminMemberTable({
   const [activeLoansOnly, setActiveLoansOnly] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
 
   // Beneficiary dialog state — null when closed; member object when
   // open (so the dialog can pre-fill from the row's current values).
-  // Using the FULL member from local state means the dialog re-opens
-  // pre-filled even after a recent save, since onSubmit pushes the
-  // updated member into `members` before closing.
+  // The shared onMemberUpdate makes any save visible to BOTH this
+  // table and the sibling KYC review section in the same render —
+  // no stale-data overwrites possible.
   const [beneficiaryEditing, setBeneficiaryEditing] =
     useState<LehumoMember | null>(null);
 
@@ -94,12 +102,7 @@ export function AdminMemberTable({
         setError(res.error);
         return;
       }
-      const updated = res.member;
-      startTransition(() => {
-        setMembers((prev) =>
-          prev.map((m) => (m.id === updated.id ? updated : m)),
-        );
-      });
+      onMemberUpdate(res.member);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -339,12 +342,7 @@ export function AdminMemberTable({
           if (!res.ok) {
             return { ok: false, error: res.error };
           }
-          const updated = res.member;
-          startTransition(() => {
-            setMembers((prev) =>
-              prev.map((m) => (m.id === updated.id ? updated : m)),
-            );
-          });
+          onMemberUpdate(res.member);
           setBeneficiaryEditing(null);
           return { ok: true };
         }}
