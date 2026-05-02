@@ -200,11 +200,14 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
 
   // ── DIAGNOSTIC ─────────────────────────────────────────────
   // Beneficiary count tracker — investigating a report that
-  // beneficiary data isn't surfacing in the admin dashboard. Logs
-  // once per page load so we can confirm whether the data is
-  // present in the parsed records (Airtable returned it) or absent
-  // (data isn't actually in Airtable). Drop this log once the
-  // root cause is identified.
+  // beneficiary data isn't surfacing in the admin dashboard.
+  // Previous logs confirmed Airtable IS returning the data with
+  // matching field IDs, yet the parsed `out` array shows 0/25.
+  // Something is dropping the field between parseRecord's read
+  // and our count check. This log dumps the parsed beneficiary
+  // fields for Mpapi specifically (member #1 and the richest
+  // record by field count) so we can see what parseRecord actually
+  // produced.
   const totalMembers = out.length;
   const withBeneficiary = out.filter(
     (m) =>
@@ -222,6 +225,27 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
           : "(none populated)"
       }`,
   );
+  // Direct parsed-shape inspection: find Mpapi (or any member whose
+  // fullName starts with M) and dump the four beneficiary string
+  // fields off the parsed object. This proves whether parseRecord
+  // produced the right values for someone we know has data.
+  const mpapi = out.find((m) =>
+    m.fullName.toLowerCase().includes("mpapi"),
+  );
+  if (mpapi) {
+    console.log(
+      `[listAllMembers] parsed Mpapi (#${mpapi.memberNumber}, ${mpapi.id}): ` +
+        `firstName=${JSON.stringify(mpapi.beneficiaryFirstName)} ` +
+        `surname=${JSON.stringify(mpapi.beneficiarySurname)} ` +
+        `relationship=${JSON.stringify(mpapi.beneficiaryRelationship)} ` +
+        `phone=${JSON.stringify(mpapi.beneficiaryPhone)} ` +
+        `updatedAt=${JSON.stringify(mpapi.beneficiaryUpdatedAt)}`,
+    );
+  } else {
+    console.log(
+      "[listAllMembers] could not find a member named 'mpapi' in parsed list",
+    );
+  }
 
   // ── Bulk hydration from the Contributions table ──
   // One full-table read for ~1,500 rows beats ~25 per-member fetches
