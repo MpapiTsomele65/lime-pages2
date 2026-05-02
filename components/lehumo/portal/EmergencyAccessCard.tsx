@@ -156,6 +156,18 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
           as an interest-free loan. Keep your monthly contributions on track
           and you&rsquo;ll unlock this safety net automatically.
         </p>
+
+        {/* R-anchor footer — even while locked, members see the lifetime
+            max emergency cash they're working toward. Mirrors the bar on
+            the available/active-loan states so the framing is consistent
+            across all three lifecycle moments. */}
+        <p className="mt-3 pt-3 border-t border-white/[0.06] text-[10px] uppercase tracking-[0.12em] text-white/30">
+          Working toward{" "}
+          <span className="text-white/55">
+            {formatZAR(access.maxPossibleZAR)}
+          </span>{" "}
+          max emergency cash · 5-year trust
+        </p>
       </motion.section>
     );
   }
@@ -231,6 +243,54 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
           </div>
         </div>
 
+        {/* R-anchored bar — full = max possible emergency cash for the
+            5-year trust. Within that:
+              • Amber 0 → activeBalanceZAR  — currently borrowed
+              • Lime  activeBalanceZAR → maxAvailableZAR  — remaining
+                headroom (still available to draw)
+              • Background past maxAvailableZAR — future emergency cash
+                that'll unlock as contributions continue to land. */}
+        <div className="mb-3">
+          <div className="relative h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
+            {/* Amber — borrowed slice */}
+            {access.maxPossibleZAR > 0 && access.activeBalanceZAR > 0 && (
+              <div
+                className="absolute inset-y-0 left-0 bg-[#F59E0B]/70"
+                style={{
+                  width: `${Math.min(100, (access.activeBalanceZAR / access.maxPossibleZAR) * 100)}%`,
+                }}
+              />
+            )}
+            {/* Lime — remaining headroom (sits to the right of borrowed,
+                ends at maxAvailableZAR) */}
+            {access.maxPossibleZAR > 0 && access.remainingHeadroomZAR > 0 && (
+              <div
+                className="absolute inset-y-0 bg-[#B8FF00]"
+                style={{
+                  left: `${(access.activeBalanceZAR / access.maxPossibleZAR) * 100}%`,
+                  width: `${(access.remainingHeadroomZAR / access.maxPossibleZAR) * 100}%`,
+                }}
+              />
+            )}
+          </div>
+          <div className="mt-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.12em] text-white/30">
+            <span>
+              <span className="text-[#F59E0B]">{formatZAR(access.activeBalanceZAR)}</span>
+              {" borrowed"}
+              {access.remainingHeadroomZAR > 0 && (
+                <>
+                  {" · "}
+                  <span className="text-[#B8FF00]">
+                    {formatZAR(access.remainingHeadroomZAR)}
+                  </span>
+                  {" headroom"}
+                </>
+              )}
+            </span>
+            <span>{formatZAR(access.maxPossibleZAR)} · 5-year max</span>
+          </div>
+        </div>
+
         {access.remainingHeadroomZAR > 0 && (
           <p className="text-xs text-white/55 leading-relaxed mb-3">
             You still have{" "}
@@ -301,6 +361,33 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
             ? `at the ${formatZAR(EMERGENCY_ACCESS_CAP_ZAR)} ceiling`
             : "below the R20,000 ceiling"}
         </p>
+
+        {/* R-anchored bar — full extent = max possible emergency cash
+            for this member's full 5-year contribution
+            (`min(20% × R60K, R20K)` = R12K for Standard, climbing toward
+            R20K ceiling for higher tiers). Lime fill = currently
+            accessible. Grows automatically as contributions land. */}
+        <div className="mt-3 relative h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 bg-[#B8FF00] transition-all"
+            style={{
+              width: `${access.maxPossibleZAR > 0
+                ? Math.min(
+                    100,
+                    (access.availableZAR / access.maxPossibleZAR) * 100,
+                  )
+                : 0}%`,
+            }}
+            role="progressbar"
+            aria-valuenow={access.availableZAR}
+            aria-valuemin={0}
+            aria-valuemax={access.maxPossibleZAR}
+          />
+        </div>
+        <div className="mt-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.12em] text-white/30">
+          <span>R0</span>
+          <span>{formatZAR(access.maxPossibleZAR)} · 5-year max</span>
+        </div>
       </div>
 
       <a

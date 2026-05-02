@@ -711,12 +711,20 @@ export type EmergencyAccessState =
       kind: "locked";
       monthsContributed: number;
       monthsRemaining: number;
+      /** The most this member could ever access at end-of-trust given
+       *  their full 60-period schedule —
+       *  `min(0.2 × lifetimeGoal, EMERGENCY_ACCESS_CAP_ZAR)`.
+       *  R12,000 for a Standard plan member; rises toward the R20,000
+       *  ceiling for Premium / Custom tiers. Used by EmergencyAccessCard
+       *  as the anchor for its R-progress bar. */
+      maxPossibleZAR: number;
     }
   | {
       kind: "available";
       monthsContributed: number;
       contributedZAR: number;
       maxAvailableZAR: number; // min(contributed × 20%, R20k)
+      maxPossibleZAR: number; // see locked state
       availableZAR: number; // maxAvailableZAR (no active draw to subtract)
       capReason: "percent" | "ceiling";
     }
@@ -725,6 +733,7 @@ export type EmergencyAccessState =
       monthsContributed: number;
       contributedZAR: number;
       maxAvailableZAR: number;
+      maxPossibleZAR: number; // see locked state
       activeBalanceZAR: number;
       issuedAt: string; // YYYY-MM-DD
       dueAt: string; // YYYY-MM-DD = issuedAt + 90d
@@ -751,19 +760,62 @@ export function computeEmergencyAccess(
   member: LehumoMember,
   today: Date = new Date(),
 ): EmergencyAccessState {
-  const monthsContributed = Object.values(member.contributions).filter(
-    Boolean,
-  ).length;
+  // ── Source of truth for monthsContributed + contributedZAR ──
+  // When the rich Contributions-table shape is hydrated on the member
+  // (Phase 3+, flag on), use it for lifetime-accurate counts:
+  //   - monthsContributed counts ALL Paid rows across the 5-year trust,
+  //     not just the SAST-current calendar year that the legacy 12-key
+  //     projection captures (which would silently zero out members'
+  //     year-1 history once we cross into 2027).
+  //   - contributedZAR sums actual `amountReceived` (plan-aware —
+  //     Premium = R2,000), not monthsContributed × R1,000.
+  // Falls back to the legacy projection × R1,000 when contributionRows
+  // is undefined (flag off, pre-cutover, or fetch failure).
+  let monthsContributed: number;
+  let contributedZAR: number;
+  let lifetimeGoalZAR: number;
+
+  if (member.contributionRows && member.contributionRows.length > 0) {
+    const paidRows = member.contributionRows.filter(
+      (r) => r.status === CONTRIBUTION_STATUS.paid,
+    );
+    monthsContributed = paidRows.length;
+    contributedZAR = paidRows.reduce(
+      (sum, r) => sum + (r.amountReceived ?? 0),
+      0,
+    );
+    lifetimeGoalZAR = member.contributionRows.reduce(
+      (sum, r) => sum + (r.amountExpected ?? 0),
+      0,
+    );
+  } else {
+    monthsContributed = Object.values(member.contributions).filter(
+      Boolean,
+    ).length;
+    contributedZAR = monthsContributed * EMERGENCY_ACCESS_MONTHLY_ZAR;
+    // 60 months × R1,000 standard plan — proxy for the legacy-only path.
+    // Real plan tiers come through via contributionRows above.
+    lifetimeGoalZAR = 60 * EMERGENCY_ACCESS_MONTHLY_ZAR;
+  }
+
+  // The most this member could ever access at end-of-trust — anchor for
+  // the EmergencyAccessCard's R-progress bar. For a Standard plan
+  // member this is R12,000 (= 0.2 × R60k); higher-tier plans rise
+  // toward the R20,000 system ceiling.
+  const maxPossibleZAR = Math.min(
+    Math.floor(lifetimeGoalZAR * EMERGENCY_ACCESS_PCT),
+    EMERGENCY_ACCESS_CAP_ZAR,
+  );
 
   if (monthsContributed < EMERGENCY_ACCESS_TENURE_MONTHS) {
     return {
       kind: "locked",
       monthsContributed,
       monthsRemaining: EMERGENCY_ACCESS_TENURE_MONTHS - monthsContributed,
+      maxPossibleZAR,
     };
   }
 
-  const contributedZAR = monthsContributed * EMERGENCY_ACCESS_MONTHLY_ZAR;
   const percentCap = Math.floor(contributedZAR * EMERGENCY_ACCESS_PCT);
   const maxAvailableZAR = Math.min(percentCap, EMERGENCY_ACCESS_CAP_ZAR);
   const capReason: "percent" | "ceiling" =
@@ -780,6 +832,7 @@ export function computeEmergencyAccess(
       monthsContributed,
       contributedZAR,
       maxAvailableZAR,
+      maxPossibleZAR,
       activeBalanceZAR: activeBalance,
       issuedAt: member.activeLoanIssuedAt,
       dueAt: due.toISOString().slice(0, 10),
@@ -794,6 +847,7 @@ export function computeEmergencyAccess(
     monthsContributed,
     contributedZAR,
     maxAvailableZAR,
+    maxPossibleZAR,
     availableZAR: maxAvailableZAR,
     capReason,
   };
