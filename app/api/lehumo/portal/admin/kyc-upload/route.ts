@@ -1,140 +1,140 @@
 import { NextRequest, NextResponse } from "next/server";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { del } from "@vercel/blob";
 
 import { getAdminSession } from "@/lib/admin-auth";
 import {
   getMemberByIdLite,
-  uploadKycAttachment,
+  uploadKycAttachmentByUrl,
   setMemberKyc,
 } from "@/lib/airtable";
 
-// ─── Limits ─────────────────────────────────────────────────────────
-// Mirror the member-portal upload route. Vercel's serverless function
-// body cap is 4.5 MB; base64 adds 33% overhead; 3 MB raw fits with
-// headroom for the JSON envelope. See member route for the full
-// rationale and the path to support 5 MB via Vercel Blob.
-const MAX_BYTES = 3 * 1024 * 1024;
+const MAX_BYTES = 10 * 1024 * 1024;
 
-const ALLOWED_MIME = new Set([
+const ALLOWED_MIME = [
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/heic",
   "image/heif",
   "application/pdf",
-]);
-
-interface UploadBody {
-  memberId?: unknown;
-  slot?: unknown;
-  filename?: unknown;
-  contentType?: unknown;
-  /** Base64-encoded file contents (no `data:` prefix). */
-  file?: unknown;
-}
-
-function bad(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
-}
+] as const;
 
 /**
- * Admin-on-behalf KYC document upload.
+ * Admin-on-behalf KYC upload — Vercel Blob direct-upload path.
  *
- * Use case: a member emails their ID/POA to lehumo@limepages.co.za
- * instead of uploading through the portal. The admin then drops it into
- * the right slot from the admin panel — same Airtable end state, no
- * second portal login required from the member.
+ * Mirrors the member-portal route but gated on `getAdminSession()`
+ * and accepts an explicit `memberId` in the client payload (vs.
+ * deriving from session.memberId for the member route). Use case:
+ * a member emails their KYC docs to lehumo@limepages.co.za and the
+ * admin uploads on their behalf from /lehumo/portal/admin.
  *
- * Flow mirrors `/api/lehumo/portal/member/kyc-upload`:
- *   1. Admin auth gate (LEHUMO_ADMIN_EMAILS).
- *   2. Validate memberId, slot, filename, content-type, and size.
- *   3. Push to Airtable's content-upload endpoint.
- *   4. If both slots populated and kycStatus is "Docs Requested",
- *      auto-flip to "In Progress" + stamp kycSubmittedAt. (We don't
- *      auto-approve here — admin still has to click Approve so the
- *      kycVerifiedAt timestamp reflects the actual review moment.)
+ * Same browser-uploads-to-Blob-then-server-PATCH-Airtable-then-
+ * deletes-Blob lifecycle as the member route — see comments there
+ * for the full story.
  */
 export async function POST(request: NextRequest) {
   let stage: string = "init";
   try {
-    stage = "admin_session";
-    const session = await getAdminSession();
-    if (!session) return bad("Forbidden", 403);
+    const body = (await request.json()) as HandleUploadBody;
 
-    stage = "parse_body";
-    const json = (await request.json().catch(() => null)) as UploadBody | null;
-    if (!json) return bad("Invalid JSON body");
+    const json = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname, clientPayloadStr) => {
+        stage = "admin_session";
+        const session = await getAdminSession();
+        if (!session) throw new Error("Forbidden");
 
-    const { memberId, slot, filename, contentType, file } = json;
+        stage = "validate_payload";
+        let payload: {
+          memberId?: unknown;
+          slot?: unknown;
+          filename?: unknown;
+        } = {};
+        try {
+          payload = clientPayloadStr ? JSON.parse(clientPayloadStr) : {};
+        } catch {
+          throw new Error("Invalid client payload");
+        }
+        const memberId = payload.memberId;
+        const slot = payload.slot;
+        const filename =
+          typeof payload.filename === "string" ? payload.filename.trim() : "";
+        if (typeof memberId !== "string" || !memberId.startsWith("rec")) {
+          throw new Error("memberId must be an Airtable record id");
+        }
+        if (slot !== "id" && slot !== "poa") {
+          throw new Error("slot must be 'id' or 'poa'");
+        }
+        if (!filename) {
+          throw new Error("filename is required");
+        }
 
-    stage = "validate_memberid";
-    if (typeof memberId !== "string" || !memberId.startsWith("rec")) {
-      return bad("memberId must be an Airtable record id");
-    }
+        stage = "lookup_member";
+        const existing = await getMemberByIdLite(memberId);
+        if (!existing) throw new Error("Member not found");
 
-    stage = "validate_slot";
-    if (slot !== "id" && slot !== "poa") {
-      return bad("slot must be 'id' or 'poa'");
-    }
+        return {
+          allowedContentTypes: [...ALLOWED_MIME],
+          maximumSizeInBytes: MAX_BYTES,
+          tokenPayload: JSON.stringify({
+            memberId: existing.id,
+            slot,
+            filename,
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        try {
+          if (!tokenPayload) {
+            console.error(
+              "admin kyc-upload onUploadCompleted: no tokenPayload, blob orphaned at",
+              blob.url,
+            );
+            return;
+          }
+          const { memberId, slot, filename } = JSON.parse(tokenPayload) as {
+            memberId: string;
+            slot: "id" | "poa";
+            filename: string;
+          };
 
-    stage = "validate_filename";
-    if (typeof filename !== "string" || filename.trim().length === 0) {
-      return bad("filename is required");
-    }
+          let updated = await uploadKycAttachmentByUrl(
+            memberId,
+            slot,
+            blob.url,
+            filename,
+          );
 
-    stage = "validate_contenttype";
-    if (typeof contentType !== "string" || !ALLOWED_MIME.has(contentType)) {
-      return bad("Unsupported file type. Allowed: JPG, PNG, HEIC, or PDF.");
-    }
+          // Same first-doc auto-flip as the member route — admin
+          // uploads land in the queue identically.
+          const idPresent = (updated.kycIdDocument?.length ?? 0) > 0;
+          const poaPresent = (updated.kycProofOfAddress?.length ?? 0) > 0;
+          const stillRequestingDocs = updated.kycStatus === "Docs Requested";
+          if ((idPresent || poaPresent) && stillRequestingDocs) {
+            updated = await setMemberKyc(updated.id, {
+              kycStatus: "In Progress",
+              markSubmittedNow: true,
+            });
+          }
 
-    stage = "validate_size";
-    if (typeof file !== "string" || file.length === 0) {
-      return bad("file (base64) is required");
-    }
-    const approxBytes = Math.floor((file.length * 3) / 4);
-    if (approxBytes > MAX_BYTES) {
-      return bad(
-        `File too large (${(approxBytes / 1024 / 1024).toFixed(1)}MB). Max 3MB.`,
-        413,
-      );
-    }
-
-    stage = "lookup_member";
-    // Lite fetch — admin upload route doesn't need contribution rows.
-    const existing = await getMemberByIdLite(memberId);
-    if (!existing) return bad("Member not found", 404);
-
-    stage = "upload_attachment";
-    let updated = await uploadKycAttachment(memberId, slot, {
-      contentType,
-      base64: file,
-      filename: filename.trim(),
+          await del(blob.url).catch((err) =>
+            console.error(
+              `Admin Blob cleanup failed for ${blob.pathname}:`,
+              err,
+            ),
+          );
+        } catch (err) {
+          console.error(
+            "admin kyc-upload onUploadCompleted error:",
+            err instanceof Error ? err.message : String(err),
+          );
+        }
+      },
     });
 
-    stage = "maybe_flip_status";
-    // Mirror the member-portal route: flip "Docs Requested" → "In
-    // Progress" on the FIRST doc uploaded so admins can review partial
-    // submissions and decide whether to approve what's there or chase
-    // the missing slot. Admin uploads are the back-channel path
-    // (member emailed docs to lehumo@); same lifecycle rules apply.
-    const idPresent = (updated.kycIdDocument?.length ?? 0) > 0;
-    const poaPresent = (updated.kycProofOfAddress?.length ?? 0) > 0;
-    const anyPresent = idPresent || poaPresent;
-    const bothPresent = idPresent && poaPresent;
-    const stillRequestingDocs = updated.kycStatus === "Docs Requested";
-    if (anyPresent && stillRequestingDocs) {
-      updated = await setMemberKyc(updated.id, {
-        kycStatus: "In Progress",
-        markSubmittedNow: true,
-      });
-    }
-
-    return NextResponse.json({
-      member: updated,
-      slot,
-      bothPresent,
-      idPresent,
-      poaPresent,
-    });
+    return NextResponse.json(json);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 import {
   Upload,
   FileCheck,
@@ -37,33 +38,11 @@ const ALLOWED_MIME = new Set([
   "image/heif",
   "application/pdf",
 ]);
-// Mirror the server route's MAX_BYTES — the binding constraint is
-// Vercel's 4.5 MB serverless function body cap. After base64 encoding
-// (33% overhead) plus the JSON envelope, ~3 MB raw is the practical
-// ceiling. Files larger than this will be rejected client-side with a
-// friendly message instead of failing in the network layer.
-const MAX_BYTES = 3 * 1024 * 1024;
-
-/**
- * Read a File as a base64 string with the `data:...,` prefix stripped.
- * Airtable's content-upload endpoint expects raw base64, not a data URL.
- */
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== "string") {
-        reject(new Error("Unexpected FileReader result"));
-        return;
-      }
-      const commaIdx = result.indexOf(",");
-      resolve(commaIdx >= 0 ? result.slice(commaIdx + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("Read failed"));
-    reader.readAsDataURL(file);
-  });
-}
+// Vercel Blob direct upload bypasses our function body cap entirely
+// (file goes browser → Blob storage, not browser → Vercel function),
+// so the 3 MB ceiling is gone. Cap at 10 MB to keep individual files
+// reasonable — bigger than that is almost certainly a misclick.
+const MAX_BYTES = 10 * 1024 * 1024;
 
 interface SlotCardProps {
   slot: SlotConfig;
@@ -116,52 +95,38 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
       if (file.size > MAX_BYTES) {
         setBusy(false);
         setError(
-          file.type === "application/pdf"
-            ? `PDF too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 3MB — try compressing the PDF or sending the original photo instead.`
-            : `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB) even after compression. Max 3MB.`,
+          `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 10MB.`,
         );
         return;
       }
 
       try {
-        const base64 = await fileToBase64(file);
-        const res = await fetch("/api/lehumo/portal/member/kyc-upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        // Direct browser → Vercel Blob upload. Our route mints a
+        // signed token, browser PUTs the file straight to Blob
+        // storage, then `onUploadCompleted` fires server-side to
+        // PATCH Airtable with the resulting public URL.
+        await upload(`kyc/${slot.key}/${Date.now()}-${file.name}`, file, {
+          access: "public",
+          handleUploadUrl: "/api/lehumo/portal/member/kyc-upload",
+          contentType: file.type,
+          clientPayload: JSON.stringify({
             slot: slot.key,
             filename: file.name,
-            contentType: file.type,
-            file: base64,
           }),
         });
 
-        if (!res.ok) {
-          // Try to parse a JSON error body first — the route returns
-          // `{ error, stage }` for anything our handler catches. If
-          // the response isn't JSON (e.g. Vercel platform 413 / 504),
-          // fall back to the HTTP status so the user gets *some*
-          // diagnostic instead of an opaque "Upload failed".
-          const ct = res.headers.get("content-type") ?? "";
-          let detail = "";
-          if (ct.includes("application/json")) {
-            const errBody = await res.json().catch(() => null);
-            detail = errBody?.error ?? "";
-          } else {
-            const text = await res.text().catch(() => "");
-            detail = text.slice(0, 120);
-          }
-          throw new Error(
-            detail
-              ? `Upload failed (${res.status}): ${detail}`
-              : `Upload failed (HTTP ${res.status})`,
-          );
-        }
-
+        // upload() resolves once the file lands in Blob storage; the
+        // server's onUploadCompleted (Airtable PATCH + Blob delete)
+        // runs as a follow-on webhook from Vercel Blob. Brief delay
+        // before the page refresh lets that PATCH land so the
+        // re-render shows the new attachment.
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         onUploaded();
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Upload failed. Please try again.",
+          err instanceof Error
+            ? `Upload failed: ${err.message}`
+            : "Upload failed. Please try again.",
         );
       } finally {
         setBusy(false);
@@ -339,7 +304,7 @@ export function KycDocumentsCard({ member }: KycDocumentsCardProps) {
     {
       key: "id",
       label: "ID Document",
-      hint: "Upload your SA ID or passport — JPG, PNG, HEIC, or PDF. Photos are auto-compressed; PDFs need to be ≤3MB.",
+      hint: "Upload your SA ID or passport — JPG, PNG, HEIC, or PDF (max 10MB).",
       attachments: member.kycIdDocument,
     },
     {

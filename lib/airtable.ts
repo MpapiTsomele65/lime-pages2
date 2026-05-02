@@ -547,6 +547,38 @@ export async function uploadKycAttachment(
 }
 
 /**
+ * Attach a KYC document to a member by handing Airtable a public URL,
+ * skipping the 5-MB-base64 limit on the content-upload endpoint.
+ *
+ * Airtable downloads the file from the URL server-side and stores its
+ * own copy in attachment storage; once the PATCH returns successfully
+ * the original URL is no longer needed. Used by the Vercel Blob
+ * direct-upload path so members can submit large PDFs (typical
+ * proof-of-address scans run 4–8 MB) without hitting our function
+ * body cap or Airtable's base64 ceiling.
+ *
+ * Replace semantics: PATCH on a multipleAttachments field replaces
+ * the entire array, so we set `[{url, filename}]` — a fresh upload
+ * supersedes whatever was in that slot before. (The legacy content-
+ * upload path APPENDS, which silently accumulates stale attachments;
+ * replace is the cleaner default.)
+ */
+export async function uploadKycAttachmentByUrl(
+  recordId: string,
+  slot: "id" | "poa",
+  url: string,
+  filename: string,
+): Promise<LehumoMember> {
+  const fieldId =
+    slot === "id"
+      ? AIRTABLE_FIELDS.kycIdDocument
+      : AIRTABLE_FIELDS.kycProofOfAddress;
+  return updateMember(recordId, {
+    [fieldId]: [{ url, filename }],
+  });
+}
+
+/**
  * Patch the structured KYC fields on a member record. Used by:
  *   - the onboarding API to write Step-3 captures (id type, id number,
  *     residential address) to dedicated columns instead of the notes blob

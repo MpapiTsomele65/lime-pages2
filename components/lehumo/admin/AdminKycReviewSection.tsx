@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 import {
   AlertCircle,
   Check,
@@ -40,28 +42,11 @@ const ALLOWED_MIME = new Set([
   "image/heif",
   "application/pdf",
 ]);
-// Mirror the server route's MAX_BYTES — the binding constraint is
-// Vercel's 4.5 MB serverless function body cap. Files larger than this
-// (after base64 encoding) hit the platform 413 before reaching our
-// route. See the member-portal kyc-upload route for the full rationale.
-const MAX_BYTES = 3 * 1024 * 1024;
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== "string") {
-        reject(new Error("Unexpected FileReader result"));
-        return;
-      }
-      const commaIdx = result.indexOf(",");
-      resolve(commaIdx >= 0 ? result.slice(commaIdx + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("Read failed"));
-    reader.readAsDataURL(file);
-  });
-}
+// Mirror the server route's MAX_BYTES — Vercel Blob direct upload
+// bypasses the function body cap, so this is just a sanity ceiling.
+// 10 MB comfortably covers high-res phone photos and multi-page bank
+// statement PDFs without inviting 100 MB scans into the queue.
+const MAX_BYTES = 10 * 1024 * 1024;
 
 /**
  * Members appearing in the review queue: anyone whose KYC isn't yet
@@ -78,8 +63,13 @@ export function AdminKycReviewSection({
   initialMembers,
 }: AdminKycReviewSectionProps) {
   // We hold the FULL member list locally so individual rows can update
-  // optimistically after approve / reject / upload — and so once a
+  // optimistically after approve / reject / clear — and so once a
   // member's KYC is approved they drop off the queue automatically.
+  // Uploads use router.refresh() instead of optimistic merging because
+  // the Blob direct-upload path's onUploadCompleted runs server-side
+  // after the client's upload promise resolves; we don't get the
+  // updated member back synchronously.
+  const router = useRouter();
   const [members, setMembers] = useState<LehumoMember[]>(initialMembers);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -169,7 +159,7 @@ export function AdminKycReviewSection({
                   adminClearKycAttachment(member.id, slot),
                 )
               }
-              onUploaded={applyMemberUpdate}
+              onRefresh={() => router.refresh()}
               onUploadError={setError}
               setBusyKey={setBusyKey}
             />
@@ -190,7 +180,7 @@ interface KycReviewRowProps {
   onApprove: () => void;
   onReject: () => void;
   onClearSlot: (slot: "id" | "poa") => void;
-  onUploaded: (member: LehumoMember) => void;
+  onRefresh: () => void;
   onUploadError: (msg: string) => void;
   setBusyKey: (key: string | null) => void;
 }
@@ -201,7 +191,7 @@ function KycReviewRow({
   onApprove,
   onReject,
   onClearSlot,
-  onUploaded,
+  onRefresh,
   onUploadError,
   setBusyKey,
 }: KycReviewRowProps) {
@@ -294,7 +284,7 @@ function KycReviewRow({
             busy={idBusy}
             clearing={idClearing}
             disabled={anyBusy}
-            onUploaded={onUploaded}
+            onRefresh={onRefresh}
             onError={onUploadError}
             onClear={() => onClearSlot("id")}
             setBusyKey={setBusyKey}
@@ -307,7 +297,7 @@ function KycReviewRow({
             busy={poaBusy}
             clearing={poaClearing}
             disabled={anyBusy}
-            onUploaded={onUploaded}
+            onRefresh={onRefresh}
             onError={onUploadError}
             onClear={() => onClearSlot("poa")}
             setBusyKey={setBusyKey}
@@ -437,7 +427,14 @@ interface DocSlotProps {
   busy: boolean;
   clearing: boolean;
   disabled: boolean;
-  onUploaded: (member: LehumoMember) => void;
+  /** Triggers a soft router.refresh() on the admin page after the
+   *  Blob upload + server-side Airtable PATCH have settled. Replaces
+   *  the previous `onUploaded(member)` prop — handleUpload's
+   *  onUploadCompleted runs server-side after the client's upload
+   *  promise resolves, so we can't return the updated member
+   *  synchronously to the client. The page-level refresh re-fetches
+   *  the member list with the new attachments visible. */
+  onRefresh: () => void;
   onError: (msg: string) => void;
   onClear: () => void;
   setBusyKey: (key: string | null) => void;
@@ -451,7 +448,7 @@ function DocSlot({
   busy,
   clearing,
   disabled,
-  onUploaded,
+  onRefresh,
   onError,
   onClear,
   setBusyKey,
@@ -490,54 +487,43 @@ function DocSlot({
       if (prepared.size > MAX_BYTES) {
         setBusyKey(null);
         onError(
-          prepared.type === "application/pdf"
-            ? `PDF too large (${(prepared.size / 1024 / 1024).toFixed(1)}MB). Max 3MB — compress the PDF or upload the original photo instead.`
-            : `File too large (${(prepared.size / 1024 / 1024).toFixed(1)}MB) even after compression. Max 3MB.`,
+          `File too large (${(prepared.size / 1024 / 1024).toFixed(1)}MB). Max 10MB.`,
         );
         return;
       }
 
       try {
-        const base64 = await fileToBase64(prepared);
-        const res = await fetch("/api/lehumo/portal/admin/kyc-upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        // Direct browser → Vercel Blob upload, then server-side
+        // onUploadCompleted patches Airtable. Bypasses the 4.5 MB
+        // Vercel function body cap entirely — admin can now upload
+        // the back-channel KYC docs members emailed in (typically
+        // 4–8 MB phone photos / bank statement PDFs).
+        await upload(`kyc/${slot}/${Date.now()}-${prepared.name}`, prepared, {
+          access: "public",
+          handleUploadUrl: "/api/lehumo/portal/admin/kyc-upload",
+          contentType: prepared.type,
+          clientPayload: JSON.stringify({
             memberId,
             slot,
             filename: prepared.name,
-            contentType: prepared.type,
-            file: base64,
           }),
         });
-        if (!res.ok) {
-          // Surface the actual HTTP status when the response isn't JSON
-          // (Vercel platform 413 / 504, etc) so admins see something
-          // actionable instead of a flat "Upload failed".
-          const ct = res.headers.get("content-type") ?? "";
-          let detail = "";
-          if (ct.includes("application/json")) {
-            const errBody = await res.json().catch(() => null);
-            detail = errBody?.error ?? "";
-          } else {
-            const text = await res.text().catch(() => "");
-            detail = text.slice(0, 120);
-          }
-          throw new Error(
-            detail
-              ? `Upload failed (${res.status}): ${detail}`
-              : `Upload failed (HTTP ${res.status})`,
-          );
-        }
-        const data = (await res.json()) as { member: LehumoMember };
-        onUploaded(data.member);
+
+        // upload() resolves once the file lands in Blob storage. The
+        // server's `onUploadCompleted` callback fires via Vercel Blob's
+        // webhook AFTER that — so there's a brief race between the
+        // upload promise resolving and Airtable being patched. A short
+        // delay before refresh lets the PATCH land. 1.5s is generous;
+        // typical onUploadCompleted finishes in ~200–500ms.
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        onRefresh();
       } catch (err) {
         onError(err instanceof Error ? err.message : "Upload failed");
       } finally {
         setBusyKey(null);
       }
     },
-    [memberId, slot, onUploaded, onError, setBusyKey],
+    [memberId, slot, onRefresh, onError, setBusyKey],
   );
 
   const baseClasses =

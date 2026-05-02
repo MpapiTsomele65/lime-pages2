@@ -1,160 +1,191 @@
 import { NextRequest, NextResponse } from "next/server";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { del } from "@vercel/blob";
 
 import { getSession } from "@/lib/session";
 import {
   getMemberByIdLite,
-  uploadKycAttachment,
+  uploadKycAttachmentByUrl,
   setMemberKyc,
 } from "@/lib/airtable";
 import { sendKycReceivedEmail } from "@/lib/email";
 
 // ─── Limits ─────────────────────────────────────────────────────────
-// Vercel's serverless function request body cap is 4.5 MB. The file
-// arrives as a base64-encoded string inside a JSON body, which adds
-// ~33% overhead, so the practical raw-file ceiling is ~3.4 MB before
-// the platform 413s us before our handler ever runs. Set MAX_BYTES at
-// 3 MB to leave headroom for the JSON envelope + base64 padding.
-// Airtable itself supports up to 5 MB; the binding constraint is
-// Vercel's body limit. To support the full 5 MB later we'd need
-// browser-direct uploads via Vercel Blob (or similar) — bypassing
-// the function body limit entirely.
-const MAX_BYTES = 3 * 1024 * 1024;
+// Vercel Blob accepts files up to 5 GB; the binding constraints are
+// our willingness to keep the blob around (we delete after Airtable
+// fetches it — see `onUploadCompleted`) and Airtable's downstream
+// attachment-size cap. We hold the cap at 10 MB which comfortably
+// covers a high-res phone photo or a multi-page bank-statement PDF
+// without inviting members to dump 100 MB scans into the queue.
+const MAX_BYTES = 10 * 1024 * 1024;
 
-const ALLOWED_MIME = new Set([
+const ALLOWED_MIME = [
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/heic",
   "image/heif",
   "application/pdf",
-]);
-
-interface UploadBody {
-  slot?: unknown;
-  filename?: unknown;
-  contentType?: unknown;
-  /** Base64-encoded file contents (no `data:` prefix). */
-  file?: unknown;
-}
-
-function bad(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
-}
+] as const;
 
 /**
- * Member-portal KYC document upload.
+ * Member-portal KYC upload — Vercel Blob direct-upload path.
  *
  * Flow:
- *   1. Auth via session cookie.
- *   2. Validate slot, filename, content-type, and size.
- *   3. Push the file to Airtable's content-upload endpoint.
- *   4. If BOTH KYC slots now hold attachments, flip kycStatus →
- *      "In Progress" and stamp kycSubmittedAt. This is the signal that
- *      pops the member into the admin review queue.
- *   5. Return the freshly-fetched member so the client can re-render.
+ *   1. Browser calls `@vercel/blob/client.upload()` against this route
+ *      with the file as a Blob/File body.
+ *   2. `handleUpload` runs server-side. `onBeforeGenerateToken` checks
+ *      the session and validates the slot/filename via clientPayload,
+ *      then returns a one-shot signed token tied to a specific
+ *      content-type allow-list and an opaque tokenPayload that
+ *      survives the round trip.
+ *   3. Browser uses the signed token to PUT the file directly to
+ *      Vercel Blob storage (bypassing our function body cap entirely
+ *      — that's the whole point).
+ *   4. Vercel Blob fires `onUploadCompleted` server-side once the
+ *      upload lands. We patch Airtable with the public Blob URL,
+ *      flip kycStatus on the first-doc transition, fire the receipt
+ *      email, then `del()` the blob — Airtable has its own copy by
+ *      then, so the Blob is just a 30-second relay. Storage stays
+ *      at near-zero permanently, well inside the 1 GB free tier.
+ *
+ * Errors thrown inside `onBeforeGenerateToken` short-circuit the
+ * upload before the token is minted — the user sees a "Forbidden" /
+ * "Bad request" rather than a successful upload that gets orphaned.
  */
 export async function POST(request: NextRequest) {
-  // Track which stage of the flow the request is in so error responses
-  // (and logs) pinpoint where things broke. Same pattern as Paystack
-  // init's `stage` variable.
   let stage: string = "init";
   try {
-    stage = "session";
-    const session = await getSession();
-    if (!session) return bad("Unauthorized", 401);
+    const body = (await request.json()) as HandleUploadBody;
 
-    stage = "parse_body";
-    const json = (await request.json().catch(() => null)) as UploadBody | null;
-    if (!json) return bad("Invalid JSON body");
+    const json = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname, clientPayloadStr) => {
+        stage = "session";
+        const session = await getSession();
+        if (!session) throw new Error("Unauthorized");
 
-    const { slot, filename, contentType, file } = json;
+        stage = "validate_payload";
+        let payload: { slot?: unknown; filename?: unknown } = {};
+        try {
+          payload = clientPayloadStr ? JSON.parse(clientPayloadStr) : {};
+        } catch {
+          throw new Error("Invalid client payload");
+        }
+        const slot = payload.slot;
+        const filename = typeof payload.filename === "string" ? payload.filename.trim() : "";
+        if (slot !== "id" && slot !== "poa") {
+          throw new Error("slot must be 'id' or 'poa'");
+        }
+        if (!filename) {
+          throw new Error("filename is required");
+        }
 
-    stage = "validate_slot";
-    if (slot !== "id" && slot !== "poa") {
-      return bad("slot must be 'id' or 'poa'");
-    }
+        stage = "lookup_member";
+        const existing = await getMemberByIdLite(session.memberId);
+        if (!existing) throw new Error("Member not found");
 
-    stage = "validate_filename";
-    if (typeof filename !== "string" || filename.trim().length === 0) {
-      return bad("filename is required");
-    }
+        // Token payload travels back to onUploadCompleted as an
+        // opaque string — encode the bits we need to PATCH Airtable
+        // afterwards (memberId, slot, filename) so we don't have to
+        // re-derive them from the Blob pathname.
+        return {
+          allowedContentTypes: [...ALLOWED_MIME],
+          maximumSizeInBytes: MAX_BYTES,
+          tokenPayload: JSON.stringify({
+            memberId: existing.id,
+            memberEmail: existing.email,
+            memberFullName: existing.fullName,
+            memberNumber: existing.memberNumber,
+            slot,
+            filename,
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // ⚠ Stage tracking inside this callback is best-effort — Vercel
+        // doesn't surface errors here back to the client (the client
+        // already got its 200 once the blob landed). Anything that
+        // throws here just logs server-side, so check Vercel logs if
+        // an attachment doesn't appear on the member's record.
+        try {
+          if (!tokenPayload) {
+            console.error(
+              "kyc-upload onUploadCompleted: no tokenPayload, blob orphaned at",
+              blob.url,
+            );
+            return;
+          }
+          const {
+            memberId,
+            memberEmail,
+            memberFullName,
+            memberNumber,
+            slot,
+            filename,
+          } = JSON.parse(tokenPayload) as {
+            memberId: string;
+            memberEmail: string;
+            memberFullName: string;
+            memberNumber: number;
+            slot: "id" | "poa";
+            filename: string;
+          };
 
-    stage = "validate_contenttype";
-    if (typeof contentType !== "string" || !ALLOWED_MIME.has(contentType)) {
-      return bad(`Unsupported file type. Allowed: JPG, PNG, HEIC, or PDF.`);
-    }
+          // Patch Airtable with the Blob URL. Airtable downloads the
+          // file from the URL within seconds and stores its own copy.
+          let updated = await uploadKycAttachmentByUrl(
+            memberId,
+            slot,
+            blob.url,
+            filename,
+          );
 
-    stage = "validate_size";
-    if (typeof file !== "string" || file.length === 0) {
-      return bad("file (base64) is required");
-    }
-    // base64 length × 3/4 ≈ decoded bytes. Cheap pre-check before we
-    // ship it to Airtable.
-    const approxBytes = Math.floor((file.length * 3) / 4);
-    if (approxBytes > MAX_BYTES) {
-      return bad(
-        `File too large (${(approxBytes / 1024 / 1024).toFixed(1)}MB). Max 3MB.`,
-        413,
-      );
-    }
+          // First-doc auto-flip — same logic as the legacy base64
+          // route. Members upload one-at-a-time in real life; flipping
+          // on the first doc surfaces partial submissions in the admin
+          // queue immediately.
+          const idPresent = (updated.kycIdDocument?.length ?? 0) > 0;
+          const poaPresent = (updated.kycProofOfAddress?.length ?? 0) > 0;
+          const stillRequestingDocs = updated.kycStatus === "Docs Requested";
+          if ((idPresent || poaPresent) && stillRequestingDocs) {
+            updated = await setMemberKyc(updated.id, {
+              kycStatus: "In Progress",
+              markSubmittedNow: true,
+            });
+            if (memberEmail) {
+              sendKycReceivedEmail({
+                to: memberEmail,
+                fullName: memberFullName,
+                memberNumber,
+              }).catch((err) =>
+                console.error("KYC received email failed:", err),
+              );
+            }
+          }
 
-    stage = "lookup_member";
-    // Lite fetch — we don't need contribution rows on the upload path.
-    const existing = await getMemberByIdLite(session.memberId);
-    if (!existing) return bad("Member not found", 404);
-
-    stage = "upload_attachment";
-    let updated = await uploadKycAttachment(session.memberId, slot, {
-      contentType,
-      base64: file,
-      filename: filename.trim(),
+          // Clean up the Blob — Airtable now has its own copy, so the
+          // Blob is redundant. Best-effort delete; if it fails we keep
+          // the blob (worst case: free-tier storage gradually fills,
+          // not a correctness issue). Don't `await` strictly — this
+          // callback is async-ish from the browser's perspective.
+          await del(blob.url).catch((err) =>
+            console.error(
+              `Blob cleanup failed for ${blob.pathname}:`,
+              err,
+            ),
+          );
+        } catch (err) {
+          console.error(
+            "kyc-upload onUploadCompleted error:",
+            err instanceof Error ? err.message : String(err),
+          );
+        }
+      },
     });
 
-    stage = "maybe_flip_status";
-    // Auto-flip kycStatus on the FIRST doc uploaded (not requiring
-    // both). Members in real life often submit one-at-a-time — large
-    // POA PDFs need to be compressed/converted, IDs are easy phone
-    // snaps. Holding the status at "Docs Requested" until both land
-    // hides the member from the admin queue and gates the half-done
-    // ones from being reviewed at all. With the first-upload flip,
-    // admins see the partial submission and can either chase the
-    // missing slot or approve what's there.
-    //
-    // We still only fire the receipt email + stamp kycSubmittedAt on
-    // the *transition* from "Docs Requested" → "In Progress" so
-    // re-uploads after admin feedback don't trigger duplicate emails.
-    const idPresent = (updated.kycIdDocument?.length ?? 0) > 0;
-    const poaPresent = (updated.kycProofOfAddress?.length ?? 0) > 0;
-    const anyPresent = idPresent || poaPresent;
-    const bothPresent = idPresent && poaPresent;
-    const stillRequestingDocs = updated.kycStatus === "Docs Requested";
-    if (anyPresent && stillRequestingDocs) {
-      updated = await setMemberKyc(updated.id, {
-        kycStatus: "In Progress",
-        markSubmittedNow: true,
-      });
-
-      // Best-effort receipt email — fire once on the Docs Requested →
-      // In Progress transition. Don't await; a Resend hiccup must not
-      // roll back the status flip.
-      if (updated.email) {
-        sendKycReceivedEmail({
-          to: updated.email,
-          fullName: updated.fullName,
-          memberNumber: updated.memberNumber,
-        }).catch((err) =>
-          console.error("KYC received email failed:", err),
-        );
-      }
-    }
-
-    return NextResponse.json({
-      member: updated,
-      slot,
-      bothPresent,
-      idPresent,
-      poaPresent,
-    });
+    return NextResponse.json(json);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(
@@ -162,9 +193,6 @@ export async function POST(request: NextRequest) {
       message,
       error instanceof Error ? error.stack : undefined,
     );
-    // Surface the stage + a one-line error message so the client can
-    // show actionable copy and we have something searchable in logs.
-    // Stack traces stay server-side.
     return NextResponse.json(
       {
         error: `Upload failed at ${stage}: ${message}`,
