@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Check, Clock, Copy, CreditCard } from "lucide-react";
+import { ArrowRightLeft, Check, Clock, Copy, CreditCard } from "lucide-react";
 
 import {
   formatMemberNumber,
@@ -85,14 +86,58 @@ export function SetUpPaymentsCard({
   fullName,
   memberNumber,
 }: SetUpPaymentsCardProps) {
+  const router = useRouter();
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isStartingPaystack, setIsStartingPaystack] = useState(false);
   const [paystackError, setPaystackError] = useState<string | null>(null);
+  const [isSwitchingPlan, setIsSwitchingPlan] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   const planInfo = PLAN_DETAILS[plan];
   const isBasic = plan === "basic";
   const isStandard = plan === "standard";
   const isVip = plan === "vip";
+
+  /**
+   * Switch the member's plan tier server-side. Updates the notes blob
+   * via /api/lehumo/portal/member/plan; on success we router.refresh()
+   * so DashboardOverview re-renders this card with the new plan
+   * variant (Basic ↔ Standard).
+   *
+   * Available only pre-first-payment — once a member has paid a
+   * contribution, the server-side route 409s with an email-the-admin
+   * message and we surface that as a switchError.
+   */
+  async function handleSwitchPlan(target: MemberPlan) {
+    if (target === plan || isSwitchingPlan) return;
+    setIsSwitchingPlan(true);
+    setSwitchError(null);
+    try {
+      const res = await fetch("/api/lehumo/portal/member/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: target }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          data.error ||
+            "Could not switch plan. Please try again or email lehumo@limepages.co.za.",
+        );
+      }
+      // Re-fetch the page so DashboardOverview re-mounts this card
+      // with the new plan variant. router.refresh() picks up the
+      // notes-blob change without a full reload.
+      router.refresh();
+    } catch (err) {
+      setSwitchError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong switching your plan.",
+      );
+      setIsSwitchingPlan(false);
+    }
+  }
 
   // EFT reference: LHM-007-FIRSTNAME. Mirrors the wizard's StepPayment
   // pattern so admins reconciling EFTs see the same shape members got
@@ -406,20 +451,64 @@ export function SetUpPaymentsCard({
               Your VIP spot is reserved. We&apos;re finalising the inner-circle
               benefits (private WhatsApp group, Lime Connect listing,
               leadership access) and we&apos;ll email you the moment VIP
-              enrolment is live — typically within 2–3 weeks. If you
-              prefer, you can switch to{" "}
-              <span className="text-[#46CDCF] font-semibold">Standard</span>{" "}
-              for immediate auto-debit setup — email{" "}
-              <a
-                href="mailto:lehumo@limepages.co.za"
-                className="text-[#46CDCF] hover:underline"
-              >
-                lehumo@limepages.co.za
-              </a>
-              .
+              enrolment is live — typically within 2–3 weeks. Want to
+              start contributing now? Use the &ldquo;Switch plan&rdquo;
+              option below to drop down to Standard or Basic for
+              immediate setup.
             </div>
           </div>
         )}
+
+        {/* ── Plan switcher footer ────────────────────────────────────
+            Available pre-first-payment so members can change their
+            mind — e.g. picked Standard during onboarding, sees the
+            R19.90 collection fee, decides Basic EFT is more their
+            speed. Hides the option for the current plan. The server
+            blocks switches once the first contribution lands and
+            surfaces an email-the-admin path. */}
+        <div className="pt-2 border-t border-white/[0.06] flex flex-col gap-2">
+          <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold flex items-center gap-1.5">
+            <ArrowRightLeft className="w-3 h-3" />
+            Changed your mind?
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {!isBasic && (
+              <button
+                type="button"
+                onClick={() => handleSwitchPlan("basic")}
+                disabled={isSwitchingPlan}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white disabled:opacity-50 transition-colors"
+              >
+                Switch to Basic · R1,000 EFT
+              </button>
+            )}
+            {!isStandard && (
+              <button
+                type="button"
+                onClick={() => handleSwitchPlan("standard")}
+                disabled={isSwitchingPlan}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#46CDCF]/20 bg-[#46CDCF]/[0.05] px-3.5 py-1.5 text-xs font-semibold text-[#46CDCF] hover:bg-[#46CDCF]/[0.12] disabled:opacity-50 transition-colors"
+              >
+                Switch to Standard · R1,019.90 debit
+              </button>
+            )}
+          </div>
+          {switchError && (
+            <p className="text-xs text-red-400 mt-1">{switchError}</p>
+          )}
+          <p className="text-[10px] text-white/35 leading-relaxed">
+            You can switch tiers any time before your first
+            contribution. After that, plan changes go through admin
+            (email{" "}
+            <a
+              href="mailto:lehumo@limepages.co.za"
+              className="text-[#46CDCF] hover:underline"
+            >
+              lehumo@limepages.co.za
+            </a>
+            ) so we can coordinate any active debit order.
+          </p>
+        </div>
       </div>
     </motion.div>
   );

@@ -608,3 +608,340 @@ export async function sendKycVerifiedEmail(params: {
 </html>`,
   });
 }
+
+/* ─── Recurring contribution receipt ───
+ *
+ * Sent on EVERY successful contribution after the first (first
+ * contribution gets the welcome-flavoured `sendPaymentSuccessEmail`
+ * with the "now Active" framing). This is the ongoing monthly
+ * receipt — same payment-receipt details, less ceremony.
+ *
+ * Webhook + verify routes pick which email to fire by reading the
+ * member's pre-payment status: !wasAlreadyActive → activation email,
+ * otherwise → this monthly receipt.
+ */
+export async function sendContributionReceiptEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  amountZar: number;
+  /** Display copy for the period — e.g. "June" or "June 2026". */
+  monthLabel: string;
+  /** Paystack reference / EFT ref. Surfaces on the receipt for
+   *  reconciliation against bank statements. */
+  paymentReference?: string;
+}) {
+  const {
+    to,
+    fullName,
+    memberNumber,
+    amountZar,
+    monthLabel,
+    paymentReference,
+  } = params;
+  const firstName = fullName.split(" ")[0];
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
+  const formattedAmount = `R${amountZar.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: `${monthLabel} contribution received — ${formattedAmount} (${formatMemberNumber(memberNumber)})`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Thanks, ${firstName}.</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 24px;">
+                We've received your <strong style="color:#ffffff;">${monthLabel}</strong> contribution of <strong style="color:#B8FF00;">${formattedAmount}</strong>. Your equity in the trust just ticked up.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;">Receipt</div>
+                    <table cellpadding="0" cellspacing="0" style="width:100%;">
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Amount</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${formattedAmount}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Period</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${monthLabel}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Member</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${formatMemberNumber(memberNumber)}</td>
+                      </tr>
+                      ${
+                        paymentReference
+                          ? `
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Reference</td>
+                        <td style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);padding:4px 0;text-align:right;font-family:monospace;">${paymentReference}</td>
+                      </tr>`
+                          : ""
+                      }
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 24px;">
+                    <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
+                      View In Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;margin:0;">
+                Your portal shows your full contribution history, lifetime total, and emergency-access eligibility as it grows.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                Lehumo Collective Investment Trust &middot; Powered by Lime Pages<br/>
+                <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}
+
+/* ─── Monthly contribution reminder (15th SAST) ───
+ *
+ * First reminder of the month. Fires only for active members who
+ * haven't paid for the current period by the 15th. Tone is gentle —
+ * the bulk of paid members never see this, and the ones who do are
+ * usually still planning to pay (mid-month is the start of the
+ * payment window for most South African salary cycles).
+ *
+ * Pair with `sendContributionFinalReminderEmail` (25th) — those two
+ * emails are the entire automated chase cadence. Anything beyond
+ * that is admin discretion.
+ */
+export async function sendContributionReminderEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  /** Display copy for the period — e.g. "June" or "June 2026". */
+  monthLabel: string;
+  /** Total contribution amount for this member's plan tier. ZAR with
+   *  cents (e.g. 1019.90 for Standard, 1000 for Basic). */
+  amountZar: number;
+}) {
+  const { to, fullName, memberNumber, monthLabel, amountZar } = params;
+  const firstName = fullName.split(" ")[0];
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
+  const formattedAmount = `R${amountZar.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: `Reminder — your ${monthLabel} contribution of ${formattedAmount} (${formatMemberNumber(memberNumber)})`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Hi ${firstName},</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 24px;">
+                Just a reminder that your <strong style="color:#ffffff;">${monthLabel}</strong> contribution of <strong style="color:#B8FF00;">${formattedAmount}</strong> hasn't reflected yet. If your debit order has already gone off, this is just a heads-up — sometimes payments take a day or two to land.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(70,205,207,0.08);border:1px solid rgba(70,205,207,0.2);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:18px 22px;">
+                    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">This Month</div>
+                    <div style="font-size:24px;font-weight:800;color:#46CDCF;line-height:1;">${formattedAmount}</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;">${monthLabel} · Member ${formatMemberNumber(memberNumber)}</div>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 24px;">
+                    <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
+                      Open Member Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;margin:0;">
+                Already paid via EFT? Reconciliation can take a day or two. If you don't see it credited by the 25th, drop us a line at <a href="mailto:lehumo@limepages.co.za" style="color:#46CDCF;text-decoration:none;">lehumo@limepages.co.za</a> and we'll trace it.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                Lehumo Collective Investment Trust &middot; Powered by Lime Pages<br/>
+                <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}
+
+/* ─── Final contribution reminder (25th SAST) ───
+ *
+ * Last automated chase. After this, admin handles personally — no
+ * member gets a third automated email about the same period. Tone is
+ * firmer than the 15th reminder but still respectful.
+ */
+export async function sendContributionFinalReminderEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  monthLabel: string;
+  amountZar: number;
+}) {
+  const { to, fullName, memberNumber, monthLabel, amountZar } = params;
+  const firstName = fullName.split(" ")[0];
+  const portalUrl = `${siteUrl()}/lehumo/portal/login`;
+  const formattedAmount = `R${amountZar.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: `Final reminder — your ${monthLabel} contribution (${formatMemberNumber(memberNumber)})`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Hi ${firstName},</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 24px;">
+                Your <strong style="color:#ffffff;">${monthLabel}</strong> contribution of <strong style="color:#B8FF00;">${formattedAmount}</strong> is still outstanding. We&apos;d hate for you to fall behind on the founding cohort — please settle this month before the end of the month so your equity tracks against the rest of the group.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(254,243,199,0.08);border:1px solid rgba(254,243,199,0.2);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:18px 22px;">
+                    <div style="font-size:11px;font-weight:700;color:rgba(254,243,199,0.85);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Last Reminder</div>
+                    <div style="font-size:24px;font-weight:800;color:#fde68a;line-height:1;">${formattedAmount}</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;">${monthLabel} · Member ${formatMemberNumber(memberNumber)}</div>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 24px;">
+                    <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
+                      Pay From Your Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;margin:0 0 12px;">
+                If something has come up that&apos;s making this month difficult, please reply to this email or message <a href="mailto:lehumo@limepages.co.za" style="color:#46CDCF;text-decoration:none;">lehumo@limepages.co.za</a> directly. We&apos;d rather work it out together than have you fall behind silently.
+              </p>
+              <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;margin:0;">
+                This is the last automated reminder you&apos;ll get for ${monthLabel} — anything beyond this comes from Mpapi or the team personally.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                Lehumo Collective Investment Trust &middot; Powered by Lime Pages<br/>
+                <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}
