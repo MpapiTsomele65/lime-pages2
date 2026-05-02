@@ -47,6 +47,35 @@ export async function GET(request: NextRequest) {
     fetchError = err instanceof Error ? err.message : String(err);
   }
 
+  // ── Probe 2: Contributions table — listContributionsForMember(1) ──
+  // Same call shape `hydrateContributionsFromNewTable` makes on every
+  // dashboard load. If this 403s but the Members GET above succeeds,
+  // the PAT lacks scope on the Contributions table specifically.
+  const contribTableId = "tblN9IO7pgfaMRE2f"; // Contributions
+  const contribFormula = encodeURIComponent(`FIND('Leh01-', {Contribution Key})=1`);
+  const contribUrl =
+    `https://api.airtable.com/v0/${baseId}/${contribTableId}` +
+    `?filterByFormula=${contribFormula}` +
+    `&sort%5B0%5D%5Bfield%5D=Period&sort%5B0%5D%5Bdirection%5D=asc` +
+    `&pageSize=100&returnFieldsByFieldId=true`;
+
+  let contribStatus = 0;
+  let contribBodyText = "";
+  let contribFetchError: string | null = null;
+  try {
+    const res = await fetch(contribUrl, {
+      headers: {
+        Authorization: `Bearer ${pat}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    contribStatus = res.status;
+    contribBodyText = (await res.text()).slice(0, 500);
+  } catch (err) {
+    contribFetchError = err instanceof Error ? err.message : String(err);
+  }
+
   return NextResponse.json({
     env: {
       baseIdLen: baseId.length,
@@ -71,6 +100,12 @@ export async function GET(request: NextRequest) {
       status,
       bodyText,
       fetchError,
+    },
+    contributionsProbe: {
+      url: contribUrl,
+      status: contribStatus,
+      bodyText: contribBodyText,
+      fetchError: contribFetchError,
     },
     runtime: {
       // Vercel's region for this function (e.g. "iad1"). Helps spot
