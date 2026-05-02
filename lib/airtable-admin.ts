@@ -155,6 +155,34 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
     for (const record of data.records ?? []) {
       out.push(parseRecord(record));
     }
+    // ── DIAGNOSTIC ──
+    // On the FIRST page only, log the raw field-ID keys Airtable
+    // returned for one record. Lets us compare against the
+    // AIRTABLE_FIELDS constants in lib/definitions.ts to spot a
+    // field-ID mismatch (e.g., column deleted + recreated → new id).
+    if (!offset && (data.records?.length ?? 0) > 0) {
+      const sample = data.records[0];
+      console.log(
+        `[listAllMembers] raw field IDs on member ${sample.id}: ${JSON.stringify(
+          Object.keys(sample.fields ?? {}),
+        )}`,
+      );
+      // Specifically, look for beneficiary-shaped fields by name in
+      // the response — even though we requested by-id, log any keys
+      // that look like beneficiary IDs in case Airtable returned
+      // them under a different ID than we expect.
+      const benFields = Object.entries(sample.fields ?? {}).filter(
+        ([, v]) => {
+          // Match the field ID format and check the value looks
+          // string-like; skip empty values.
+          return typeof v === "string" && v.length > 0 && v.length < 100;
+        },
+      );
+      console.log(
+        `[listAllMembers] non-empty string fields on member ${sample.id}:`,
+        benFields.map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(" | "),
+      );
+    }
     offset = data.offset;
   } while (offset);
 
