@@ -15,6 +15,10 @@ import {
 
 import type { LehumoMember, AirtableAttachment } from "@/lib/definitions";
 import { compressImage } from "@/lib/compress-image";
+import {
+  uploadViaServerRelay,
+  SERVER_RELAY_MAX_BYTES,
+} from "@/lib/upload-via-server-relay";
 
 interface KycDocumentsCardProps {
   member: LehumoMember;
@@ -111,31 +115,66 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
       setUploadedBytes(0);
       setTotalBytes(file.size);
 
+      // ─── Path selection ─────────────────────────────────────────
+      // For files ≤ 3 MB after compression we use our same-origin
+      // server-relay route (POST → our function → Airtable). This
+      // avoids the @vercel/blob client's PUT to vercel.com/api/blob,
+      // which has been failing with "Failed to fetch" on some South
+      // African networks (almost certainly ISP-level filtering of
+      // that hostname).
+      //
+      // For files > 3 MB we fall back to @vercel/blob direct upload —
+      // Vercel's serverless function body cap is 4.5 MB so a 5 MB+
+      // file can't fit through our own function. If the user's
+      // network blocks vercel.com too, we surface workarounds in the
+      // error message (compress, different network, email instead).
+      const useServerRelay = file.size <= SERVER_RELAY_MAX_BYTES;
+
+      if (useServerRelay) {
+        try {
+          await uploadViaServerRelay({
+            endpoint: "/api/lehumo/portal/member/kyc-upload-direct",
+            file,
+            payload: { slot: slot.key },
+            onProgress: ({ loaded, total, percentage }) => {
+              setProgress(percentage);
+              setUploadedBytes(loaded);
+              setTotalBytes(total);
+            },
+          });
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          onUploaded();
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? `Upload failed: ${err.message}`
+              : "Upload failed. Please try again.",
+          );
+        } finally {
+          setBusy(false);
+          setProgress(null);
+          setUploadedBytes(0);
+          setTotalBytes(0);
+        }
+        return;
+      }
+
+      // ─── Fallback: @vercel/blob direct upload for files > 3 MB ─
       // 90-second hard timeout via AbortSignal. The PUT to Vercel
       // Blob has been hanging indefinitely on some networks (likely
-      // ISP-level filtering of blob.vercel-storage.com — South
-      // African mobile networks have a history of this). Without a
-      // timeout, the promise never resolves AND never rejects, so
-      // the user sees a spinner forever. With one, an aborted upload
-      // surfaces as a real error in the slot's error message —
-      // actionable, not silent.
+      // ISP-level filtering of vercel.com/api/blob — South African
+      // networks have a history of this). Without a timeout, the
+      // promise never resolves AND never rejects.
       const abortCtrl = new AbortController();
       let stalledTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
         abortCtrl.abort(new Error("Upload timed out after 90 seconds"));
       }, 90_000);
 
       try {
-        // Direct browser → Vercel Blob upload. Our route mints a
-        // signed token, browser PUTs the file straight to Blob
-        // storage, then `onUploadCompleted` fires server-side to
-        // PATCH Airtable with the resulting public URL.
-        //
         // `multipart: false` forces a single PUT instead of parallel
         // chunked uploads. @vercel/blob v2 splits files >5 MB into
         // multipart, and the finalize step has been observed to
         // bounce certain uploads at 99% — restarting from scratch.
-        // For our 10 MB ceiling, single PUT is fast enough and
-        // sidesteps the multipart edge cases entirely.
         await upload(`kyc/${slot.key}/${Date.now()}-${file.name}`, file, {
           access: "public",
           handleUploadUrl: "/api/lehumo/portal/member/kyc-upload",
@@ -147,14 +186,9 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
             filename: file.name,
           }),
           onUploadProgress: ({ loaded, total, percentage }) => {
-            // Throttling not needed — react batches; the percentage
-            // bar only re-renders when this state changes.
             setProgress(Math.round(percentage));
             setUploadedBytes(loaded);
             setTotalBytes(total);
-            // Reset the stall timer on each progress event — if
-            // bytes are flowing, we don't want to abort just
-            // because the file is large or the connection is slow.
             clearTimeout(stalledTimer);
             stalledTimer = setTimeout(() => {
               abortCtrl.abort(new Error("Upload timed out after 90 seconds"));
@@ -164,23 +198,18 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
 
         // upload() resolves once the file lands in Blob storage; the
         // server's onUploadCompleted (Airtable PATCH + Blob delete)
-        // runs as a follow-on webhook from Vercel Blob. Brief delay
-        // before the page refresh lets that PATCH land so the
-        // re-render shows the new attachment.
+        // runs as a follow-on webhook from Vercel Blob.
         await new Promise((resolve) => setTimeout(resolve, 1500));
         onUploaded();
       } catch (err) {
-        // Differentiate timeout / abort from other errors so the
-        // member sees actionable copy. Network-level hangs (ISP
-        // filtering of blob.vercel-storage.com, captive portals,
-        // overly-aggressive corporate proxies) hit this branch with
-        // the abort message.
         const isAbort =
           err instanceof Error &&
           (err.name === "AbortError" || err.message.includes("timed out"));
-        if (isAbort) {
+        const isFetchFailure =
+          err instanceof Error && err.message.includes("Failed to fetch");
+        if (isAbort || isFetchFailure) {
           setError(
-            "Upload stalled — no progress for 90 seconds. This usually means your network is blocking our storage provider. Try a different network (mobile hotspot often works) or email the document to lehumo@limepages.co.za.",
+            "Large-file upload blocked — your network appears to be filtering our storage provider. Try compressing the file under 3MB, switching network (mobile hotspot often works), or email the document to lehumo@limepages.co.za.",
           );
         } else {
           setError(
