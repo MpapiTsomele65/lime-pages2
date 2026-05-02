@@ -47,12 +47,18 @@ export async function GET(request: NextRequest) {
     fetchError = err instanceof Error ? err.message : String(err);
   }
 
-  // ── Probe 2: Contributions table — listContributionsForMember(1) ──
+  // ── Probe 2: Contributions table — listContributionsForMember ──
   // Same call shape `hydrateContributionsFromNewTable` makes on every
   // dashboard load. If this 403s but the Members GET above succeeds,
   // the PAT lacks scope on the Contributions table specifically.
+  // Optional `?prefix=Leh22` query param lets us probe per-member.
   const contribTableId = "tblN9IO7pgfaMRE2f"; // Contributions
-  const contribFormula = encodeURIComponent(`FIND('Leh01-', {Contribution Key})=1`);
+  const queryPrefix = request.nextUrl.searchParams.get("prefix");
+  const prefix =
+    queryPrefix && /^Leh\d{2}$/.test(queryPrefix) ? queryPrefix : "Leh01";
+  const contribFormula = encodeURIComponent(
+    `FIND('${prefix}-', {Contribution Key})=1`,
+  );
   const contribUrl =
     `https://api.airtable.com/v0/${baseId}/${contribTableId}` +
     `?filterByFormula=${contribFormula}` +
@@ -102,6 +108,7 @@ export async function GET(request: NextRequest) {
       fetchError,
     },
     contributionsProbe: {
+      prefix,
       url: contribUrl,
       status: contribStatus,
       bodyText: contribBodyText,
