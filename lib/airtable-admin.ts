@@ -172,6 +172,7 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
       for (const m of out) {
         const rows = byPrefix.get(formatMemberNumber(m.memberNumber)) ?? [];
         m.contributions = projectToLegacyContributions(rows, year);
+        m.contributionRows = rows;
       }
     } catch (err) {
       console.error(

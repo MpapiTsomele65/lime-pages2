@@ -237,6 +237,10 @@ async function hydrateContributionsFromNewTable(
     return {
       ...member,
       contributions: projectToLegacyContributions(rows, getSastYear()),
+      // Phase 4: expose the full 60-row shape so period-aware UI
+      // (PaymentCard, ContributionGrid year selector, ContributionReminderCard)
+      // can render year-spanning history without re-fetching.
+      contributionRows: rows,
     };
   } catch (err) {
     console.error(
@@ -700,6 +704,7 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
         // grouping helper keys on.
         const rows = byPrefix.get(formatMemberNumber(m.memberNumber)) ?? [];
         m.contributions = projectToLegacyContributions(rows, year);
+        m.contributionRows = rows;
       }
     } catch (err) {
       console.error(

@@ -6,6 +6,21 @@ import {
   type LehumoContribution,
 } from "./definitions";
 
+const MONTH_FULL_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 /**
  * Read-side adapter for the Path B Contributions table cutover.
  *
@@ -83,6 +98,57 @@ export function projectToLegacyContributions(
     out[month] = row?.status === CONTRIBUTION_STATUS.paid;
   }
   return out;
+}
+
+/**
+ * Format a YYYY-MM period as a long human-readable string.
+ *
+ * `formatPeriodLong("2026-06")` → "June 2026"
+ *
+ * Returns the input verbatim if it doesn't parse — defensive fallback
+ * so a malformed period never crashes the UI.
+ */
+export function formatPeriodLong(period: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(period);
+  if (!m) return period;
+  const monthIdx = Number(m[2]) - 1;
+  const monthName = MONTH_FULL_NAMES[monthIdx];
+  if (!monthName) return period;
+  return `${monthName} ${m[1]}`;
+}
+
+/**
+ * Format a YYYY-MM period as a short human-readable string.
+ *
+ * `formatPeriodShort("2026-06")` → "Jun 2026"
+ *
+ * Use for compact UI surfaces (chips, table cells) where vertical real
+ * estate is tight. `formatPeriodLong` is the right choice for the
+ * dashboard headline copy.
+ */
+export function formatPeriodShort(period: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(period);
+  if (!m) return period;
+  const monthIdx = Number(m[2]) - 1;
+  const monthCode = MONTH_NAMES[monthIdx];
+  if (!monthCode) return period;
+  return `${monthCode} ${m[1]}`;
+}
+
+/**
+ * Compute the SAST-current period (`YYYY-MM`).
+ *
+ * Same SAST-aware trick as `getSastYear` — uses `toLocaleDateString`
+ * with the Africa/Johannesburg timezone so the period boundary lines
+ * up with the South African calendar, not UTC's. Used by
+ * ContributionReminderCard to look up "this month's row" in the new
+ * 60-period shape.
+ */
+export function getSastCurrentPeriod(now: Date = new Date()): string {
+  const ymd = now.toLocaleDateString("en-CA", {
+    timeZone: "Africa/Johannesburg",
+  });
+  return ymd.slice(0, 7); // "YYYY-MM"
 }
 
 /**

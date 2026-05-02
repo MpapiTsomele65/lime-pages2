@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { CalendarClock, CreditCard, CheckCircle2 } from "lucide-react";
-import { CONTRIBUTION_MONTH_ORDER } from "@/lib/definitions";
+import {
+  CONTRIBUTION_MONTH_ORDER,
+  CONTRIBUTION_STATUS,
+  type LehumoContribution,
+} from "@/lib/definitions";
+
+const TRUST_DURATION_MONTHS = 60;
 
 interface PaymentCardProps {
   contributions: Record<string, boolean>;
@@ -13,6 +19,31 @@ interface PaymentCardProps {
    *  1 June 2026" placeholder instead of a payment CTA. Lehumo collections
    *  start 1 Jun 2026; before then there's no real "next due" to surface. */
   beforeLaunch?: boolean;
+  /**
+   * Phase 4 — full 60-period contribution history. When provided, the
+   * card shows lifetime progress (X/60) with period-aware "Next due"
+   * (e.g. "Jun 2026" not just "Jun"), and surfaces the most recent paid
+   * contribution as a confirmation chip. When undefined (flag off, or
+   * fetch failed), falls back to the 12-month projected shape via the
+   * `contributions` prop above so the legacy UI keeps working.
+   */
+  contributionRows?: LehumoContribution[];
+}
+
+/**
+ * Format a YYYY-MM period as "MMM YYYY" (e.g. "Jun 2026"). Inline so the
+ * client component doesn't pull in lib/member-contributions-view.ts (which
+ * imports `server-only`).
+ */
+const SHORT_MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+function formatPeriodShort(period: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(period);
+  if (!m) return period;
+  const monthIdx = Number(m[2]) - 1;
+  return `${SHORT_MONTH_NAMES[monthIdx] ?? "?"} ${m[1]}`;
 }
 
 export function PaymentCard({
@@ -20,19 +51,57 @@ export function PaymentCard({
   email,
   memberId,
   beforeLaunch = false,
+  contributionRows,
 }: PaymentCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const paidCount = Object.values(contributions).filter(Boolean).length;
-  const allPaid = paidCount === 12;
+  // ── Derived data ──
+  // Prefer the rich shape (60-period awareness) when available; fall
+  // back to the 12-key projection for the flag-off path. Both branches
+  // produce the same {paidCount, totalCount, allPaid, nextLabel} ABI
+  // so the JSX below stays uniform.
+  const richShape = (contributionRows?.length ?? 0) > 0;
 
-  // Find the next unpaid month — using collection order (Jun → May), not
-  // calendar order. Otherwise pre-Jun members would see "Next due: Jan"
-  // even though Jan-May 2027 are *future* contributions, not arrears.
-  const nextUnpaidMonth = CONTRIBUTION_MONTH_ORDER.find(
-    (month) => contributions[month] !== true,
-  );
+  let paidCount: number;
+  let totalCount: number;
+  let nextDueLabel: string | null;
+  let lastPaidLabel: string | null;
+  let lastPaidAmount: number | null;
+
+  if (richShape && contributionRows) {
+    // Sort defensively — the hydration path returns sorted, but caller
+    // could pass anything.
+    const sorted = [...contributionRows].sort((a, b) =>
+      a.period.localeCompare(b.period),
+    );
+    const paidRows = sorted.filter(
+      (c) => c.status === CONTRIBUTION_STATUS.paid,
+    );
+    paidCount = paidRows.length;
+    totalCount = sorted.length || TRUST_DURATION_MONTHS;
+    const nextUnpaid = sorted.find(
+      (c) => c.status !== CONTRIBUTION_STATUS.paid,
+    );
+    nextDueLabel = nextUnpaid ? formatPeriodShort(nextUnpaid.period) : null;
+    const lastPaid = paidRows[paidRows.length - 1] ?? null;
+    lastPaidLabel = lastPaid ? formatPeriodShort(lastPaid.period) : null;
+    lastPaidAmount = lastPaid?.amountReceived ?? null;
+  } else {
+    paidCount = Object.values(contributions).filter(Boolean).length;
+    totalCount = 12;
+    // Find the next unpaid month — using collection order (Jun → May), not
+    // calendar order. Otherwise pre-Jun members would see "Next due: Jan"
+    // even though Jan-May 2027 are *future* contributions, not arrears.
+    const nextUnpaidMonth = CONTRIBUTION_MONTH_ORDER.find(
+      (month) => contributions[month] !== true,
+    );
+    nextDueLabel = nextUnpaidMonth ?? null;
+    lastPaidLabel = null;
+    lastPaidAmount = null;
+  }
+
+  const allPaid = paidCount > 0 && paidCount === totalCount;
 
   async function handlePayment() {
     setError("");
@@ -99,8 +168,8 @@ export function PaymentCard({
           <CheckCircle2 className="h-12 w-12 text-[#B8FF00] mb-3" />
           <h3 className="text-lg font-semibold text-white">All caught up!</h3>
           <p className="text-sm text-white/50 mt-1">
-            All 12 monthly contributions have been paid. Thank you for your
-            commitment.
+            All {totalCount} monthly contributions have been paid. Thank you
+            for your commitment.
           </p>
         </motion.div>
       ) : (
@@ -111,30 +180,57 @@ export function PaymentCard({
             <span className="text-white/40 text-sm">/month</span>
           </div>
 
-          {/* Next due */}
-          {nextUnpaidMonth && (
-            <p className="text-sm text-white/50 mb-6">
+          {/* Next due — period-aware (Jun 2026) when rich shape is available,
+              falls back to month-only (Jun) for the legacy projection */}
+          {nextDueLabel && (
+            <p className="text-sm text-white/50 mb-2">
               Next due:{" "}
               <span className="text-[#46CDCF] font-medium">
-                {nextUnpaidMonth}
+                {nextDueLabel}
               </span>
             </p>
           )}
+
+          {/* Last paid — only surfaces with the rich shape, since the
+              projection can't tell us a payment date or amount.
+              Membership-level "you're on track" reassurance. */}
+          {lastPaidLabel && (
+            <p className="text-xs text-white/35 mb-6">
+              Last paid:{" "}
+              <span className="text-white/50">{lastPaidLabel}</span>
+              {lastPaidAmount !== null && lastPaidAmount > 0 && (
+                <>
+                  {" · "}
+                  <span className="text-white/50">
+                    R{lastPaidAmount.toLocaleString("en-ZA")}
+                  </span>
+                </>
+              )}
+            </p>
+          )}
+          {!lastPaidLabel && <div className="mb-4" />}
 
           {/* Progress */}
           <div className="mb-6">
             <div className="flex items-center justify-between text-xs text-white/40 mb-2">
               <span>Progress</span>
               <span>
-                {paidCount}/12 months
+                {paidCount}/{totalCount} months
               </span>
             </div>
             <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
               <div
                 className="h-full rounded-full bg-[#B8FF00] transition-all"
-                style={{ width: `${(paidCount / 12) * 100}%` }}
+                style={{ width: `${(paidCount / totalCount) * 100}%` }}
               />
             </div>
+            {/* Footnote — clarifies "X/60" is the trust lifetime, not a
+                12-month tally. Only shown for the rich shape. */}
+            {richShape && (
+              <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/30">
+                Across the 5-year trust ({totalCount} months total)
+              </p>
+            )}
           </div>
 
           {/* Error */}

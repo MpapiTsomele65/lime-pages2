@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { getCommunityPoolStats, getMemberById } from "@/lib/airtable";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { getSastMonthInfo, isBeforeLaunch } from "@/lib/definitions";
+import { getSastCurrentPeriod } from "@/lib/member-contributions-view";
 import { PortalShell } from "@/components/lehumo/portal/PortalShell";
 import { DashboardOverview } from "@/components/lehumo/portal/DashboardOverview";
 
@@ -51,6 +52,12 @@ export default async function PortalDashboardPage() {
   // month for two hours either side of UTC midnight).
   const { monthCode: currentMonth, daysLeftInMonth } = getSastMonthInfo();
 
+  // Period (YYYY-MM) is what the new Contributions table indexes on. Past
+  // Phase 4 the reminder/grid use this to disambiguate Jun 2026 from Jun
+  // 2027 etc — the legacy `currentMonth` (just "Jun") is ambiguous after
+  // year 1.
+  const currentPeriod = getSastCurrentPeriod();
+
   // Lehumo collections start 1 Jun 2026. Members onboarding before that
   // shouldn't see "Next due: Jan" / past-month catch-up prompts — gate
   // payment-prompt UI on this flag, computed server-side so SSR matches
@@ -64,6 +71,7 @@ export default async function PortalDashboardPage() {
         communityStats={communityStats}
         isAdmin={isAdmin}
         currentMonth={currentMonth}
+        currentPeriod={currentPeriod}
         daysLeftInMonth={daysLeftInMonth}
         beforeLaunch={beforeLaunch}
       />

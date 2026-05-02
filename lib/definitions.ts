@@ -564,6 +564,20 @@ export interface LehumoMember {
   source: string;
   notes: string;
   contributions: Record<string, boolean>; // { Jan: true, Feb: false, ... }
+  /**
+   * Full contribution history from the new Contributions linked table —
+   * 60 rows per member spanning Jun 2026 → May 2031, each carrying
+   * payment metadata (amount, source, ref, reconciliation state).
+   *
+   * Populated by `hydrateContributionsFromNewTable` when
+   * `LEHUMO_USE_NEW_CONTRIBUTIONS` is on. Components use this for
+   * year-spanning UI (5-year roadmap, full payment history) — when
+   * undefined (flag off, or fetch failed), components fall back to
+   * the projected 12-month `contributions` shape above.
+   *
+   * Sorted ascending by Period for stable rendering.
+   */
+  contributionRows?: LehumoContribution[];
   // ── KYC / identity (optional — populated post-Tier 2A onboarding) ──
   idType?: "SA ID" | "Passport" | "";
   idNumber?: string;

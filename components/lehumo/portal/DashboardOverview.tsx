@@ -23,6 +23,10 @@ interface DashboardOverviewProps {
   /** SAST month code (e.g. "Apr") computed server-side. Powers the
    *  ContributionReminderCard's "pay this month" copy. */
   currentMonth: string;
+  /** SAST period (`YYYY-MM`) computed server-side. Used by the
+   *  reminder card and contribution grid to disambiguate years post-launch
+   *  — the bare month code is only enough for year 1 of the trust. */
+  currentPeriod: string;
   /** Days remaining in the current SAST month (1-31). Used for the
    *  reminder card's urgency tier. */
   daysLeftInMonth: number;
@@ -37,13 +41,25 @@ export function DashboardOverview({
   communityStats,
   isAdmin = false,
   currentMonth,
+  currentPeriod,
   daysLeftInMonth,
   beforeLaunch,
 }: DashboardOverviewProps) {
   const firstName = member.fullName.split(" ")[0];
 
-  const myContributed =
-    Object.values(member.contributions).filter(Boolean).length * 1000;
+  // Lifetime contribution total. Prefer the rich 60-period shape (sums
+  // actual `amountReceived` from every Paid row, lifetime, in ZAR) so
+  // years 2027-2031 of history show up in the community card. Falls
+  // back to the 12-month projection × R1,000 for the flag-off path.
+  const myContributed = member.contributionRows
+    ? member.contributionRows.reduce(
+        (sum, row) =>
+          row.status === "Paid" && row.amountReceived
+            ? sum + row.amountReceived
+            : sum,
+        0,
+      )
+    : Object.values(member.contributions).filter(Boolean).length * 1000;
 
   return (
     <div className="space-y-8">
@@ -107,7 +123,9 @@ export function DashboardOverview({
           confirmation chip when this month is already paid. */}
       <ContributionReminderCard
         contributions={member.contributions}
+        contributionRows={member.contributionRows}
         currentMonth={currentMonth}
+        currentPeriod={currentPeriod}
         daysLeftInMonth={daysLeftInMonth}
         beforeLaunch={beforeLaunch}
       />
@@ -132,7 +150,11 @@ export function DashboardOverview({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
         >
-          <ContributionGrid contributions={member.contributions} />
+          <ContributionGrid
+            contributions={member.contributions}
+            contributionRows={member.contributionRows}
+            currentPeriod={currentPeriod}
+          />
         </motion.div>
 
         <motion.div
@@ -152,6 +174,7 @@ export function DashboardOverview({
         >
           <PaymentCard
             contributions={member.contributions}
+            contributionRows={member.contributionRows}
             email={member.email}
             memberId={member.id}
             beforeLaunch={beforeLaunch}
