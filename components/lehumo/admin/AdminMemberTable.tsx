@@ -201,12 +201,19 @@ export function AdminMemberTable({
                   </div>
                 </td>
 
-                {/* Status dropdown */}
+                {/* Status dropdown — colour-coded so admins can scan
+                    distribution at a glance. Mapping:
+                      Active → lime (the goal state)
+                      Onboarding → teal (in progress)
+                      On Hold → amber (needs attention)
+                      Exited → muted red (left the program)
+                      Prospect → grey neutral (default, low-signal) */}
                 <td className="px-3 py-3">
                   <SelectCell
                     value={m.status}
                     options={Object.values(MEMBER_STATUS)}
                     busy={busyKey === `${m.id}:status`}
+                    colorClassFor={statusColorClass}
                     onChange={(v) =>
                       runAction(`${m.id}:status`, () =>
                         updateMemberStatus(m.id, v as MemberStatus),
@@ -215,12 +222,18 @@ export function AdminMemberTable({
                   />
                 </td>
 
-                {/* KYC dropdown */}
+                {/* KYC dropdown — colour-coded mirror of the status
+                    column. Mapping:
+                      Complete → lime (verified)
+                      In Progress → teal (admin reviewing)
+                      Docs Requested → amber (waiting on member)
+                      Not Started → grey neutral (default state) */}
                 <td className="px-3 py-3">
                   <SelectCell
                     value={m.kycStatus}
                     options={Object.values(KYC_STATUS)}
                     busy={busyKey === `${m.id}:kyc`}
+                    colorClassFor={kycColorClass}
                     onChange={(v) =>
                       runAction(`${m.id}:kyc`, () =>
                         updateMemberKyc(m.id, v as KycStatus),
@@ -407,24 +420,80 @@ function LoanCell({ member }: { member: LehumoMember }) {
   );
 }
 
+/**
+ * Member-status colour mapping. The admin scan-bar use-case wants a
+ * fast read on each member's lifecycle position — green = goal,
+ * teal = in motion, amber = blocked, red = ended, grey = baseline.
+ *
+ * Tailwind classes only; falls through to the neutral grey for any
+ * value Airtable might surface that we don't have a mapping for
+ * (defensive against schema drift).
+ */
+function statusColorClass(value: string): string {
+  switch (value) {
+    case "Active":
+      return "bg-[#B8FF00]/20 border-[#B8FF00]/50 text-[#0B1933]";
+    case "Onboarding":
+      return "bg-[#46CDCF]/15 border-[#46CDCF]/40 text-[#0B1933]";
+    case "On Hold":
+      return "bg-[#FEF3C7] border-[#F59E0B]/40 text-[#92400E]";
+    case "Exited":
+      return "bg-[#FEE2E2] border-[#FCA5A5] text-[#991B1B]";
+    case "Prospect":
+    default:
+      return "bg-[#F8F9FA] border-[#E5E7EB] text-[#6B7280]";
+  }
+}
+
+/**
+ * KYC-status colour mapping. Mirrors the verified-pill scheme used in
+ * AdminKycReviewSection so the same colour reads consistently across
+ * the dashboard:
+ *   Complete → lime (verified)
+ *   In Progress → teal (under admin review)
+ *   Docs Requested → amber (waiting on member action)
+ *   Not Started → grey neutral (default; expected for new prospects)
+ */
+function kycColorClass(value: string): string {
+  switch (value) {
+    case "Complete":
+      return "bg-[#B8FF00]/20 border-[#B8FF00]/50 text-[#0B1933]";
+    case "In Progress":
+      return "bg-[#46CDCF]/15 border-[#46CDCF]/40 text-[#0B1933]";
+    case "Docs Requested":
+      return "bg-[#FEF3C7] border-[#F59E0B]/40 text-[#92400E]";
+    case "Not Started":
+    default:
+      return "bg-[#F8F9FA] border-[#E5E7EB] text-[#6B7280]";
+  }
+}
+
 function SelectCell({
   value,
   options,
   busy,
+  colorClassFor,
   onChange,
 }: {
   value: string;
   options: string[];
   busy: boolean;
+  /** Optional value→Tailwind-class mapper. When provided, the select's
+   *  background / border / text colour reflects the current value so
+   *  admins can scan a column for distribution at a glance. Without
+   *  this prop the cell renders the original neutral white style. */
+  colorClassFor?: (value: string) => string;
   onChange: (v: string) => void;
 }) {
+  const colorClass =
+    colorClassFor?.(value) ?? "bg-white border-[#E5E7EB] text-[#0B0B0B]";
   return (
     <div className="relative">
       <select
         value={value}
         disabled={busy}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none rounded-lg bg-white border border-[#E5E7EB] pl-3 pr-8 py-1.5 text-xs text-[#0B0B0B] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/10 disabled:opacity-50"
+        className={`w-full appearance-none rounded-lg border pl-3 pr-8 py-1.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#0B1933]/10 disabled:opacity-50 transition-colors ${colorClass}`}
       >
         {options.map((opt) => (
           <option key={opt} value={opt} className="bg-white text-[#0B0B0B]">
