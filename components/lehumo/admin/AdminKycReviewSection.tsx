@@ -6,9 +6,13 @@ import { upload } from "@vercel/blob/client";
 import {
   AlertCircle,
   Check,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   FileCheck,
+  HeartHandshake,
   Loader2,
+  Pencil,
   RotateCcw,
   ShieldCheck,
   Trash2,
@@ -18,6 +22,7 @@ import {
 
 import {
   formatMemberNumber,
+  hasBeneficiary,
   type AirtableAttachment,
   type LehumoMember,
 } from "@/lib/definitions";
@@ -25,6 +30,7 @@ import {
   adminApproveKyc,
   adminClearKycAttachment,
   adminRequestKycResubmission,
+  adminSetMemberBeneficiary,
   type AdminActionResult,
 } from "@/app/lehumo/portal/admin/actions";
 import { compressImage } from "@/lib/compress-image";
@@ -37,6 +43,7 @@ import {
   CHUNKED_MAX_BYTES,
 } from "@/lib/upload-via-chunks";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { BeneficiaryDialog } from "@/components/lehumo/admin/BeneficiaryDialog";
 
 interface AdminKycReviewSectionProps {
   initialMembers: LehumoMember[];
@@ -121,6 +128,13 @@ export function AdminKycReviewSection({
   // drops the dialog without firing.
   const [pendingConfirm, setPendingConfirm] =
     useState<PendingConfirm | null>(null);
+
+  // Beneficiary edit/add dialog state. Set to a member when the row's
+  // BeneficiaryBlock is clicked; cleared on cancel or successful save.
+  // Reuses the same BeneficiaryDialog as the AdminMemberTable so the
+  // form rules + look-and-feel are identical across surfaces.
+  const [beneficiaryEditing, setBeneficiaryEditing] =
+    useState<LehumoMember | null>(null);
 
   const queue = useMemo(() => members.filter(isAwaitingReview), [members]);
   // Verified members, most-recently-verified first. We sort by
@@ -267,6 +281,7 @@ export function AdminKycReviewSection({
                   }}
                   onRefresh={() => router.refresh()}
                   onMemberUpdate={applyMemberUpdate}
+                  onEditBeneficiary={() => setBeneficiaryEditing(member)}
                   onUploadError={setError}
                   setBusyKey={setBusyKey}
                 />
@@ -322,6 +337,7 @@ export function AdminKycReviewSection({
                     onClearSlot={() => {}}
                     onRefresh={() => router.refresh()}
                     onMemberUpdate={applyMemberUpdate}
+                    onEditBeneficiary={() => setBeneficiaryEditing(member)}
                     onUploadError={setError}
                     setBusyKey={setBusyKey}
                   />
@@ -350,6 +366,26 @@ export function AdminKycReviewSection({
         }}
         onCancel={() => setPendingConfirm(null)}
       />
+
+      {/* Beneficiary edit/add dialog — single instance at the section
+          root; shared by every row's BeneficiaryBlock. On success we
+          merge the returned member into local state via
+          applyMemberUpdate AND call router.refresh() so the parallel
+          AdminMemberTable's beneficiary cell stays in sync. */}
+      <BeneficiaryDialog
+        member={beneficiaryEditing}
+        onSubmit={async (member, fields) => {
+          const res = await adminSetMemberBeneficiary(member.id, fields);
+          if (!res.ok) {
+            return { ok: false, error: res.error };
+          }
+          applyMemberUpdate(res.member);
+          router.refresh();
+          setBeneficiaryEditing(null);
+          return { ok: true };
+        }}
+        onCancel={() => setBeneficiaryEditing(null)}
+      />
     </section>
   );
 }
@@ -369,6 +405,10 @@ interface KycReviewRowProps {
    *  state so the slot UI flips to "uploaded" without waiting for
    *  router.refresh() (which doesn't reset useState anyway). */
   onMemberUpdate: (updated: LehumoMember) => void;
+  /** Open the beneficiary edit/add dialog at the section root with
+   *  this row's member pre-loaded. The dialog handles its own
+   *  validation + save flow. */
+  onEditBeneficiary: () => void;
   onUploadError: (msg: string) => void;
   setBusyKey: (key: string | null) => void;
 }
@@ -381,6 +421,7 @@ function KycReviewRow({
   onClearSlot,
   onRefresh,
   onMemberUpdate,
+  onEditBeneficiary,
   onUploadError,
   setBusyKey,
 }: KycReviewRowProps) {
@@ -484,6 +525,19 @@ function KycReviewRow({
               />
             )}
           </dl>
+
+          {/* Beneficiary / next-of-kin block. Lives in the left column
+              under the ID/address details so admins reading the row
+              see the full identity-side picture in one column.
+              Compact summary by default (name + relationship +
+              primary contact); See-more reveals the rest. Empty
+              state offers a one-click admin-on-behalf entry. */}
+          <div className="mt-3">
+            <BeneficiaryBlock
+              member={member}
+              onEdit={onEditBeneficiary}
+            />
+          </div>
         </div>
 
         {/* Right: documents + actions */}
@@ -577,6 +631,182 @@ function KycReviewRow({
       </div>
     </li>
   );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Beneficiary block — collapsible summary lives in each KYC row
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Renders the next-of-kin / beneficiary summary for a single member
+ * inside the KYC Review section's left column.
+ *
+ * Two states:
+ *   - On file → light-grey card with name + relationship inline,
+ *     primary contact (phone preferred, falls through to email or
+ *     address) on the next line, and a See more chevron that reveals
+ *     all secondary contacts + the updated date. Always-visible Edit
+ *     pencil opens the section's BeneficiaryDialog pre-filled.
+ *   - Empty → muted dashed card with an "+ Add" button that opens
+ *     the same dialog blank for an admin-on-behalf entry.
+ *
+ * Sized to sit comfortably below the ID/address dl without crowding
+ * the row. The "see more" toggle keeps the default footprint small —
+ * an admin scanning a queue of 30 rows isn't drowning in beneficiary
+ * detail unless they ask for it.
+ */
+function BeneficiaryBlock({
+  member,
+  onEdit,
+}: {
+  member: LehumoMember;
+  onEdit: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const onFile = hasBeneficiary(member);
+
+  if (!onFile) {
+    return (
+      <div className="rounded-lg border border-dashed border-[#E5E7EB] bg-[#F8F9FA] px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[#9CA3AF]">
+            <HeartHandshake className="h-3 w-3" />
+            Beneficiary
+          </span>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2.5 py-0.5 text-[11px] font-semibold text-[#0B1933] hover:border-[#B8FF00]/50 hover:bg-[#B8FF00]/10 transition-colors"
+            title="Add the member's next-of-kin on their behalf"
+          >
+            + Add
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-[#9CA3AF]">No next-of-kin on file</p>
+      </div>
+    );
+  }
+
+  // On-file state. Build the inline summary line and the deeper
+  // expanded list separately so the collapsed view stays readable
+  // even with a verbose address or a long email.
+  const fullName =
+    `${member.beneficiaryFirstName ?? ""} ${member.beneficiarySurname ?? ""}`.trim();
+  const relationship = member.beneficiaryRelationship || "";
+  const phone = member.beneficiaryPhone || "";
+  const email = member.beneficiaryEmail || "";
+  const address = member.beneficiaryAddress || "";
+
+  // Pick the primary contact channel for the always-visible summary
+  // line. Phone first (most useful for a SA-based admin), email
+  // second, address last. The expanded view always shows everything.
+  const primaryContact =
+    phone || email || (address ? truncate(address, 60) : "");
+
+  const hasSecondaryDetails =
+    [phone, email, address].filter(Boolean).length > 1 ||
+    !!member.beneficiaryUpdatedAt;
+
+  return (
+    <div className="rounded-lg border border-[#E5E7EB] bg-[#F8F9FA] px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[#9CA3AF]">
+          <HeartHandshake className="h-3 w-3" />
+          Beneficiary
+        </span>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#6B7280] hover:text-[#0B1933] transition-colors"
+          title="Edit beneficiary details"
+        >
+          <Pencil className="h-3 w-3" />
+          Edit
+        </button>
+      </div>
+
+      {/* Always-visible summary: name + relationship + primary contact */}
+      <p className="mt-1 text-sm font-semibold text-[#0B0B0B]">
+        {fullName || "—"}
+        {relationship && (
+          <span className="ml-1.5 text-xs font-normal text-[#6B7280]">
+            · {relationship}
+          </span>
+        )}
+      </p>
+      {primaryContact && (
+        <p className="mt-0.5 text-xs text-[#6B7280] truncate">
+          {primaryContact}
+        </p>
+      )}
+
+      {/* Expandable details — only render the toggle when there's
+          actually more to show beyond the primary contact line. */}
+      {hasSecondaryDetails && (
+        <>
+          {expanded && (
+            <dl className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+              {phone && (
+                <BeneficiaryField label="Phone" value={phone} />
+              )}
+              {email && <BeneficiaryField label="Email" value={email} />}
+              {address && (
+                <BeneficiaryField
+                  label="Address"
+                  value={address}
+                  colSpan
+                />
+              )}
+              {member.beneficiaryUpdatedAt && (
+                <BeneficiaryField
+                  label="Updated"
+                  value={member.beneficiaryUpdatedAt}
+                />
+              )}
+            </dl>
+          )}
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#0B1933] hover:text-[#46CDCF] transition-colors"
+          >
+            {expanded ? (
+              <>
+                See less <ChevronUp className="h-3 w-3" />
+              </>
+            ) : (
+              <>
+                See more <ChevronDown className="h-3 w-3" />
+              </>
+            )}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function BeneficiaryField({
+  label,
+  value,
+  colSpan = false,
+}: {
+  label: string;
+  value: string;
+  colSpan?: boolean;
+}) {
+  return (
+    <div className={colSpan ? "sm:col-span-2" : ""}>
+      <dt className="text-[10px] uppercase tracking-wider text-[#9CA3AF]">
+        {label}
+      </dt>
+      <dd className="text-[#0B0B0B] break-words">{value}</dd>
+    </div>
+  );
+}
+
+function truncate(s: string, n: number): string {
+  return s.length > n ? `${s.slice(0, n)}…` : s;
 }
 
 // ──────────────────────────────────────────────────────────────────────
