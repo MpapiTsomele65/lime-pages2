@@ -19,6 +19,10 @@ import {
   uploadViaServerRelay,
   SERVER_RELAY_MAX_BYTES,
 } from "@/lib/upload-via-server-relay";
+import {
+  uploadViaChunks,
+  CHUNKED_MAX_BYTES,
+} from "@/lib/upload-via-chunks";
 
 interface KycDocumentsCardProps {
   member: LehumoMember;
@@ -116,24 +120,59 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
       setTotalBytes(file.size);
 
       // ─── Path selection ─────────────────────────────────────────
-      // For files ≤ 3 MB after compression we use our same-origin
-      // server-relay route (POST → our function → Airtable). This
-      // avoids the @vercel/blob client's PUT to vercel.com/api/blob,
-      // which has been failing with "Failed to fetch" on some South
-      // African networks (almost certainly ISP-level filtering of
-      // that hostname).
+      // Three upload paths, ordered by network friendliness on
+      // filtered ISPs (South African mobile networks frequently
+      // filter vercel.com), then by simplicity:
       //
-      // For files > 3 MB we fall back to @vercel/blob direct upload —
-      // Vercel's serverless function body cap is 4.5 MB so a 5 MB+
-      // file can't fit through our own function. If the user's
-      // network blocks vercel.com too, we surface workarounds in the
-      // error message (compress, different network, email instead).
+      //   ≤ 3 MB → server-relay (single POST through our own
+      //            function on limepages.co.za)
+      //   ≤ 10 MB → chunked (multiple sub-cap POSTs through our
+      //            function; the SERVER then uses @vercel/blob's
+      //            server-side put() — server-to-server, never
+      //            user→vercel.com)
+      //   > 10 MB → @vercel/blob direct (last resort; only path
+      //            with no headroom limit, but blocked on
+      //            filtered networks)
+      //
+      // Server-relay caps at 3 MB because Vercel functions have a
+      // 4.5 MB request body cap. Chunked extends to 10 MB by
+      // splitting across multiple sub-cap requests.
       const useServerRelay = file.size <= SERVER_RELAY_MAX_BYTES;
+      const useChunked = !useServerRelay && file.size <= CHUNKED_MAX_BYTES;
 
       if (useServerRelay) {
         try {
           await uploadViaServerRelay({
             endpoint: "/api/lehumo/portal/member/kyc-upload-direct",
+            file,
+            payload: { slot: slot.key },
+            onProgress: ({ loaded, total, percentage }) => {
+              setProgress(percentage);
+              setUploadedBytes(loaded);
+              setTotalBytes(total);
+            },
+          });
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          onUploaded();
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? `Upload failed: ${err.message}`
+              : "Upload failed. Please try again.",
+          );
+        } finally {
+          setBusy(false);
+          setProgress(null);
+          setUploadedBytes(0);
+          setTotalBytes(0);
+        }
+        return;
+      }
+
+      if (useChunked) {
+        try {
+          await uploadViaChunks({
+            endpoint: "/api/lehumo/portal/member/kyc-upload-chunked",
             file,
             payload: { slot: slot.key },
             onProgress: ({ loaded, total, percentage }) => {

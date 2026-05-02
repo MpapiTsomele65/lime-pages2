@@ -32,6 +32,10 @@ import {
   uploadViaServerRelay,
   SERVER_RELAY_MAX_BYTES,
 } from "@/lib/upload-via-server-relay";
+import {
+  uploadViaChunks,
+  CHUNKED_MAX_BYTES,
+} from "@/lib/upload-via-chunks";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface AdminKycReviewSectionProps {
@@ -590,20 +594,27 @@ function DocSlot({
       setTotalBytes(prepared.size);
 
       // ─── Path selection ─────────────────────────────────────────
-      // For files ≤ 3 MB after compression we go through our own
-      // function on limepages.co.za (server-relay path). This
-      // sidesteps the @vercel/blob client's PUT to vercel.com/api/blob
-      // which has been failing as "Failed to fetch" on some South
-      // African networks — almost certainly ISP-level filtering of
-      // that hostname. Bouncing through our same-origin function
-      // means the browser only ever talks to limepages.co.za.
+      // Three upload paths, ordered by network friendliness on
+      // filtered ISPs (South African mobile networks frequently
+      // filter vercel.com), then by simplicity:
       //
-      // For files > 3 MB we fall back to @vercel/blob direct upload
-      // because Vercel's serverless function body cap is 4.5 MB and
-      // there's no way to fit a 5 MB file through our own function.
-      // If the user's network blocks vercel.com/api/blob too, they'll
-      // hit the timeout/abort error and we surface workarounds.
+      //   ≤ 3 MB → server-relay (single POST through our own
+      //            function on limepages.co.za, never touches
+      //            vercel.com from the browser)
+      //   ≤ 10 MB → chunked (multiple POSTs through our function;
+      //            the SERVER then uses @vercel/blob's server-side
+      //            put() — server-to-server, also never user→
+      //            vercel.com)
+      //   > 10 MB → @vercel/blob direct (last resort; only path
+      //            with no headroom limit, but blocked on filtered
+      //            networks)
+      //
+      // Server-relay caps at 3 MB because Vercel functions have a
+      // hard 4.5 MB body cap. Chunked extends that to 10 MB by
+      // splitting the file across multiple sub-cap requests.
       const useServerRelay = prepared.size <= SERVER_RELAY_MAX_BYTES;
+      const useChunked =
+        !useServerRelay && prepared.size <= CHUNKED_MAX_BYTES;
 
       if (useServerRelay) {
         try {
@@ -642,14 +653,45 @@ function DocSlot({
         return;
       }
 
-      // ─── Fallback: @vercel/blob direct upload for files > 3 MB ─
-      // 90-second hard timeout via AbortSignal. The PUT to Vercel
-      // Blob has been hanging indefinitely on some networks (likely
-      // ISP-level filtering of vercel.com/api/blob — South African
-      // mobile networks have a history of this). Without a timeout,
-      // the promise never resolves AND never rejects, so the user
-      // sees a spinner forever. With one, an aborted upload surfaces
-      // as a real error in the toast — actionable, not silent.
+      if (useChunked) {
+        try {
+          const res = await uploadViaChunks<{ member: LehumoMember }>({
+            endpoint: "/api/lehumo/portal/admin/kyc-upload-chunked",
+            file: prepared,
+            payload: { memberId, slot },
+            onProgress: ({ loaded, total, percentage }) => {
+              setProgress(percentage);
+              setUploadedBytes(loaded);
+              setTotalBytes(total);
+            },
+          });
+          if (res?.member) {
+            onMemberUpdate(res.member);
+          }
+          onRefresh();
+        } catch (err) {
+          onError(err instanceof Error ? err.message : "Upload failed");
+        } finally {
+          setBusyKey(null);
+          setProgress(null);
+          setUploadedBytes(0);
+          setTotalBytes(0);
+        }
+        return;
+      }
+
+      // ─── Fallback: @vercel/blob direct upload ──────────────────
+      // Practically unreachable today — MAX_BYTES (10 MB) ≤
+      // CHUNKED_MAX_BYTES, so files in range take the chunked path
+      // and oversized files are rejected before this point. Kept as
+      // a defensive last resort: if MAX_BYTES is ever bumped past
+      // CHUNKED_MAX_BYTES, files in the gap fall through here.
+      //
+      // 90-second hard timeout via AbortSignal — without it, a
+      // PUT to vercel.com/api/blob on a filtered network never
+      // resolves AND never rejects, leaving the user with a
+      // forever-spinner. With it, a stalled upload surfaces as
+      // a real error in the toast.
       const abortCtrl = new AbortController();
       let stalledTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
         abortCtrl.abort(new Error("Upload timed out after 90 seconds"));
