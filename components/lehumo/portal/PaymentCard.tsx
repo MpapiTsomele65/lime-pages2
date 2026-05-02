@@ -126,23 +126,7 @@ export function PaymentCard({
         Monthly Contribution
       </h2>
 
-      {beforeLaunch ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex-1 flex flex-col items-center justify-center text-center py-4"
-        >
-          <CalendarClock className="h-12 w-12 text-[#46CDCF] mb-3" />
-          <h3 className="text-lg font-semibold text-white">
-            Contributions begin 1 June 2026
-          </h3>
-          <p className="text-sm text-white/50 mt-1 max-w-xs">
-            Your R60,000 contribution goal builds at R1,000/month over 5
-            years. We&rsquo;ll send a reminder closer to the date — nothing
-            to do for now.
-          </p>
-        </motion.div>
-      ) : allPaid ? (
+      {allPaid ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -317,43 +301,62 @@ export function PaymentCard({
             </div>
           )}
 
-          {/* Pay button */}
+          {/* Action — pre-launch shows a "Begins 1 June 2026" hint
+              alongside a disabled Pay button so the goal-anchored shape
+              above stays fully visible without giving members a way to
+              charge before the schedule starts. Post-launch the button
+              is live. */}
           <div className="mt-auto">
-            <button
-              onClick={handlePayment}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#B8FF00] py-3 px-6 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <svg
-                    className="h-4 w-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="h-4 w-4" />
-                  Make Payment
-                </>
-              )}
-            </button>
+            {beforeLaunch ? (
+              <div className="rounded-2xl border border-[#46CDCF]/25 bg-[#46CDCF]/[0.06] px-4 py-3 flex items-center gap-3">
+                <CalendarClock className="h-4 w-4 text-[#46CDCF] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#46CDCF]">
+                    Begins 1 June 2026
+                  </p>
+                  <p className="text-xs text-white/55 mt-0.5">
+                    Your first R1,000 contribution unlocks the Pay
+                    button — nothing to do for now.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handlePayment}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-[#B8FF00] py-3 px-6 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4" />
+                    Make Payment
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Footnote — the "month count" framing as quiet supporting

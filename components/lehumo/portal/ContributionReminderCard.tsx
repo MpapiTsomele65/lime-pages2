@@ -106,13 +106,58 @@ export function ContributionReminderCard({
   beforeLaunch = false,
   contributionRows,
 }: ContributionReminderCardProps) {
-  // Pre-launch (before 1 Jun 2026): no contribution is actually due, so
-  // showing "Pay your April contribution" would be wrong. PaymentCard
-  // handles the "Contributions begin 1 June 2026" placeholder; this card
-  // simply hides itself.
-  if (beforeLaunch) return null;
-
   const richShape = (contributionRows?.length ?? 0) > 0;
+
+  // Pre-launch (before 1 Jun 2026): render a quiet "first contribution
+  // due 1 Jun 2026" hint instead of returning null. Lets members see
+  // the period-aware reminder shape ahead of launch — it'll quietly
+  // morph into the urgent-or-paid states once the schedule kicks in.
+  if (beforeLaunch) {
+    // Resolve the first unpaid period from the rich shape so the hint
+    // tracks any back-channel members who might already have a row
+    // marked Paid via admin tooling. Fall back to the canonical 1 Jun
+    // 2026 launch period when contributionRows is empty.
+    const firstDue = (() => {
+      if (richShape && contributionRows) {
+        const sorted = [...contributionRows].sort((a, b) =>
+          a.period.localeCompare(b.period),
+        );
+        const next = sorted.find(
+          (c) => c.status !== CONTRIBUTION_STATUS.paid,
+        );
+        if (next) return next.period;
+      }
+      return "2026-06";
+    })();
+
+    return (
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="rounded-2xl border border-[#46CDCF]/25 bg-[#46CDCF]/[0.04] p-5"
+        aria-label="Contribution schedule"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#46CDCF]/15 text-[#46CDCF]">
+            <CalendarClock className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#46CDCF]">
+              First contribution
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-white">
+              Due {periodToLong(firstDue)} · R1,000
+            </p>
+            <p className="mt-1 text-xs text-white/50">
+              No action needed yet — we&rsquo;ll send a reminder closer
+              to the date.
+            </p>
+          </div>
+        </div>
+      </motion.section>
+    );
+  }
 
   // ── Resolve "is the current month paid?" + "what's the next due?"
   //    against either the rich 60-period shape (preferred) or the 12-key
