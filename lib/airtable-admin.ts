@@ -156,31 +156,41 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
       out.push(parseRecord(record));
     }
     // ── DIAGNOSTIC ──
-    // On the FIRST page only, log the raw field-ID keys Airtable
-    // returned for one record. Lets us compare against the
-    // AIRTABLE_FIELDS constants in lib/definitions.ts to spot a
-    // field-ID mismatch (e.g., column deleted + recreated → new id).
+    // On the FIRST page only, find the most-populated member record
+    // and dump every field key + first ~50 chars of each value. The
+    // previous version sampled records[0] which landed on a sparse
+    // prospect with no beneficiary data — useless for diagnosing
+    // field-ID drift. The "richest" member (most populated keys) is
+    // far more likely to be Mpapi / Londani — both fully onboarded
+    // with KYC + beneficiary on file.
     if (!offset && (data.records?.length ?? 0) > 0) {
-      const sample = data.records[0];
+      const records = data.records as Array<{
+        id: string;
+        fields: Record<string, unknown>;
+      }>;
+      const richest = records.reduce((best, r) =>
+        Object.keys(r.fields ?? {}).length >
+        Object.keys(best.fields ?? {}).length
+          ? r
+          : best,
+      );
       console.log(
-        `[listAllMembers] raw field IDs on member ${sample.id}: ${JSON.stringify(
-          Object.keys(sample.fields ?? {}),
+        `[listAllMembers] richest member ${richest.id} has ${Object.keys(richest.fields ?? {}).length} fields populated`,
+      );
+      console.log(
+        `[listAllMembers] richest member field IDs: ${JSON.stringify(
+          Object.keys(richest.fields ?? {}),
         )}`,
       );
-      // Specifically, look for beneficiary-shaped fields by name in
-      // the response — even though we requested by-id, log any keys
-      // that look like beneficiary IDs in case Airtable returned
-      // them under a different ID than we expect.
-      const benFields = Object.entries(sample.fields ?? {}).filter(
-        ([, v]) => {
-          // Match the field ID format and check the value looks
-          // string-like; skip empty values.
-          return typeof v === "string" && v.length > 0 && v.length < 100;
-        },
-      );
       console.log(
-        `[listAllMembers] non-empty string fields on member ${sample.id}:`,
-        benFields.map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(" | "),
+        `[listAllMembers] richest member field values: ${Object.entries(
+          richest.fields ?? {},
+        )
+          .map(([k, v]) => {
+            const s = typeof v === "string" ? v : JSON.stringify(v);
+            return `${k}=${s.length > 50 ? `${s.slice(0, 50)}…` : s}`;
+          })
+          .join(" | ")}`,
       );
     }
     offset = data.offset;
