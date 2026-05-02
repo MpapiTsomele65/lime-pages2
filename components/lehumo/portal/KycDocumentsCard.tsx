@@ -54,6 +54,13 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Live progress while a Blob upload is in flight. `null` outside an
+  // active upload, 0–100 during the PUT to Blob storage. Surfaced in
+  // the slot UI so a slow connection on a 5 MB+ file looks like
+  // "uploading 40%" instead of "spinner forever".
+  const [progress, setProgress] = useState<number | null>(null);
+  const [uploadedBytes, setUploadedBytes] = useState<number>(0);
+  const [totalBytes, setTotalBytes] = useState<number>(0);
 
   const hasFile = (slot.attachments?.length ?? 0) > 0;
   const firstFile = slot.attachments?.[0];
@@ -100,6 +107,10 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
         return;
       }
 
+      setProgress(0);
+      setUploadedBytes(0);
+      setTotalBytes(file.size);
+
       try {
         // Direct browser → Vercel Blob upload. Our route mints a
         // signed token, browser PUTs the file straight to Blob
@@ -113,6 +124,13 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
             slot: slot.key,
             filename: file.name,
           }),
+          onUploadProgress: ({ loaded, total, percentage }) => {
+            // Throttling not needed — react batches; the percentage
+            // bar only re-renders when this state changes.
+            setProgress(Math.round(percentage));
+            setUploadedBytes(loaded);
+            setTotalBytes(total);
+          },
         });
 
         // upload() resolves once the file lands in Blob storage; the
@@ -130,10 +148,19 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
         );
       } finally {
         setBusy(false);
+        setProgress(null);
+        setUploadedBytes(0);
+        setTotalBytes(0);
       }
     },
     [slot.key, onUploaded],
   );
+
+  // Helper for the progress label — formats as "MB" with one decimal
+  // for files under 100MB (covers our 10MB ceiling comfortably) and
+  // returns "n/a" if total isn't yet known (e.g., before first
+  // progress event fires).
+  const fmtMb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)}MB`;
 
   // ── Render variants ──────────────────────────────────────────────
   const baseClasses =
@@ -218,7 +245,8 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
               >
                 {busy ? (
                   <>
-                    <Loader2 className="h-3 w-3 animate-spin" /> Uploading…
+                    <Loader2 className="h-3 w-3 animate-spin" />{" "}
+                    {progress !== null ? `${progress}%` : "Uploading…"}
                   </>
                 ) : (
                   <>
@@ -227,6 +255,19 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
                 )}
               </button>
             </div>
+            {/* Inline progress bar during a Replace upload — same
+                bytes/percent feedback as the empty-slot case. */}
+            {busy && progress !== null && (
+              <div className="mt-2 h-1 w-full rounded-full bg-white/[0.08] overflow-hidden">
+                <div
+                  className="h-full bg-[#B8FF00] transition-all duration-150 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+                <p className="mt-1 text-[10px] text-white/40">
+                  {fmtMb(uploadedBytes)} of {fmtMb(totalBytes)}
+                </p>
+              </div>
+            )}
             <input
               ref={inputRef}
               type="file"
@@ -267,8 +308,24 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
             {slot.label}
           </p>
           <p className="text-xs text-white/50">
-            {busy ? "Uploading…" : slot.hint}
+            {busy
+              ? progress !== null
+                ? `Uploading ${progress}% · ${fmtMb(uploadedBytes)} of ${fmtMb(totalBytes)}`
+                : "Uploading…"
+              : slot.hint}
           </p>
+          {/* Progress bar — only renders during an active upload.
+              Gives explicit visual confirmation that bytes are
+              flowing, so a slow connection on a large file looks
+              like work-in-progress instead of "stuck spinner". */}
+          {busy && progress !== null && (
+            <div className="mt-2 h-1 w-full rounded-full bg-white/[0.08] overflow-hidden">
+              <div
+                className="h-full bg-[#B8FF00] transition-all duration-150 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
           {error && (
             <p className="mt-2 flex items-center gap-1 text-[11px] text-red-400">
               <AlertCircle className="h-3 w-3" /> {error}

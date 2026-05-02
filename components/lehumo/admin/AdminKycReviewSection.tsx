@@ -522,6 +522,13 @@ function DocSlot({
   setBusyKey,
 }: DocSlotProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // Live progress while a Blob upload is in flight. Mirrors the
+  // member-portal SlotCard so admins on slow connections see byte-by-
+  // byte feedback on a 5–8 MB POA PDF instead of a "did this freeze?"
+  // spinner.
+  const [progress, setProgress] = useState<number | null>(null);
+  const [uploadedBytes, setUploadedBytes] = useState<number>(0);
+  const [totalBytes, setTotalBytes] = useState<number>(0);
 
   const pick = useCallback(() => {
     if (disabled) return;
@@ -560,6 +567,10 @@ function DocSlot({
         return;
       }
 
+      setProgress(0);
+      setUploadedBytes(0);
+      setTotalBytes(prepared.size);
+
       try {
         // Direct browser → Vercel Blob upload, then server-side
         // onUploadCompleted patches Airtable. Bypasses the 4.5 MB
@@ -575,6 +586,11 @@ function DocSlot({
             slot,
             filename: prepared.name,
           }),
+          onUploadProgress: ({ loaded, total, percentage }) => {
+            setProgress(Math.round(percentage));
+            setUploadedBytes(loaded);
+            setTotalBytes(total);
+          },
         });
 
         // upload() resolves once the file lands in Blob storage. The
@@ -589,6 +605,9 @@ function DocSlot({
         onError(err instanceof Error ? err.message : "Upload failed");
       } finally {
         setBusyKey(null);
+        setProgress(null);
+        setUploadedBytes(0);
+        setTotalBytes(0);
       }
     },
     [memberId, slot, onRefresh, onError, setBusyKey],
@@ -684,8 +703,23 @@ function DocSlot({
           {label}
         </p>
         <p className="text-xs text-[#6B7280]">
-          {busy ? "Uploading…" : "Not yet uploaded · click to upload on member's behalf"}
+          {busy
+            ? progress !== null
+              ? `Uploading ${progress}% · ${(uploadedBytes / 1024 / 1024).toFixed(1)}MB of ${(totalBytes / 1024 / 1024).toFixed(1)}MB`
+              : "Uploading…"
+            : "Not yet uploaded · click to upload on member's behalf"}
         </p>
+        {/* Live progress bar — visible only while a Blob upload is
+            in flight. Gives explicit byte-by-byte confirmation that
+            a 5–8 MB POA PDF is actually moving across the wire. */}
+        {busy && progress !== null && (
+          <div className="mt-1.5 h-1 w-full rounded-full bg-[#E5E7EB] overflow-hidden">
+            <div
+              className="h-full bg-[#46CDCF] transition-all duration-150 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
       </div>
       <AlertCircle className="h-4 w-4 shrink-0 text-[#9CA3AF]" />
       <input
