@@ -34,14 +34,19 @@ import {
 } from "./member-contributions-view";
 
 // ─── Config ─────────────────────────────────────────────────────────
-function getBaseUrl() {
+// Exported (alongside resolveSelect + parseRecord further down) so
+// lib/airtable-admin.ts can share the same Airtable plumbing instead
+// of carrying a parallel copy that drifts. Keep these "package-
+// internal" — they're consumed by airtable-admin.ts but not by app
+// code.
+export function getBaseUrl() {
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
   if (!baseId || !tableId) throw new Error("Airtable env vars not set");
   return `https://api.airtable.com/v0/${baseId}/${tableId}`;
 }
 
-function getHeaders() {
+export function getHeaders() {
   const pat = process.env.AIRTABLE_PAT;
   if (!pat) throw new Error("AIRTABLE_PAT is not set");
   return {
@@ -62,7 +67,7 @@ function getHeaders() {
  *
  * This helper handles all three, falling back to `fallback` for empty values.
  */
-function resolveSelect(
+export function resolveSelect(
   value: unknown,
   choiceMap: Record<string, string>,
   fallback: string,
@@ -79,7 +84,7 @@ function resolveSelect(
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function parseRecord(record: any): LehumoMember {
+export function parseRecord(record: any): LehumoMember {
   const f = record.fields;
   // Phase 5: contributions are now sourced exclusively from the
   // Contributions linked table — `hydrateContributionsFromNewTable` (or

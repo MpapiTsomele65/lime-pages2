@@ -1,25 +1,23 @@
 import "server-only";
 
 import {
-  AIRTABLE_FIELDS,
   CONTRIBUTION_SOURCE,
   CONTRIBUTION_STATUS,
   MONTH_NAMES,
-  STATUS_CHOICE_ID_TO_NAME,
-  KYC_CHOICE_ID_TO_NAME,
-  SOURCE_CHOICE_ID_TO_NAME,
-  ID_TYPE_CHOICE_ID_TO_NAME,
-  RELATIONSHIP_CHOICE_ID_TO_NAME,
-  LOAN_TYPE_CHOICE_ID_TO_NAME,
   buildContributionKey,
   formatMemberNumber,
   parseContributionPeriod,
-  type AirtableAttachment,
   type LehumoMember,
-  type MemberStatus,
-  type KycStatus,
-  type BeneficiaryRelationship,
 } from "./definitions";
+// Shared Airtable plumbing — see lib/airtable.ts for the canonical
+// implementations. Importing rather than duplicating eliminates the
+// parseRecord-drift class of bug that previously caused the admin
+// dashboard to silently drop beneficiary + active-loan fields.
+import {
+  getBaseUrl,
+  getHeaders,
+  parseRecord,
+} from "./airtable";
 import {
   getContributionByKey,
   listAllContributions,
@@ -32,128 +30,6 @@ import {
   groupContributionsByMemberPrefix,
   projectToLegacyContributions,
 } from "./member-contributions-view";
-
-// ─── Config (duplicated from lib/airtable.ts to keep this file standalone) ──
-
-function getBaseUrl() {
-  const baseId = process.env.AIRTABLE_BASE_ID;
-  const tableId = process.env.AIRTABLE_TABLE_ID;
-  if (!baseId || !tableId) throw new Error("Airtable env vars not set");
-  return `https://api.airtable.com/v0/${baseId}/${tableId}`;
-}
-
-function getHeaders() {
-  const pat = process.env.AIRTABLE_PAT;
-  if (!pat) throw new Error("AIRTABLE_PAT is not set");
-  return {
-    Authorization: `Bearer ${pat}`,
-    "Content-Type": "application/json",
-  };
-}
-
-function resolveSelect(
-  value: unknown,
-  choiceMap: Record<string, string>,
-  fallback: string,
-): string {
-  if (value == null) return fallback;
-  if (typeof value === "string") {
-    return choiceMap[value] ?? value;
-  }
-  if (typeof value === "object" && "name" in (value as object)) {
-    return String((value as { name: unknown }).name ?? fallback);
-  }
-  return fallback;
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function parseRecord(record: any): LehumoMember {
-  const f = record.fields;
-  // Phase 5: contributions are sourced exclusively from the
-  // Contributions linked table — `listAllMembers` overwrites this empty
-  // map with a SAST-year projection of `contributionRows` after
-  // `parseRecord` returns. The legacy MONTH_FIELDS boolean columns on
-  // the Members table are no longer read from.
-  const contributions: Record<string, boolean> = {};
-
-  // Mirror the optional-shape coercion done in lib/airtable.ts so the
-  // admin reads expose the same `LehumoMember` contract — admin UI can
-  // safely render attachments without TS gymnastics.
-  const idDoc = f[AIRTABLE_FIELDS.kycIdDocument] as
-    | AirtableAttachment[]
-    | undefined;
-  const poaDoc = f[AIRTABLE_FIELDS.kycProofOfAddress] as
-    | AirtableAttachment[]
-    | undefined;
-
-  return {
-    id: record.id,
-    fullName: f[AIRTABLE_FIELDS.fullName] || "",
-    memberNumber: f[AIRTABLE_FIELDS.memberNumber] || 0,
-    email: f[AIRTABLE_FIELDS.email] || "",
-    phone: f[AIRTABLE_FIELDS.phone] || "",
-    status: resolveSelect(
-      f[AIRTABLE_FIELDS.status],
-      STATUS_CHOICE_ID_TO_NAME,
-      "Prospect",
-    ) as MemberStatus,
-    kycStatus: resolveSelect(
-      f[AIRTABLE_FIELDS.kycStatus],
-      KYC_CHOICE_ID_TO_NAME,
-      "Not Started",
-    ) as KycStatus,
-    source: resolveSelect(
-      f[AIRTABLE_FIELDS.source],
-      SOURCE_CHOICE_ID_TO_NAME,
-      "",
-    ),
-    notes: f[AIRTABLE_FIELDS.notes] || "",
-    contributions,
-    // ── KYC fields (Tier 2A) — admin needs to read attachments + dates ──
-    idType: resolveSelect(
-      f[AIRTABLE_FIELDS.idType],
-      ID_TYPE_CHOICE_ID_TO_NAME,
-      "",
-    ) as "SA ID" | "Passport" | "",
-    idNumber: f[AIRTABLE_FIELDS.idNumber] || "",
-    residentialAddress: f[AIRTABLE_FIELDS.residentialAddress] || "",
-    kycIdDocument: idDoc && idDoc.length > 0 ? idDoc : undefined,
-    kycProofOfAddress: poaDoc && poaDoc.length > 0 ? poaDoc : undefined,
-    kycSubmittedAt: f[AIRTABLE_FIELDS.kycSubmittedAt] || undefined,
-    kycVerifiedAt: f[AIRTABLE_FIELDS.kycVerifiedAt] || undefined,
-    // ── Beneficiary / next-of-kin (mirror lib/airtable.ts:parseRecord) ──
-    // These were missing from this admin-side copy of parseRecord
-    // until May 2026; consequence was that the admin dashboard +
-    // member table both showed 0 beneficiaries on file even when the
-    // member-portal write had successfully landed in Airtable. Keep
-    // this block in lockstep with the canonical parseRecord — any
-    // schema column added there must be added here too.
-    beneficiaryFirstName: f[AIRTABLE_FIELDS.beneficiaryFirstName] || undefined,
-    beneficiarySurname: f[AIRTABLE_FIELDS.beneficiarySurname] || undefined,
-    beneficiaryRelationship: resolveSelect(
-      f[AIRTABLE_FIELDS.beneficiaryRelationship],
-      RELATIONSHIP_CHOICE_ID_TO_NAME,
-      "",
-    ) as BeneficiaryRelationship | "",
-    beneficiaryPhone: f[AIRTABLE_FIELDS.beneficiaryPhone] || undefined,
-    beneficiaryEmail: f[AIRTABLE_FIELDS.beneficiaryEmail] || undefined,
-    beneficiaryAddress: f[AIRTABLE_FIELDS.beneficiaryAddress] || undefined,
-    beneficiaryUpdatedAt:
-      f[AIRTABLE_FIELDS.beneficiaryUpdatedAt] || undefined,
-    // ── Active loan ledger (also missing from this copy until May 2026) ──
-    activeLoanBalance:
-      typeof f[AIRTABLE_FIELDS.activeLoanBalance] === "number"
-        ? (f[AIRTABLE_FIELDS.activeLoanBalance] as number)
-        : undefined,
-    activeLoanIssuedAt: f[AIRTABLE_FIELDS.activeLoanIssuedAt] || undefined,
-    activeLoanType: resolveSelect(
-      f[AIRTABLE_FIELDS.activeLoanType],
-      LOAN_TYPE_CHOICE_ID_TO_NAME,
-      "",
-    ) as "Self" | "P2P" | "",
-  };
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ─── Admin API Methods ─────────────────────────────────────────────
 
