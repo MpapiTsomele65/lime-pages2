@@ -12,16 +12,23 @@
 // No auth gate by design — the only sensitive output is a 6-char
 // prefix of the PAT, which is non-credential by Airtable's design.
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const TEST_RECORD_ID = "rec9yXOXGcAXfdVEE"; // Leh01
+const DEFAULT_TEST_RECORD_ID = "rec9yXOXGcAXfdVEE"; // Leh01
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const baseId = process.env.AIRTABLE_BASE_ID ?? "";
   const tableId = process.env.AIRTABLE_TABLE_ID ?? "";
   const pat = process.env.AIRTABLE_PAT ?? "";
 
-  const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${TEST_RECORD_ID}?returnFieldsByFieldId=true`;
+  // Allow per-record probing so we can test specific session.memberIds.
+  const queryRecordId = request.nextUrl.searchParams.get("rec");
+  const recordId =
+    queryRecordId && /^rec[A-Za-z0-9]{14}$/.test(queryRecordId)
+      ? queryRecordId
+      : DEFAULT_TEST_RECORD_ID;
+
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}?returnFieldsByFieldId=true`;
 
   let status = 0;
   let bodyText = "";
@@ -58,6 +65,7 @@ export async function GET() {
     },
     request: {
       url,
+      recordId,
     },
     response: {
       status,
