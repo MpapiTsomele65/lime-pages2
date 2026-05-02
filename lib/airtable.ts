@@ -261,13 +261,10 @@ export async function getMemberById(
   const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
   if (!res.ok) {
     if (res.status === 404) return null;
-    // Surface the Airtable response body in logs so 401/403 reasons
-    // (NOT_AUTHORIZED, INVALID_PERMISSIONS, etc) are diagnosable from
-    // Vercel logs instead of opaque "Airtable error: 403" toasts.
     const body = await res.text().catch(() => "");
     const patSig = (process.env.AIRTABLE_PAT ?? "").slice(0, 6);
     throw new Error(
-      `Airtable getMemberById error: ${res.status} — ${body.slice(0, 300)} ` +
+      `Airtable getMemberById error: ${res.status} — recordId="${recordId}" url="${url}" body=${body.slice(0, 300)} ` +
         `(pat="${patSig}…", patLen=${(process.env.AIRTABLE_PAT ?? "").length})`,
     );
   }
