@@ -161,8 +161,9 @@ export function PaymentCard({
       ) : ledger ? (
         // ── Rich-shape goal-anchored layout ──────────────────────────
         <div className="flex-1 flex flex-col">
-          {/* Hero — R-amount contributed of R-goal. The number that
-              answers "how am I doing toward the R60,000 commitment?" */}
+          {/* Hero — R-amount contributed of the R60,000 lifetime anchor.
+              The number that answers "how am I doing toward the 5-year
+              commitment?" */}
           <div className="mb-1">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-bold text-[#B8FF00]">
@@ -174,36 +175,84 @@ export function PaymentCard({
             </div>
           </div>
 
-          {/* Progress — R-based percentage toward the goal */}
-          <div className="mt-4 mb-5">
-            <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+          {/* Running target — what should be paid by end of `monthsDue`.
+              Hidden pre-first-month so we don't flash "Target so far: R0". */}
+          {ledger.monthsDue > 0 && (
+            <p className="mt-1 text-xs text-white/50">
+              Target so far:{" "}
+              <span className="text-[#46CDCF] font-medium">
+                {formatZAR(ledger.cumulativeExpected)}
+              </span>
+              <span className="text-white/35">
+                {" "}
+                · {ledger.monthsDue}/{ledger.totalMonths} months due
+              </span>
+            </p>
+          )}
+
+          {/* Progress bar — three layers anchored to the R60,000 max.
+              Shows lime achievement against the running teal target so
+              members see at a glance whether they're on track:
+                • Background (dark)        — R0 to R60,000 reference
+                • Dim teal layer           — R0 to cumulativeExpected
+                                              (where you should be by now)
+                • Amber overlay (if behind)— received → expected
+                                              (the outstanding gap)
+                • Lime fill                — R0 to lifetimeReceived
+                                              (your actual contributions)
+              At month 12 with 12 paid: lime ends exactly at the 20% mark
+              (R12,000 of R60,000), tucked against the target boundary.
+              At month 60 with all paid: full lime bar.
+              At month 6 with 0 paid: dim teal + amber visible to 10%
+              (R6,000), no lime — visualises the R6,000 outstanding. */}
+          <div className="mt-3 relative h-3 rounded-full bg-white/[0.06] overflow-hidden">
+            {/* Dim teal "target zone" — R0 → cumulativeExpected. Sits
+                behind everything so it shows through where lime/amber
+                aren't drawn. */}
+            {ledger.cumulativeExpected > 0 && (
               <div
-                className="h-full rounded-full bg-[#B8FF00] transition-all"
+                className="absolute inset-y-0 left-0 bg-[#46CDCF]/20"
                 style={{
-                  width: `${ledger.lifetimeGoal > 0
-                    ? Math.min(
-                        100,
-                        (ledger.lifetimeReceived / ledger.lifetimeGoal) * 100,
-                      )
-                    : 0}%`,
+                  width: `${Math.min(100, (ledger.cumulativeExpected / ledger.lifetimeGoal) * 100)}%`,
                 }}
               />
-            </div>
-            <p className="mt-1.5 text-[10px] uppercase tracking-[0.12em] text-white/30">
-              {ledger.lifetimeGoal > 0
-                ? Math.round(
-                    (ledger.lifetimeReceived / ledger.lifetimeGoal) * 100,
-                  )
-                : 0}
-              % of 5-year goal
-            </p>
+            )}
+            {/* Amber outstanding gap — only when lifetimeReceived <
+                cumulativeExpected. Spans from received to expected so
+                the gap colour-codes the R-balance owed. */}
+            {ledger.outstanding > 0 && ledger.lifetimeGoal > 0 && (
+              <div
+                className="absolute inset-y-0 bg-[#F59E0B]/35"
+                style={{
+                  left: `${(ledger.lifetimeReceived / ledger.lifetimeGoal) * 100}%`,
+                  width: `${(ledger.outstanding / ledger.lifetimeGoal) * 100}%`,
+                }}
+              />
+            )}
+            {/* Lime achievement — R0 → lifetimeReceived. Drawn on top so
+                it covers the dim teal in the achieved region. */}
+            <div
+              className="absolute inset-y-0 left-0 bg-[#B8FF00] transition-all"
+              style={{
+                width: `${ledger.lifetimeGoal > 0
+                  ? Math.min(100, (ledger.lifetimeReceived / ledger.lifetimeGoal) * 100)
+                  : 0}%`,
+              }}
+            />
+          </div>
+          {/* Bar caption — R0 / R60K range markers. Static under the bar
+              so members see the absolute scale at a glance. */}
+          <div className="mt-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.12em] text-white/25">
+            <span>R0</span>
+            <span>{formatZAR(ledger.lifetimeGoal)} · 5-year goal</span>
           </div>
 
-          {/* Outstanding — R-amount owed RIGHT NOW. Yellow alert if >0,
-              quiet "All caught up" chip if 0 (and at least one month is
-              due so far — pre-first-month it just stays hidden). */}
+          {/* Outstanding chip — R-amount owed RIGHT NOW. Yellow alert
+              if >0, quiet "Up to date" chip if 0 (and at least one
+              month is due so far — pre-first-month it stays hidden so
+              members don't see "Up to date" before launch). */}
           {ledger.monthsDue > 0 && ledger.outstanding > 0 ? (
-            <div className="mb-5 rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/[0.07] px-4 py-3">
+            <div className="mt-4 mb-4 rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/[0.07] px-4 py-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-[#F59E0B] shrink-0" />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#F59E0B]">
@@ -221,15 +270,17 @@ export function PaymentCard({
               </div>
             </div>
           ) : ledger.monthsDue > 0 ? (
-            <div className="mb-5 rounded-xl border border-[#B8FF00]/20 bg-[#B8FF00]/[0.04] px-4 py-3">
+            <div className="mt-4 mb-4 rounded-xl border border-[#B8FF00]/20 bg-[#B8FF00]/[0.04] px-4 py-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#B8FF00] shrink-0" />
                 <span className="text-sm font-semibold text-white">
-                  Up to date — no balance owed
+                  On track — no balance owed
                 </span>
               </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="mt-4 mb-4" />
+          )}
 
           {/* Next due / Last paid — period-aware secondary detail */}
           <div className="space-y-1.5 mb-5">
