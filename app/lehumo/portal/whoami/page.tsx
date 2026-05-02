@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/session";
 import { isAdminEmail } from "@/lib/admin-auth";
+import { getMemberById, getMemberByIdLite } from "@/lib/airtable";
+import { listContributionsForMember } from "@/lib/contributions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,51 @@ export default async function WhoAmIPage() {
     .split(",")
     .map((e) => e.trim())
     .filter(Boolean).length;
+
+  // ── Probe the dashboard's actual call path so we can see whether
+  //    member fetch + contribution hydration are succeeding for THIS
+  //    session, not just for a hardcoded test record. ──
+  let liteResult = "(not run)";
+  let fullResult = "(not run)";
+  let contribResult = "(not run)";
+  let contribCount = 0;
+
+  try {
+    const lite = await getMemberByIdLite(session.memberId);
+    liteResult = lite
+      ? `OK — fullName="${lite.fullName}" memberNumber=${lite.memberNumber}`
+      : "null (404)";
+  } catch (err) {
+    liteResult = `THREW: ${err instanceof Error ? err.message : String(err)}`;
+  }
+
+  try {
+    const full = await getMemberById(session.memberId);
+    if (full) {
+      contribCount = full.contributionRows?.length ?? 0;
+      fullResult = `OK — contributionRows=${contribCount} contributions(legacy)=${
+        Object.values(full.contributions).filter(Boolean).length
+      }/${Object.keys(full.contributions).length}`;
+    } else {
+      fullResult = "null (404)";
+    }
+  } catch (err) {
+    fullResult = `THREW: ${err instanceof Error ? err.message : String(err)}`;
+  }
+
+  try {
+    // Probe listContributionsForMember directly using the session's
+    // memberNumber. If full.fullResult succeeded, we can derive it.
+    const lite = await getMemberByIdLite(session.memberId).catch(() => null);
+    if (lite) {
+      const rows = await listContributionsForMember(lite.memberNumber);
+      contribResult = `OK — ${rows.length} rows for Leh${String(lite.memberNumber).padStart(2, "0")}`;
+    } else {
+      contribResult = "skipped — memberLite null";
+    }
+  } catch (err) {
+    contribResult = `THREW: ${err instanceof Error ? err.message : String(err)}`;
+  }
 
   return (
     <div className="min-h-screen bg-[#0B1933] text-white p-8">
@@ -45,6 +92,23 @@ export default async function WhoAmIPage() {
             value={admin ? "GRANTED" : "DENIED"}
             tone={admin ? "good" : "bad"}
           />
+        </div>
+
+        {/* Phase-4-debug: probe the dashboard's actual data fetches so we can
+            see whether the user's session-scoped getMemberById +
+            hydration are succeeding. Remove once portal stabilizes. */}
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0F2040] p-6 space-y-4">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-[#46CDCF]/70">
+              Data Fetch Probe
+            </p>
+            <p className="text-[11px] text-white/40 mt-0.5">
+              Same calls the dashboard makes for this session.
+            </p>
+          </div>
+          <Row label="getMemberByIdLite" value={liteResult} />
+          <Row label="getMemberById (with hydration)" value={fullResult} />
+          <Row label="listContributionsForMember" value={contribResult} />
         </div>
 
         {!admin && (
