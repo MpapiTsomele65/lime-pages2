@@ -62,9 +62,9 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export async function uploadViaServerRelay(
+export async function uploadViaServerRelay<T = unknown>(
   options: ServerRelayUploadOptions,
-): Promise<void> {
+): Promise<T> {
   const base64 = await fileToBase64(options.file);
   const body = JSON.stringify({
     ...options.payload,
@@ -73,7 +73,7 @@ export async function uploadViaServerRelay(
     file: base64,
   });
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", options.endpoint);
     xhr.setRequestHeader("Content-Type", "application/json");
@@ -92,7 +92,19 @@ export async function uploadViaServerRelay(
       // 2xx → success; otherwise try to extract the server's
       // {error, stage} payload for an actionable message.
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
+        // Parse and resolve with the server's JSON. Callers that
+        // ignore the return value get void semantics — callers that
+        // want the freshly-updated member (admin / portal KYC routes
+        // both return `{member, slot, ...}`) read it directly.
+        try {
+          const parsed = JSON.parse(xhr.responseText) as T;
+          resolve(parsed);
+        } catch {
+          // Endpoint returned 2xx with non-JSON body. Treat as
+          // success but with no data — the caller will fall back
+          // to its own refresh logic.
+          resolve(undefined as T);
+        }
         return;
       }
       let serverMsg = `Server returned ${xhr.status}`;

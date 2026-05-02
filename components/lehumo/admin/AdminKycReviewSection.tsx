@@ -213,6 +213,7 @@ export function AdminKycReviewSection({
                 });
               }}
               onRefresh={() => router.refresh()}
+              onMemberUpdate={applyMemberUpdate}
               onUploadError={setError}
               setBusyKey={setBusyKey}
             />
@@ -253,6 +254,10 @@ interface KycReviewRowProps {
   onReject: () => void;
   onClearSlot: (slot: "id" | "poa") => void;
   onRefresh: () => void;
+  /** Push a freshly-fetched member back into the section's local
+   *  state so the slot UI flips to "uploaded" without waiting for
+   *  router.refresh() (which doesn't reset useState anyway). */
+  onMemberUpdate: (updated: LehumoMember) => void;
   onUploadError: (msg: string) => void;
   setBusyKey: (key: string | null) => void;
 }
@@ -264,6 +269,7 @@ function KycReviewRow({
   onReject,
   onClearSlot,
   onRefresh,
+  onMemberUpdate,
   onUploadError,
   setBusyKey,
 }: KycReviewRowProps) {
@@ -357,6 +363,7 @@ function KycReviewRow({
             clearing={idClearing}
             disabled={anyBusy}
             onRefresh={onRefresh}
+            onMemberUpdate={onMemberUpdate}
             onError={onUploadError}
             onClear={() => onClearSlot("id")}
             setBusyKey={setBusyKey}
@@ -370,6 +377,7 @@ function KycReviewRow({
             clearing={poaClearing}
             disabled={anyBusy}
             onRefresh={onRefresh}
+            onMemberUpdate={onMemberUpdate}
             onError={onUploadError}
             onClear={() => onClearSlot("poa")}
             setBusyKey={setBusyKey}
@@ -500,13 +508,18 @@ interface DocSlotProps {
   clearing: boolean;
   disabled: boolean;
   /** Triggers a soft router.refresh() on the admin page after the
-   *  Blob upload + server-side Airtable PATCH have settled. Replaces
-   *  the previous `onUploaded(member)` prop — handleUpload's
-   *  onUploadCompleted runs server-side after the client's upload
-   *  promise resolves, so we can't return the updated member
-   *  synchronously to the client. The page-level refresh re-fetches
-   *  the member list with the new attachments visible. */
+   *  Blob upload + server-side Airtable PATCH have settled. Used by
+   *  the @vercel/blob direct path — handleUpload's onUploadCompleted
+   *  runs server-side after the client's upload promise resolves,
+   *  so we can't return the updated member synchronously. The
+   *  page-level refresh re-fetches the member list. */
   onRefresh: () => void;
+  /** Server-relay path (≤3MB) returns the freshly-PATCHed member
+   *  in its response body. Push it back into the section's local
+   *  state so the slot UI flips to "uploaded" immediately —
+   *  router.refresh() alone doesn't help because useState in the
+   *  section doesn't re-initialise from props on re-render. */
+  onMemberUpdate: (updated: LehumoMember) => void;
   onError: (msg: string) => void;
   onClear: () => void;
   setBusyKey: (key: string | null) => void;
@@ -521,6 +534,7 @@ function DocSlot({
   clearing,
   disabled,
   onRefresh,
+  onMemberUpdate,
   onError,
   onClear,
   setBusyKey,
@@ -593,7 +607,17 @@ function DocSlot({
 
       if (useServerRelay) {
         try {
-          await uploadViaServerRelay({
+          // The route returns `{member, slot, idPresent, poaPresent,
+          // bothPresent}`. We push the fresh member into local state
+          // immediately so the slot UI flips to "uploaded" without
+          // waiting on router.refresh() (which can't mutate the
+          // section's useState anyway — see comments on
+          // onMemberUpdate). Then we ALSO call onRefresh() so the
+          // outer admin page (queue counts, KPI tiles, behind-list)
+          // re-fetches with the new state.
+          const res = await uploadViaServerRelay<{
+            member: LehumoMember;
+          }>({
             endpoint: "/api/lehumo/portal/admin/kyc-upload-direct",
             file: prepared,
             payload: { memberId, slot },
@@ -603,6 +627,9 @@ function DocSlot({
               setTotalBytes(total);
             },
           });
+          if (res?.member) {
+            onMemberUpdate(res.member);
+          }
           onRefresh();
         } catch (err) {
           onError(err instanceof Error ? err.message : "Upload failed");
@@ -683,7 +710,7 @@ function DocSlot({
         setTotalBytes(0);
       }
     },
-    [memberId, slot, onRefresh, onError, setBusyKey],
+    [memberId, slot, onRefresh, onMemberUpdate, onError, setBusyKey],
   );
 
   const baseClasses =
