@@ -36,7 +36,12 @@ const ALLOWED_MIME = new Set([
   "image/heif",
   "application/pdf",
 ]);
-const MAX_BYTES = 5 * 1024 * 1024;
+// Mirror the server route's MAX_BYTES — the binding constraint is
+// Vercel's 4.5 MB serverless function body cap. After base64 encoding
+// (33% overhead) plus the JSON envelope, ~3 MB raw is the practical
+// ceiling. Files larger than this will be rejected client-side with a
+// friendly message instead of failing in the network layer.
+const MAX_BYTES = 3 * 1024 * 1024;
 
 /**
  * Read a File as a base64 string with the `data:...,` prefix stripped.
@@ -114,8 +119,25 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
         });
 
         if (!res.ok) {
-          const errBody = await res.json().catch(() => ({}));
-          throw new Error(errBody.error || "Upload failed");
+          // Try to parse a JSON error body first — the route returns
+          // `{ error, stage }` for anything our handler catches. If
+          // the response isn't JSON (e.g. Vercel platform 413 / 504),
+          // fall back to the HTTP status so the user gets *some*
+          // diagnostic instead of an opaque "Upload failed".
+          const ct = res.headers.get("content-type") ?? "";
+          let detail = "";
+          if (ct.includes("application/json")) {
+            const errBody = await res.json().catch(() => null);
+            detail = errBody?.error ?? "";
+          } else {
+            const text = await res.text().catch(() => "");
+            detail = text.slice(0, 120);
+          }
+          throw new Error(
+            detail
+              ? `Upload failed (${res.status}): ${detail}`
+              : `Upload failed (HTTP ${res.status})`,
+          );
         }
 
         onUploaded();
@@ -299,7 +321,7 @@ export function KycDocumentsCard({ member }: KycDocumentsCardProps) {
     {
       key: "id",
       label: "ID Document",
-      hint: "Upload your SA ID or passport (JPG, PNG, HEIC, or PDF • max 5MB)",
+      hint: "Upload your SA ID or passport (JPG, PNG, HEIC, or PDF • max 3MB)",
       attachments: member.kycIdDocument,
     },
     {

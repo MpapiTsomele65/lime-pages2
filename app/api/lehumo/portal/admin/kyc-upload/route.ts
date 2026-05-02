@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAdminSession } from "@/lib/admin-auth";
-import { getMemberById, uploadKycAttachment, setMemberKyc } from "@/lib/airtable";
+import {
+  getMemberByIdLite,
+  uploadKycAttachment,
+  setMemberKyc,
+} from "@/lib/airtable";
 
 // ─── Limits ─────────────────────────────────────────────────────────
-// Mirror the member-portal upload route. Airtable's hard ceiling for
-// inline-base64 uploads is 5MB.
-const MAX_BYTES = 5 * 1024 * 1024;
+// Mirror the member-portal upload route. Vercel's serverless function
+// body cap is 4.5 MB; base64 adds 33% overhead; 3 MB raw fits with
+// headroom for the JSON envelope. See member route for the full
+// rationale and the path to support 5 MB via Vercel Blob.
+const MAX_BYTES = 3 * 1024 * 1024;
 
 const ALLOWED_MIME = new Set([
   "image/jpeg",
@@ -48,62 +54,63 @@ function bad(message: string, status = 400) {
  *      kycVerifiedAt timestamp reflects the actual review moment.)
  */
 export async function POST(request: NextRequest) {
+  let stage: string = "init";
   try {
+    stage = "admin_session";
     const session = await getAdminSession();
     if (!session) return bad("Forbidden", 403);
 
+    stage = "parse_body";
     const json = (await request.json().catch(() => null)) as UploadBody | null;
     if (!json) return bad("Invalid JSON body");
 
     const { memberId, slot, filename, contentType, file } = json;
 
-    // ── Validate memberId ──
+    stage = "validate_memberid";
     if (typeof memberId !== "string" || !memberId.startsWith("rec")) {
       return bad("memberId must be an Airtable record id");
     }
 
-    // ── Validate slot ──
+    stage = "validate_slot";
     if (slot !== "id" && slot !== "poa") {
       return bad("slot must be 'id' or 'poa'");
     }
 
-    // ── Validate filename ──
+    stage = "validate_filename";
     if (typeof filename !== "string" || filename.trim().length === 0) {
       return bad("filename is required");
     }
 
-    // ── Validate content type ──
+    stage = "validate_contenttype";
     if (typeof contentType !== "string" || !ALLOWED_MIME.has(contentType)) {
       return bad("Unsupported file type. Allowed: JPG, PNG, HEIC, or PDF.");
     }
 
-    // ── Validate base64 + size ──
+    stage = "validate_size";
     if (typeof file !== "string" || file.length === 0) {
       return bad("file (base64) is required");
     }
     const approxBytes = Math.floor((file.length * 3) / 4);
     if (approxBytes > MAX_BYTES) {
       return bad(
-        `File too large (${(approxBytes / 1024 / 1024).toFixed(1)}MB). Max 5MB.`,
+        `File too large (${(approxBytes / 1024 / 1024).toFixed(1)}MB). Max 3MB.`,
         413,
       );
     }
 
-    // ── Confirm the target member exists ──
-    const existing = await getMemberById(memberId);
+    stage = "lookup_member";
+    // Lite fetch — admin upload route doesn't need contribution rows.
+    const existing = await getMemberByIdLite(memberId);
     if (!existing) return bad("Member not found", 404);
 
-    // ── Upload to Airtable ──
+    stage = "upload_attachment";
     let updated = await uploadKycAttachment(memberId, slot, {
       contentType,
       base64: file,
       filename: filename.trim(),
     });
 
-    // ── Auto-flip kycStatus when both slots are filled ──
-    // Same logic as the member-portal upload route — only on the
-    // transition from "Docs Requested" to avoid resetting an already-
-    // reviewed-and-rejected resubmission cycle.
+    stage = "maybe_flip_status";
     const bothPresent =
       (updated.kycIdDocument?.length ?? 0) > 0 &&
       (updated.kycProofOfAddress?.length ?? 0) > 0;
@@ -121,9 +128,17 @@ export async function POST(request: NextRequest) {
       bothPresent,
     });
   } catch (error) {
-    console.error("Admin KYC upload error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      `Admin KYC upload error [stage=${stage}]:`,
+      message,
+      error instanceof Error ? error.stack : undefined,
+    );
     return NextResponse.json(
-      { error: "Upload failed. Please try again." },
+      {
+        error: `Upload failed at ${stage}: ${message}`,
+        stage,
+      },
       { status: 500 },
     );
   }

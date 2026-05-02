@@ -269,6 +269,40 @@ export async function getMemberById(
   return hydrateContributionsFromNewTable(member);
 }
 
+/**
+ * Lighter sibling of `getMemberById` that skips the Contributions-table
+ * hydration step.
+ *
+ * Use for code paths that only need the Members-table fields (KYC
+ * uploads, KYC status flips, beneficiary writes, status changes etc) —
+ * paths that don't render contribution data and don't need the
+ * 60-period rows attached.
+ *
+ * Why: post-Phase-5 every `getMemberById` performs an additional
+ * Airtable list call to fetch ~60 contribution rows, plus the
+ * projection calc. For an upload route that calls `getMemberById`
+ * twice (pre-validate + post-upload refetch), that's two unnecessary
+ * paginated list calls per request — easy to push past Vercel's
+ * function timeout on a slow Airtable response, and easy to chew
+ * through Airtable's 5 req/sec rate limit.
+ *
+ * Returns the member with `contributions` as the empty `parseRecord`
+ * default (`{}`) and `contributionRows` undefined. Callers that need
+ * contribution data should still use `getMemberById`.
+ */
+export async function getMemberByIdLite(
+  recordId: string,
+): Promise<LehumoMember | null> {
+  const url = `${getBaseUrl()}/${recordId}?returnFieldsByFieldId=true`;
+  const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error(`Airtable error: ${res.status}`);
+  }
+
+  return parseRecord(await res.json());
+}
+
 export async function getNextMemberNumber(): Promise<number> {
   const url = `${getBaseUrl()}?fields%5B%5D=${AIRTABLE_FIELDS.memberNumber}&sort%5B0%5D%5Bfield%5D=Member+%23&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1&returnFieldsByFieldId=true`;
 
@@ -487,8 +521,11 @@ export async function uploadKycAttachment(
 
   // The upload endpoint returns the field's new attachment array only.
   // Re-fetch the whole record so the caller gets a fully-parsed
-  // LehumoMember (including all the other KYC bits).
-  const refreshed = await getMemberById(recordId);
+  // LehumoMember (including all the other KYC bits). Use the lite
+  // fetcher — the upload route immediately triggers `router.refresh()`
+  // on the client which re-renders the dashboard with full contribution
+  // hydration, so we don't need to pay for it on the upload path itself.
+  const refreshed = await getMemberByIdLite(recordId);
   if (!refreshed) {
     throw new Error("Member disappeared after attachment upload");
   }

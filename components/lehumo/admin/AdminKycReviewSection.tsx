@@ -37,7 +37,11 @@ const ALLOWED_MIME = new Set([
   "image/heif",
   "application/pdf",
 ]);
-const MAX_BYTES = 5 * 1024 * 1024;
+// Mirror the server route's MAX_BYTES — the binding constraint is
+// Vercel's 4.5 MB serverless function body cap. Files larger than this
+// (after base64 encoding) hit the platform 413 before reaching our
+// route. See the member-portal kyc-upload route for the full rationale.
+const MAX_BYTES = 3 * 1024 * 1024;
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -422,7 +426,7 @@ function DocSlot({
       }
       if (file.size > MAX_BYTES) {
         onError(
-          `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 5MB.`,
+          `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 3MB.`,
         );
         return;
       }
@@ -443,8 +447,23 @@ function DocSlot({
           }),
         });
         if (!res.ok) {
-          const errBody = await res.json().catch(() => ({}));
-          throw new Error(errBody.error || "Upload failed");
+          // Surface the actual HTTP status when the response isn't JSON
+          // (Vercel platform 413 / 504, etc) so admins see something
+          // actionable instead of a flat "Upload failed".
+          const ct = res.headers.get("content-type") ?? "";
+          let detail = "";
+          if (ct.includes("application/json")) {
+            const errBody = await res.json().catch(() => null);
+            detail = errBody?.error ?? "";
+          } else {
+            const text = await res.text().catch(() => "");
+            detail = text.slice(0, 120);
+          }
+          throw new Error(
+            detail
+              ? `Upload failed (${res.status}): ${detail}`
+              : `Upload failed (HTTP ${res.status})`,
+          );
         }
         const data = (await res.json()) as { member: LehumoMember };
         onUploaded(data.member);
