@@ -111,15 +111,24 @@ export async function POST(request: NextRequest) {
     });
 
     stage = "maybe_flip_status";
-    // Auto-flip kycStatus when both slots are filled. We only flip on
-    // the *transition* — once kycStatus is already "In Progress" or
-    // "Complete", we leave it alone so re-uploads after admin rejection
-    // don't double-count the queue.
-    const bothPresent =
-      (updated.kycIdDocument?.length ?? 0) > 0 &&
-      (updated.kycProofOfAddress?.length ?? 0) > 0;
+    // Auto-flip kycStatus on the FIRST doc uploaded (not requiring
+    // both). Members in real life often submit one-at-a-time — large
+    // POA PDFs need to be compressed/converted, IDs are easy phone
+    // snaps. Holding the status at "Docs Requested" until both land
+    // hides the member from the admin queue and gates the half-done
+    // ones from being reviewed at all. With the first-upload flip,
+    // admins see the partial submission and can either chase the
+    // missing slot or approve what's there.
+    //
+    // We still only fire the receipt email + stamp kycSubmittedAt on
+    // the *transition* from "Docs Requested" → "In Progress" so
+    // re-uploads after admin feedback don't trigger duplicate emails.
+    const idPresent = (updated.kycIdDocument?.length ?? 0) > 0;
+    const poaPresent = (updated.kycProofOfAddress?.length ?? 0) > 0;
+    const anyPresent = idPresent || poaPresent;
+    const bothPresent = idPresent && poaPresent;
     const stillRequestingDocs = updated.kycStatus === "Docs Requested";
-    if (bothPresent && stillRequestingDocs) {
+    if (anyPresent && stillRequestingDocs) {
       updated = await setMemberKyc(updated.id, {
         kycStatus: "In Progress",
         markSubmittedNow: true,
@@ -143,6 +152,8 @@ export async function POST(request: NextRequest) {
       member: updated,
       slot,
       bothPresent,
+      idPresent,
+      poaPresent,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

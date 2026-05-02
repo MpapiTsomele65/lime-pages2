@@ -23,6 +23,7 @@ import {
   adminRequestKycResubmission,
   type AdminActionResult,
 } from "@/app/lehumo/portal/admin/actions";
+import { compressImage } from "@/lib/compress-image";
 
 interface AdminKycReviewSectionProps {
   initialMembers: LehumoMember[];
@@ -203,14 +204,18 @@ function KycReviewRow({
 
   const idAttachment = member.kycIdDocument?.[0];
   const poaAttachment = member.kycProofOfAddress?.[0];
-  const bothPresent = !!idAttachment && !!poaAttachment;
+  const idPresent = !!idAttachment;
+  const poaPresent = !!poaAttachment;
+  const bothPresent = idPresent && poaPresent;
+  const anyPresent = idPresent || poaPresent;
+  const submittedCount = (idPresent ? 1 : 0) + (poaPresent ? 1 : 0);
 
   return (
     <li className="px-5 py-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         {/* Left: identity */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <p className="text-sm font-semibold text-[#0B0B0B]">
               {member.fullName || "—"}
             </p>
@@ -218,6 +223,25 @@ function KycReviewRow({
               {formatMemberNumber(member.memberNumber)}
             </span>
             <KycStatusPill status={member.kycStatus} />
+            {/* Partial-submission badge — only render when 0 or 1 of 2
+                docs are uploaded. Once both land we drop the chip so the
+                row's KycStatusPill carries the rest of the lifecycle. */}
+            {submittedCount < 2 && (
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  submittedCount === 0
+                    ? "bg-[#F8F9FA] border border-[#E5E7EB] text-[#6B7280]"
+                    : "bg-[#46CDCF]/10 border border-[#46CDCF]/30 text-[#0B1933]"
+                }`}
+                title={
+                  submittedCount === 0
+                    ? "Awaiting both ID and Proof of Address"
+                    : `Awaiting ${idPresent ? "Proof of Address" : "ID Document"}`
+                }
+              >
+                {submittedCount} of 2 docs
+              </span>
+            )}
           </div>
           <p className="text-xs text-[#6B7280] truncate">
             {member.email || "no email"}
@@ -278,20 +302,26 @@ function KycReviewRow({
             <button
               type="button"
               onClick={onApprove}
-              disabled={anyBusy || !bothPresent}
+              disabled={anyBusy || !anyPresent}
               title={
                 bothPresent
                   ? "Approve KYC and stamp verified date"
-                  : "Both documents must be uploaded before approval"
+                  : anyPresent
+                    ? "Approve with partial submission — admin override (member is missing one document)"
+                    : "Upload at least one document before approving"
               }
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#B8FF00] px-3 py-1.5 text-xs font-bold text-[#0B1933] hover:bg-[#a8ef00] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                bothPresent
+                  ? "bg-[#B8FF00] text-[#0B1933] hover:bg-[#a8ef00]"
+                  : "bg-[#46CDCF] text-white hover:bg-[#3aa9ab]"
+              }`}
             >
               {approving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Check className="h-3.5 w-3.5" />
               )}
-              Approve
+              {bothPresent ? "Approve" : "Approve (1 of 2)"}
             </button>
             <button
               type="button"
@@ -424,25 +454,39 @@ function DocSlot({
         onError("Unsupported file type. Use JPG, PNG, HEIC, or PDF.");
         return;
       }
-      if (file.size > MAX_BYTES) {
+      const key = `${memberId}:upload:${slot}`;
+      setBusyKey(key);
+
+      // Compress images that exceed 3 MB before base64-encoding —
+      // most ID photos arrive as 4–5 MB phone snaps. PDFs pass
+      // through unchanged.
+      let prepared: File;
+      try {
+        prepared = await compressImage({ file });
+      } catch {
+        prepared = file;
+      }
+
+      if (prepared.size > MAX_BYTES) {
+        setBusyKey(null);
         onError(
-          `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 3MB.`,
+          prepared.type === "application/pdf"
+            ? `PDF too large (${(prepared.size / 1024 / 1024).toFixed(1)}MB). Max 3MB — compress the PDF or upload the original photo instead.`
+            : `File too large (${(prepared.size / 1024 / 1024).toFixed(1)}MB) even after compression. Max 3MB.`,
         );
         return;
       }
 
-      const key = `${memberId}:upload:${slot}`;
-      setBusyKey(key);
       try {
-        const base64 = await fileToBase64(file);
+        const base64 = await fileToBase64(prepared);
         const res = await fetch("/api/lehumo/portal/admin/kyc-upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             memberId,
             slot,
-            filename: file.name,
-            contentType: file.type,
+            filename: prepared.name,
+            contentType: prepared.type,
             file: base64,
           }),
         });

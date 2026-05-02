@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import type { LehumoMember, AirtableAttachment } from "@/lib/definitions";
+import { compressImage } from "@/lib/compress-image";
 
 interface KycDocumentsCardProps {
   member: LehumoMember;
@@ -86,25 +87,42 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
 
   const handleChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
+      const picked = e.target.files?.[0];
       // Reset the input value so picking the same file again still triggers
       // change — by default browsers suppress duplicate selections.
       e.target.value = "";
-      if (!file) return;
+      if (!picked) return;
 
-      if (!ALLOWED_MIME.has(file.type)) {
+      if (!ALLOWED_MIME.has(picked.type)) {
         setError("Unsupported file type. Use JPG, PNG, HEIC, or PDF.");
-        return;
-      }
-      if (file.size > MAX_BYTES) {
-        setError(
-          `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 5MB.`,
-        );
         return;
       }
 
       setBusy(true);
       setError(null);
+
+      // Compress images that exceed the 3 MB envelope before encoding —
+      // a 5 MB phone photo typically lands in 500 KB–1 MB at quality 0.85
+      // with a 2,000 px long-edge cap. PDFs are passed through unchanged
+      // (compressImage early-exits on non-image MIME types) so they
+      // still hit the size gate below if too large.
+      let file: File;
+      try {
+        file = await compressImage({ file: picked });
+      } catch {
+        file = picked;
+      }
+
+      if (file.size > MAX_BYTES) {
+        setBusy(false);
+        setError(
+          file.type === "application/pdf"
+            ? `PDF too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 3MB — try compressing the PDF or sending the original photo instead.`
+            : `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB) even after compression. Max 3MB.`,
+        );
+        return;
+      }
+
       try {
         const base64 = await fileToBase64(file);
         const res = await fetch("/api/lehumo/portal/member/kyc-upload", {
@@ -321,7 +339,7 @@ export function KycDocumentsCard({ member }: KycDocumentsCardProps) {
     {
       key: "id",
       label: "ID Document",
-      hint: "Upload your SA ID or passport (JPG, PNG, HEIC, or PDF • max 3MB)",
+      hint: "Upload your SA ID or passport — JPG, PNG, HEIC, or PDF. Photos are auto-compressed; PDFs need to be ≤3MB.",
       attachments: member.kycIdDocument,
     },
     {
@@ -333,7 +351,12 @@ export function KycDocumentsCard({ member }: KycDocumentsCardProps) {
   ];
 
   const isVerified = member.kycStatus === "Complete";
-  const allSubmitted = slots.every((s) => (s.attachments?.length ?? 0) > 0);
+  const submittedCount = slots.reduce(
+    (n, s) => n + ((s.attachments?.length ?? 0) > 0 ? 1 : 0),
+    0,
+  );
+  const allSubmitted = submittedCount === slots.length;
+  const someSubmitted = submittedCount > 0 && !allSubmitted;
 
   // After an upload, refresh the route so the server-rendered card
   // re-fetches the member with the new attachment URLs.
@@ -353,6 +376,10 @@ export function KycDocumentsCard({ member }: KycDocumentsCardProps) {
           <span className="inline-flex items-center rounded-full bg-[#46CDCF]/15 px-2.5 py-1 text-[11px] font-bold text-[#46CDCF]">
             Awaiting review
           </span>
+        ) : someSubmitted ? (
+          <span className="inline-flex items-center rounded-full bg-[#46CDCF]/15 px-2.5 py-1 text-[11px] font-bold text-[#46CDCF]">
+            {submittedCount} of {slots.length} submitted
+          </span>
         ) : (
           <span className="inline-flex items-center rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white/60">
             Action required
@@ -364,7 +391,9 @@ export function KycDocumentsCard({ member }: KycDocumentsCardProps) {
           ? "Your documents have been verified. Nothing more to do here."
           : allSubmitted
             ? "Both documents received. We'll review and verify within 24 hours."
-            : "Upload both documents to complete your KYC. You can also email them to lehumo@limepages.co.za."}
+            : someSubmitted
+              ? "One document received — upload the remaining one to complete your KYC. The admin can also approve a partial submission while you sort the second file."
+              : "Upload both documents to complete your KYC. You can also email them to lehumo@limepages.co.za."}
       </p>
 
       <div className="grid grid-cols-1 gap-3">

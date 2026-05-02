@@ -111,11 +111,17 @@ export async function POST(request: NextRequest) {
     });
 
     stage = "maybe_flip_status";
-    const bothPresent =
-      (updated.kycIdDocument?.length ?? 0) > 0 &&
-      (updated.kycProofOfAddress?.length ?? 0) > 0;
+    // Mirror the member-portal route: flip "Docs Requested" → "In
+    // Progress" on the FIRST doc uploaded so admins can review partial
+    // submissions and decide whether to approve what's there or chase
+    // the missing slot. Admin uploads are the back-channel path
+    // (member emailed docs to lehumo@); same lifecycle rules apply.
+    const idPresent = (updated.kycIdDocument?.length ?? 0) > 0;
+    const poaPresent = (updated.kycProofOfAddress?.length ?? 0) > 0;
+    const anyPresent = idPresent || poaPresent;
+    const bothPresent = idPresent && poaPresent;
     const stillRequestingDocs = updated.kycStatus === "Docs Requested";
-    if (bothPresent && stillRequestingDocs) {
+    if (anyPresent && stillRequestingDocs) {
       updated = await setMemberKyc(updated.id, {
         kycStatus: "In Progress",
         markSubmittedNow: true,
@@ -126,6 +132,8 @@ export async function POST(request: NextRequest) {
       member: updated,
       slot,
       bothPresent,
+      idPresent,
+      poaPresent,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
