@@ -116,10 +116,18 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
         // signed token, browser PUTs the file straight to Blob
         // storage, then `onUploadCompleted` fires server-side to
         // PATCH Airtable with the resulting public URL.
+        //
+        // `multipart: false` forces a single PUT instead of parallel
+        // chunked uploads. @vercel/blob v2 splits files >5 MB into
+        // multipart, and the finalize step has been observed to
+        // bounce certain uploads at 99% — restarting from scratch.
+        // For our 10 MB ceiling, single PUT is fast enough and
+        // sidesteps the multipart edge cases entirely.
         await upload(`kyc/${slot.key}/${Date.now()}-${file.name}`, file, {
           access: "public",
           handleUploadUrl: "/api/lehumo/portal/member/kyc-upload",
           contentType: file.type,
+          multipart: false,
           clientPayload: JSON.stringify({
             slot: slot.key,
             filename: file.name,

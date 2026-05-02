@@ -577,10 +577,18 @@ function DocSlot({
         // Vercel function body cap entirely — admin can now upload
         // the back-channel KYC docs members emailed in (typically
         // 4–8 MB phone photos / bank statement PDFs).
+        //
+        // `multipart: false` keeps the upload as a single PUT.
+        // @vercel/blob v2 auto-shards files >5 MB into multipart
+        // chunks; the finalize step has produced infinite 99%-loop
+        // retries on certain files in our environment. Forcing
+        // single PUT trades a small amount of parallelism for a
+        // monotonic, predictable progress curve.
         await upload(`kyc/${slot}/${Date.now()}-${prepared.name}`, prepared, {
           access: "public",
           handleUploadUrl: "/api/lehumo/portal/admin/kyc-upload",
           contentType: prepared.type,
+          multipart: false,
           clientPayload: JSON.stringify({
             memberId,
             slot,
