@@ -261,7 +261,15 @@ export async function getMemberById(
   const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
   if (!res.ok) {
     if (res.status === 404) return null;
-    throw new Error(`Airtable error: ${res.status}`);
+    // Surface the Airtable response body in logs so 401/403 reasons
+    // (NOT_AUTHORIZED, INVALID_PERMISSIONS, etc) are diagnosable from
+    // Vercel logs instead of opaque "Airtable error: 403" toasts.
+    const body = await res.text().catch(() => "");
+    const patSig = (process.env.AIRTABLE_PAT ?? "").slice(0, 6);
+    throw new Error(
+      `Airtable getMemberById error: ${res.status} — ${body.slice(0, 300)} ` +
+        `(pat="${patSig}…", patLen=${(process.env.AIRTABLE_PAT ?? "").length})`,
+    );
   }
 
   const record = await res.json();
@@ -297,7 +305,12 @@ export async function getMemberByIdLite(
   const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
   if (!res.ok) {
     if (res.status === 404) return null;
-    throw new Error(`Airtable error: ${res.status}`);
+    const body = await res.text().catch(() => "");
+    const patSig = (process.env.AIRTABLE_PAT ?? "").slice(0, 6);
+    throw new Error(
+      `Airtable getMemberByIdLite error: ${res.status} — ${body.slice(0, 300)} ` +
+        `(pat="${patSig}…", patLen=${(process.env.AIRTABLE_PAT ?? "").length})`,
+    );
   }
 
   return parseRecord(await res.json());
