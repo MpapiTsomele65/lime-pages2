@@ -186,6 +186,10 @@ export async function adminApproveKyc(
  * portal then re-renders the upload card with both slots accepting new
  * files. The original attachments stay in Airtable (admins can clear
  * them manually if needed) so we have an audit trail of what was sent.
+ *
+ * Notably this action does NOT touch any other onboarding field — id
+ * type, id number, address, beneficiary, contributions schedule, etc.
+ * are preserved. Only `kycStatus` changes.
  */
 export async function adminRequestKycResubmission(
   recordId: string,
@@ -203,6 +207,72 @@ export async function adminRequestKycResubmission(
     return { ok: true, member };
   } catch (err) {
     console.error("adminRequestKycResubmission error:", err);
+    return { ok: false, error: "Airtable update failed" };
+  }
+}
+
+/**
+ * Clear a single KYC attachment slot (`id` or `poa`) for one member —
+ * the surgical undo for "I uploaded the wrong file" or "I uploaded to
+ * the wrong member" mistakes.
+ *
+ * Only the targeted slot is wiped. The other slot, kycStatus,
+ * onboarding fields, and contributions are all preserved. If the
+ * targeted slot was the LAST attachment present and the member's
+ * status was "In Progress" (auto-flipped on the first upload),
+ * status reverts to "Docs Requested" so the admin queue reflects
+ * the empty state. Members already at "Complete" stay Complete —
+ * an admin clearing one attachment after verification was a
+ * deliberate choice (e.g. replacing a stale POA), not a roll-back
+ * of the verification.
+ */
+export async function adminClearKycAttachment(
+  recordId: string,
+  slot: "id" | "poa",
+): Promise<AdminActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as AdminActionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+  if (slot !== "id" && slot !== "poa") {
+    return { ok: false, error: "Invalid slot" };
+  }
+
+  try {
+    const fieldId =
+      slot === "id"
+        ? AIRTABLE_FIELDS.kycIdDocument
+        : AIRTABLE_FIELDS.kycProofOfAddress;
+
+    // Clear only the targeted slot — Airtable's PATCH on a
+    // multipleAttachments field replaces the array, so an empty
+    // array drops every attachment in that slot in a single write.
+    let member = await adminUpdateMember(recordId, {
+      [fieldId]: [],
+    });
+
+    // Reflect the new state in kycStatus. If both slots are now
+    // empty AND we're mid-review ("In Progress"), drop back to
+    // "Docs Requested" so the queue copy ("Awaiting Proof of
+    // Address") doesn't lie. We don't touch "Complete" because a
+    // verified member who has one slot cleared is still verified;
+    // the admin can re-flip via Resubmission if they want.
+    const idStillPresent = (member.kycIdDocument?.length ?? 0) > 0;
+    const poaStillPresent = (member.kycProofOfAddress?.length ?? 0) > 0;
+    if (
+      !idStillPresent &&
+      !poaStillPresent &&
+      member.kycStatus === "In Progress"
+    ) {
+      member = await adminUpdateMember(recordId, {
+        [AIRTABLE_FIELDS.kycStatus]: "Docs Requested",
+      });
+    }
+
+    return { ok: true, member };
+  } catch (err) {
+    console.error("adminClearKycAttachment error:", err);
     return { ok: false, error: "Airtable update failed" };
   }
 }

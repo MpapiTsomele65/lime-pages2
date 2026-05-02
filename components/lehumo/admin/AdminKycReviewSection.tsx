@@ -9,6 +9,7 @@ import {
   Loader2,
   RotateCcw,
   ShieldCheck,
+  Trash2,
   Upload,
   XCircle,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/definitions";
 import {
   adminApproveKyc,
+  adminClearKycAttachment,
   adminRequestKycResubmission,
   type AdminActionResult,
 } from "@/app/lehumo/portal/admin/actions";
@@ -162,6 +164,11 @@ export function AdminKycReviewSection({
                   adminRequestKycResubmission(member.id),
                 )
               }
+              onClearSlot={(slot) =>
+                runAction(`${member.id}:clear:${slot}`, () =>
+                  adminClearKycAttachment(member.id, slot),
+                )
+              }
               onUploaded={applyMemberUpdate}
               onUploadError={setError}
               setBusyKey={setBusyKey}
@@ -182,6 +189,7 @@ interface KycReviewRowProps {
   busyKey: string | null;
   onApprove: () => void;
   onReject: () => void;
+  onClearSlot: (slot: "id" | "poa") => void;
   onUploaded: (member: LehumoMember) => void;
   onUploadError: (msg: string) => void;
   setBusyKey: (key: string | null) => void;
@@ -192,6 +200,7 @@ function KycReviewRow({
   busyKey,
   onApprove,
   onReject,
+  onClearSlot,
   onUploaded,
   onUploadError,
   setBusyKey,
@@ -200,7 +209,10 @@ function KycReviewRow({
   const rejecting = busyKey === `${member.id}:reject`;
   const idBusy = busyKey === `${member.id}:upload:id`;
   const poaBusy = busyKey === `${member.id}:upload:poa`;
-  const anyBusy = approving || rejecting || idBusy || poaBusy;
+  const idClearing = busyKey === `${member.id}:clear:id`;
+  const poaClearing = busyKey === `${member.id}:clear:poa`;
+  const anyBusy =
+    approving || rejecting || idBusy || poaBusy || idClearing || poaClearing;
 
   const idAttachment = member.kycIdDocument?.[0];
   const poaAttachment = member.kycProofOfAddress?.[0];
@@ -280,9 +292,11 @@ function KycReviewRow({
             memberId={member.id}
             attachment={idAttachment}
             busy={idBusy}
+            clearing={idClearing}
             disabled={anyBusy}
             onUploaded={onUploaded}
             onError={onUploadError}
+            onClear={() => onClearSlot("id")}
             setBusyKey={setBusyKey}
           />
           <DocSlot
@@ -291,9 +305,11 @@ function KycReviewRow({
             memberId={member.id}
             attachment={poaAttachment}
             busy={poaBusy}
+            clearing={poaClearing}
             disabled={anyBusy}
             onUploaded={onUploaded}
             onError={onUploadError}
+            onClear={() => onClearSlot("poa")}
             setBusyKey={setBusyKey}
           />
 
@@ -419,9 +435,11 @@ interface DocSlotProps {
   memberId: string;
   attachment?: AirtableAttachment;
   busy: boolean;
+  clearing: boolean;
   disabled: boolean;
   onUploaded: (member: LehumoMember) => void;
   onError: (msg: string) => void;
+  onClear: () => void;
   setBusyKey: (key: string | null) => void;
 }
 
@@ -431,9 +449,11 @@ function DocSlot({
   memberId,
   attachment,
   busy,
+  clearing,
   disabled,
   onUploaded,
   onError,
+  onClear,
   setBusyKey,
 }: DocSlotProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -560,6 +580,33 @@ function DocSlot({
             <RotateCcw className="h-3 w-3" />
           )}
           Replace
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            // Confirm before destroying — wrong-member uploads are
+            // exactly the case this button exists for, but a misclick
+            // on a verified member's doc shouldn't be a one-click
+            // operation. Native confirm() is fine here; no need for a
+            // bespoke modal in the admin tooling.
+            if (
+              window.confirm(
+                `Remove this ${label} attachment? Other onboarding data is preserved.`,
+              )
+            ) {
+              onClear();
+            }
+          }}
+          disabled={disabled}
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9CA3AF] hover:text-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          title="Delete this attachment without changing other onboarding data — for wrong-file or wrong-member uploads"
+        >
+          {clearing ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Trash2 className="h-3 w-3" />
+          )}
+          Remove
         </button>
         <input
           ref={inputRef}
