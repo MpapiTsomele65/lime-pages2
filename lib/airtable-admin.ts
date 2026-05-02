@@ -160,6 +160,31 @@ export async function listAllMembers(): Promise<LehumoMember[]> {
 
   out.sort((a, b) => a.memberNumber - b.memberNumber);
 
+  // ── DIAGNOSTIC ─────────────────────────────────────────────
+  // Beneficiary count tracker — investigating a report that
+  // beneficiary data isn't surfacing in the admin dashboard. Logs
+  // once per page load so we can confirm whether the data is
+  // present in the parsed records (Airtable returned it) or absent
+  // (data isn't actually in Airtable). Drop this log once the
+  // root cause is identified.
+  const totalMembers = out.length;
+  const withBeneficiary = out.filter(
+    (m) =>
+      Boolean(m.beneficiaryFirstName?.trim()) &&
+      Boolean(m.beneficiarySurname?.trim()),
+  ).length;
+  const sampleNamed = out.find(
+    (m) => m.beneficiaryFirstName || m.beneficiarySurname,
+  );
+  console.log(
+    `[listAllMembers] beneficiary diag: ${withBeneficiary}/${totalMembers} on file. ` +
+      `sample: ${
+        sampleNamed
+          ? `member#${sampleNamed.memberNumber} firstName=${JSON.stringify(sampleNamed.beneficiaryFirstName)} surname=${JSON.stringify(sampleNamed.beneficiarySurname)}`
+          : "(none populated)"
+      }`,
+  );
+
   // ── Bulk hydration from the Contributions table ──
   // One full-table read for ~1,500 rows beats ~25 per-member fetches
   // against Airtable's 5 req/sec rate limit. Phase 5: this is the
