@@ -712,7 +712,7 @@ function QuestionRow({ item, index }: QuestionRowProps) {
 
 export function LehumoFAQ() {
   return (
-    <section className="py-20 md:py-28 bg-navy relative overflow-hidden">
+    <section id="faq" className="py-20 md:py-28 bg-navy relative overflow-hidden">
       {/* Subtle glow orbs to match adjacent sections */}
       <div className="absolute top-[20%] -left-[10%] w-[420px] h-[420px] rounded-full bg-[radial-gradient(circle,rgba(70,205,207,0.07),transparent_70%)] blur-[80px] pointer-events-none" />
       <div className="absolute bottom-[10%] -right-[10%] w-[380px] h-[380px] rounded-full bg-[radial-gradient(circle,rgba(184,255,0,0.05),transparent_70%)] blur-[80px] pointer-events-none" />
