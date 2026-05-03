@@ -31,20 +31,37 @@ export function AdminShell({ memberName, children }: AdminShellProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FA] text-[#0B0B0B]">
-      {/* Top header bar */}
+    <div
+      className="min-h-screen flex flex-col text-[#0B0B0B] relative overflow-x-hidden"
+      style={{
+        // Apple light-mode page chrome. Two stacked low-alpha radial
+        // gradients on top of the off-white base — a faint warm tint
+        // at the top (lime, like a hint of brand) and a cooler one
+        // at the bottom-left (teal). Cards floating on this read as
+        // truly floating instead of stamped on a flat sheet.
+        background:
+          "#F5F6F8 radial-gradient(ellipse 80% 50% at 50% -20%, rgba(184, 255, 0, 0.06) 0%, transparent 55%), " +
+          "radial-gradient(ellipse 60% 40% at 0% 100%, rgba(70, 205, 207, 0.04) 0%, transparent 55%)",
+      }}
+    >
+      {/* Top header bar — Apple-flavoured chrome. Backdrop-saturate-150
+          gives the glass blur a slight pop on warm/cool backgrounds
+          (the trick used in macOS Big Sur+). The base hairline is a
+          gradient (transparent → black/8 → transparent) instead of a
+          solid border — reads as a soft transition between chrome and
+          content, not a hard line. */}
       <motion.header
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="sticky top-0 z-50 border-b border-[#E5E7EB] bg-white/85 backdrop-blur-xl"
+        transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+        className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl backdrop-saturate-150"
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-8">
           {/* Left: Back-to-portal + brand */}
           <div className="flex items-center gap-3">
             <Link
               href="/lehumo/portal"
-              className="flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#0B1933] transition-colors"
+              className="flex items-center gap-1.5 text-[12px] font-medium text-[#6B7280] hover:text-[#0B1933] transition-colors"
               title="Back to member dashboard"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -55,16 +72,16 @@ export function AdminShell({ memberName, children }: AdminShellProps) {
 
             <Link
               href="/lehumo/portal/admin"
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0B1933]">
-                <span className="text-sm font-bold text-[#B8FF00]">L</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-gradient-to-br from-[#0B1933] to-[#0F2040] shadow-[0_2px_6px_-1px_rgba(11,25,51,0.3)]">
+                <span className="text-[13px] font-bold text-[#B8FF00] tracking-tight">L</span>
               </div>
               <div className="hidden sm:flex flex-col leading-tight">
-                <span className="text-base font-bold tracking-tight text-[#0B1933]">
+                <span className="text-[15px] font-semibold tracking-tight text-[#0B1933]">
                   Lehumo
                 </span>
-                <span className="text-[10px] uppercase tracking-widest text-[#6B7280]">
+                <span className="text-[9px] uppercase tracking-[0.18em] text-[#9CA3AF] font-semibold mt-0.5">
                   Admin
                 </span>
               </div>
@@ -72,28 +89,35 @@ export function AdminShell({ memberName, children }: AdminShellProps) {
           </div>
 
           {/* Right: Member name + Logout */}
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-sm text-[#6B7280]">
-              <User className="h-4 w-4" />
-              <span>{memberName}</span>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 text-[13px] text-[#6B7280] mr-1">
+              <User className="h-3.5 w-3.5" />
+              <span className="font-medium">{memberName}</span>
             </div>
 
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="flex items-center gap-2 rounded-full border border-[#E5E7EB] px-3 py-1.5 text-xs font-medium text-[#6B7280] hover:text-[#0B1933] hover:border-[#0B1933]/20 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white/50 px-3 py-1.5 text-[11.5px] font-medium text-[#6B7280] hover:text-[#0B1933] hover:border-[#0B1933]/20 hover:bg-white transition-all duration-200 disabled:opacity-50"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">
-                {loggingOut ? "Signing out..." : "Sign Out"}
+                {loggingOut ? "Signing out…" : "Sign Out"}
               </span>
             </button>
           </div>
         </div>
+
+        {/* Soft gradient hairline at the bottom — replaces the solid
+            E5E7EB border. Reads as a fade between chrome and content
+            rather than a hard rule, the macOS / iOS pattern for
+            sticky-bar/scrolling-content boundaries. */}
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent" />
       </motion.header>
 
-      {/* Main content */}
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 md:px-8 py-8">
+      {/* Main content — slightly more vertical breathing room than the
+          old py-8 to match the portal's py-10 cadence. */}
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 md:px-8 py-10">
         {children}
       </main>
     </div>

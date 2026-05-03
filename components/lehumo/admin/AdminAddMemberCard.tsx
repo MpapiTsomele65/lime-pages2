@@ -122,7 +122,7 @@ export function AdminAddMemberCard() {
   );
 
   return (
-    <section className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+    <section className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_-4px_rgba(0,0,0,0.05)]">
       {/* Header / trigger */}
       <button
         type="button"

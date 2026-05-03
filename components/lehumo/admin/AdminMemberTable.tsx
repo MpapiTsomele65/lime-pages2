@@ -111,10 +111,14 @@ export function AdminMemberTable({
   }
 
   return (
-    <section className="rounded-[20px] border border-[#E5E7EB] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] px-5 py-4">
-        <h2 className="text-lg font-semibold text-[#0B0B0B]">Members</h2>
+    <section className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_-4px_rgba(0,0,0,0.05)]">
+      {/* Toolbar — soft gradient hairline at the bottom replaces the
+          hard E5E7EB rule. Section header tightened to match the
+          portal's tracking-tight typography. */}
+      <div className="relative flex flex-wrap items-center justify-between gap-3 px-6 py-5">
+        <h2 className="text-[17px] font-semibold tracking-tight text-[#0B0B0B]">
+          Members
+        </h2>
         <div className="flex flex-wrap items-center gap-2">
           {/* Missing-beneficiary filter — toggle pill. Active state mirrors
               the lime accent we use on dashboard CTAs so admins can spot
@@ -160,10 +164,12 @@ export function AdminMemberTable({
               placeholder="Search name, email or ID…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full sm:w-72 rounded-full bg-white border border-[#E5E7EB] pl-9 pr-3 py-2 text-sm text-[#0B0B0B] placeholder:text-[#9CA3AF] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/10"
+              className="w-full sm:w-72 rounded-full bg-white border border-[#E5E7EB] pl-9 pr-3 py-2 text-sm text-[#0B0B0B] placeholder:text-[#9CA3AF] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/10 transition-colors"
             />
           </div>
         </div>
+        {/* Soft gradient hairline replacing the harsh border-b */}
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent" />
       </div>
 
       {error && (

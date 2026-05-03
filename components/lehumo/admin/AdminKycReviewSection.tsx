@@ -181,26 +181,31 @@ export function AdminKycReviewSection({
   );
 
   return (
-    <section className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] px-5 py-4">
+    <section className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_-4px_rgba(0,0,0,0.05)]">
+      {/* Header — refined typography + soft gradient hairline at the
+          base instead of a hard border. The status pills get a subtle
+          border for the same reason: they read as floating chips on
+          the gradient surface, not stickers. */}
+      <div className="relative flex flex-wrap items-center justify-between gap-3 px-6 py-5">
         <div>
-          <h2 className="text-lg font-semibold text-[#0B0B0B]">KYC Review</h2>
-          <p className="text-xs text-[#6B7280] mt-0.5">
+          <h2 className="text-[17px] font-semibold tracking-tight text-[#0B0B0B]">
+            KYC Review
+          </h2>
+          <p className="text-[12px] text-[#6B7280] mt-1">
             Members awaiting document review, with recent approvals
             visible at the bottom for audit.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span
-            className="inline-flex items-center rounded-full bg-[#0B1933]/[0.06] px-2.5 py-1 text-[11px] font-bold text-[#0B1933]"
+            className="inline-flex items-center rounded-full border border-[#0B1933]/10 bg-[#0B1933]/[0.04] px-2.5 py-1 text-[11px] font-semibold text-[#0B1933] tracking-tight"
             title="Awaiting review (Docs Requested + In Progress)"
           >
             {queue.length} pending
           </span>
           {verified.length > 0 && (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-[#B8FF00]/15 px-2.5 py-1 text-[11px] font-bold text-[#0B1933]"
+              className="inline-flex items-center gap-1 rounded-full border border-[#B8FF00]/30 bg-[#B8FF00]/15 px-2.5 py-1 text-[11px] font-semibold text-[#0B1933] tracking-tight"
               title="Verified KYC — kept visible for audit"
             >
               <ShieldCheck className="h-3 w-3" />
@@ -208,6 +213,7 @@ export function AdminKycReviewSection({
             </span>
           )}
         </div>
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent" />
       </div>
 
       {error && (

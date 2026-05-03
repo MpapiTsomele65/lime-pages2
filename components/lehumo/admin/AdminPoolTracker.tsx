@@ -72,7 +72,7 @@ export function AdminPoolTracker({ stats }: AdminPoolTrackerProps) {
           : "text-[#9CA3AF]";
 
   return (
-    <section className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+    <section className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] p-7 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_-4px_rgba(0,0,0,0.05)]">
       {/* Header row */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
@@ -105,7 +105,7 @@ export function AdminPoolTracker({ stats }: AdminPoolTrackerProps) {
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${poolFillPct}%` }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
+            transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
             className="h-full rounded-full bg-gradient-to-r from-[#B8FF00] to-[#46CDCF]"
           />
         </div>

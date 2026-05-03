@@ -34,22 +34,25 @@ export default async function AdminDashboardPage() {
   return (
     <AdminShell memberName={session.fullName || "Admin"}>
       <div className="space-y-8">
-        {/* Header */}
+        {/* Header — refined typography to match the portal facelift.
+            Eyebrow / headline / sub-line stack with tracking-tight on
+            the headline; signed-in chip moves to the right with a
+            subtle pill background to match the new chrome system. */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#0B1933] mb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0B1933] mb-1.5">
               Admin Panel
             </p>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#0B0B0B]">
+            <h1 className="text-[28px] md:text-[34px] font-semibold tracking-tight text-[#0B0B0B] leading-[1.1]">
               Lehumo Member Management
             </h1>
-            <p className="mt-1 text-sm text-[#6B7280]">
+            <p className="mt-2 text-[14px] text-[#6B7280]">
               Track contributions, KYC, and status for every member.
             </p>
           </div>
-          <div className="text-xs text-[#9CA3AF]">
+          <div className="inline-flex items-center gap-2 self-start rounded-full border border-[#E5E7EB] bg-white/60 px-3 py-1.5 text-[11px] text-[#6B7280] backdrop-blur-sm">
             Signed in as{" "}
-            <span className="text-[#0B1933] font-medium">{session.email}</span>
+            <span className="text-[#0B1933] font-semibold">{session.email}</span>
           </div>
         </div>
 
@@ -128,8 +131,16 @@ export default async function AdminDashboardPage() {
         />
 
         {/* Pool settings placeholder */}
-        <section className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <h2 className="text-lg font-semibold text-[#0B0B0B] mb-1">
+        <section
+          className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] p-7"
+          style={{
+            boxShadow:
+              "inset 0 1px 0 0 rgba(255, 255, 255, 0.6), " +
+              "0 1px 2px 0 rgba(0, 0, 0, 0.04), " +
+              "0 4px 16px -4px rgba(0, 0, 0, 0.05)",
+          }}
+        >
+          <h2 className="text-[17px] font-semibold tracking-tight text-[#0B0B0B] mb-1">
             Pool Interest Earned
           </h2>
           <p className="text-sm text-[#6B7280] mb-4">
@@ -165,15 +176,23 @@ function StatTile({
   sub?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-      <p className="text-[11px] uppercase tracking-wider text-[#9CA3AF]">
+    <div
+      className="rounded-[20px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] p-4 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-[1px] hover:border-[#E0E0E0]"
+      style={{
+        boxShadow:
+          "inset 0 1px 0 0 rgba(255, 255, 255, 0.6), " +
+          "0 1px 2px 0 rgba(0, 0, 0, 0.04), " +
+          "0 4px 16px -4px rgba(0, 0, 0, 0.05)",
+      }}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9CA3AF]">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-bold text-[#0B1933] leading-none">
+      <p className="mt-2 text-[26px] font-semibold text-[#0B1933] leading-none tracking-tight tabular-nums">
         {value}
       </p>
       {sub && (
-        <p className="mt-1.5 text-[11px] text-[#6B7280] truncate">{sub}</p>
+        <p className="mt-2 text-[11px] text-[#6B7280] truncate">{sub}</p>
       )}
     </div>
   );

@@ -57,7 +57,7 @@ export function AdminBehindSnapshot({ stats }: AdminBehindSnapshotProps) {
   }
 
   return (
-    <section className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+    <section className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] p-7 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_-4px_rgba(0,0,0,0.05)]">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-5">
         <div className="flex items-start gap-3">
@@ -90,7 +90,7 @@ export function AdminBehindSnapshot({ stats }: AdminBehindSnapshotProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{
               duration: 0.3,
-              ease: "easeOut",
+              ease: [0.32, 0.72, 0, 1],
               delay: i * 0.04,
             }}
             className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"

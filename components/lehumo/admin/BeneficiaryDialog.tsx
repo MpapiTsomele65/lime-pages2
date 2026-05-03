@@ -179,7 +179,7 @@ function BeneficiaryDialogInner({
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        transition={{ duration: 0.18, ease: "easeOut" }}
+        transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#0F2040] shadow-2xl"
       >
