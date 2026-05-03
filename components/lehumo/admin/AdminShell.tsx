@@ -31,19 +31,7 @@ export function AdminShell({ memberName, children }: AdminShellProps) {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col text-[#0B0B0B] relative overflow-x-hidden"
-      style={{
-        // Apple light-mode page chrome. Two stacked low-alpha radial
-        // gradients on top of the off-white base — a faint warm tint
-        // at the top (lime, like a hint of brand) and a cooler one
-        // at the bottom-left (teal). Cards floating on this read as
-        // truly floating instead of stamped on a flat sheet.
-        background:
-          "#F5F6F8 radial-gradient(ellipse 80% 50% at 50% -20%, rgba(184, 255, 0, 0.06) 0%, transparent 55%), " +
-          "radial-gradient(ellipse 60% 40% at 0% 100%, rgba(70, 205, 207, 0.04) 0%, transparent 55%)",
-      }}
-    >
+    <div className="min-h-screen flex flex-col bg-[#F8F9FA] text-[#0B0B0B] relative overflow-x-hidden">
       {/* Top header bar — Apple-flavoured chrome. Backdrop-saturate-150
           gives the glass blur a slight pop on warm/cool backgrounds
           (the trick used in macOS Big Sur+). The base hairline is a
