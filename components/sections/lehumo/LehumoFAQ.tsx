@@ -192,7 +192,7 @@ const FAQ: FaqItem[] = [
           <li className="flex gap-3">
             <span className="text-lime shrink-0">●</span>
             <span>~40% deployed via{" "}
-              <span className="text-white font-semibold">Samman Investments</span>{" "}
+              <span className="text-white font-semibold">Sum1 Investments</span>{" "}
               (registered FSP focused on SME lending)</span>
           </li>
           <li className="flex gap-3">
@@ -499,7 +499,7 @@ const FAQ: FaqItem[] = [
         </p>
         <p className="mt-3">
           KYC and FICA compliance is required because our asset managers
-          (Samman Investments, SV Capital) are FSCA-registered FSPs —
+          (Sum1 Investments, SV Capital) are FSCA-registered FSPs —
           they can&rsquo;t deploy capital from an unverified member.
         </p>
       </>
