@@ -50,6 +50,7 @@ export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({});
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isStep1Loading, setIsStep1Loading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Auto-jump to confirmation step if URL has ?step=confirm&reference=xxx
@@ -97,94 +98,109 @@ export function OnboardingWizard() {
   // contribution.
   const handleStep1Next = useCallback(
     async (data: Partial<FormData>) => {
+      // Guard against concurrent calls (double-click / rapid taps).
+      // isStep1Loading is set synchronously before the first await so
+      // subsequent clicks find it true and bail out immediately —
+      // prevents the wizard from advancing multiple steps at once.
+      if (isStep1Loading) return;
+
       if (!data.fullName || !data.email) {
         handleNext(data);
         return;
       }
 
-      const notes = data.commitment
-        ? `Commitment: ${data.commitment}${data.intent ? ` | Intent: ${data.intent}` : ""}`
-        : data.intent
-          ? `Intent: ${data.intent}`
-          : undefined;
+      setIsStep1Loading(true);
 
-      fetch("/api/lehumo/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: data.fullName,
-          email: data.email,
-          phone: data.phone,
-          source: "Onboarding — Step 1",
-          notes,
-        }),
-      }).catch(() => {
-        // Silent — leads capture is best-effort, not critical.
-      });
-
-      trackEvent("lead_submitted", {
-        source: "Onboarding Step 1",
-        commitment: data.commitment,
-        intent: data.intent,
-      });
-      trackEvent("onboarding_started");
-
-      // ── Resume detection ──
-      // Treat any failure here as "not resumable" and fall through to the
-      // normal flow — we never want a flaky lookup to block onboarding.
       try {
-        const res = await fetch("/api/lehumo/resume", {
+        const notes = data.commitment
+          ? `Commitment: ${data.commitment}${data.intent ? ` | Intent: ${data.intent}` : ""}`
+          : data.intent
+            ? `Intent: ${data.intent}`
+            : undefined;
+
+        fetch("/api/lehumo/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: data.email }),
+          body: JSON.stringify({
+            fullName: data.fullName,
+            email: data.email,
+            phone: data.phone,
+            source: "Onboarding — Step 1",
+            notes,
+          }),
+        }).catch(() => {
+          // Silent — leads capture is best-effort, not critical.
         });
 
-        if (res.ok) {
-          // Returning Onboarding-status member — they've already done
-          // KYC + plan selection. Land them on confirmation directly so
-          // they get a clear "your application is in, set up payments
-          // from the portal" message rather than re-walking the wizard.
-          const resume = await res.json();
-          setFormData((prev) => ({
-            ...prev,
-            ...data,
-            memberId: resume.memberId,
-            memberNumber: resume.memberNumber,
-            plan: resume.plan ?? prev.plan ?? "standard",
-            resumed: true,
-          }));
-          setError(null);
-          setCurrentStep(4);
-          trackEvent("onboarding_resumed", { plan: resume.plan ?? null });
-          return;
+        trackEvent("lead_submitted", {
+          source: "Onboarding Step 1",
+          commitment: data.commitment,
+          intent: data.intent,
+        });
+        trackEvent("onboarding_started");
+
+        // ── Resume detection ──
+        // Treat any failure here as "not resumable" and fall through to the
+        // normal flow — we never want a flaky lookup to block onboarding.
+        try {
+          const res = await fetch("/api/lehumo/resume", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: data.email }),
+          });
+
+          if (res.ok) {
+            // Returning Onboarding-status member — they've already done
+            // KYC + plan selection. Land them on confirmation directly so
+            // they get a clear "your application is in, set up payments
+            // from the portal" message rather than re-walking the wizard.
+            const resume = await res.json();
+            setFormData((prev) => ({
+              ...prev,
+              ...data,
+              memberId: resume.memberId,
+              memberNumber: resume.memberNumber,
+              plan: resume.plan ?? prev.plan ?? "standard",
+              resumed: true,
+            }));
+            setError(null);
+            setCurrentStep(4);
+            trackEvent("onboarding_resumed", { plan: resume.plan ?? null });
+            return;
+          }
+
+          if (res.status === 409) {
+            const errBody = await res.json().catch(() => ({}));
+            if (errBody.code === "ALREADY_ACTIVE") {
+              setError(
+                "This email is already registered as an active Lehumo member. " +
+                  "Please log in with your member number to access your account.",
+              );
+              return;
+            }
+            if (errBody.code === "NOT_RESUMABLE") {
+              setError(
+                "This account can't be resumed automatically. Please contact " +
+                  "support@limepages.co.za and we'll get you back on track.",
+              );
+              return;
+            }
+            // Any other 409 → fall through to normal flow.
+          }
+          // 404 / non-200 → no resumable record, normal wizard flow.
+        } catch {
+          // Network blip on the resume check is non-blocking.
         }
 
-        if (res.status === 409) {
-          const errBody = await res.json().catch(() => ({}));
-          if (errBody.code === "ALREADY_ACTIVE") {
-            setError(
-              "This email is already registered as an active Lehumo member. " +
-                "Please log in with your member number to access your account.",
-            );
-            return;
-          }
-          if (errBody.code === "NOT_RESUMABLE") {
-            setError(
-              "This account can't be resumed automatically. Please contact " +
-                "support@limepages.co.za and we'll get you back on track.",
-            );
-            return;
-          }
-          // Any other 409 → fall through to normal flow.
-        }
-        // 404 / non-200 → no resumable record, normal wizard flow.
-      } catch {
-        // Network blip on the resume check is non-blocking.
+        handleNext(data);
+      } finally {
+        // Always clear the loading gate — whether we advanced, showed an
+        // error, or hit a network failure. This ensures the button is
+        // re-enabled for the next attempt rather than stuck in a spinner.
+        setIsStep1Loading(false);
       }
-
-      handleNext(data);
     },
-    [handleNext],
+    [handleNext, isStep1Loading],
   );
 
   // Create account after KYC (step 3) — before moving to Payment (step 4).
@@ -382,6 +398,7 @@ export function OnboardingWizard() {
               <StepPersonalInfo
                 onNext={(data) => handleStep1Next(data)}
                 defaultValues={formData}
+                isLoading={isStep1Loading}
               />
             )}
             {currentStep === 2 && (

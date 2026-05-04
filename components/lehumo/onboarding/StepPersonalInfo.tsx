@@ -17,6 +17,10 @@ interface PersonalInfoData {
 interface StepPersonalInfoProps {
   onNext: (data: PersonalInfoData) => void;
   defaultValues?: Partial<PersonalInfoData>;
+  /** Set to true while the parent is awaiting the async resume check so
+   *  the submit button is disabled and a loading spinner prevents
+   *  double-clicks from advancing the wizard multiple steps. */
+  isLoading?: boolean;
 }
 
 const COMMITMENT_OPTIONS = [
@@ -41,7 +45,7 @@ const inputClasses =
 
 const labelClasses = "text-sm font-semibold text-white/70 mb-2 block";
 
-export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProps) {
+export function StepPersonalInfo({ onNext, defaultValues, isLoading = false }: StepPersonalInfoProps) {
   const [fullName, setFullName] = useState(defaultValues?.fullName ?? "");
   const [email, setEmail] = useState(defaultValues?.email ?? "");
   const [phone, setPhone] = useState(defaultValues?.phone ?? "");
@@ -293,9 +297,20 @@ export function StepPersonalInfo({ onNext, defaultValues }: StepPersonalInfoProp
       <div className="pt-4">
         <button
           type="submit"
-          className="bg-lime text-navy font-bold rounded-full px-8 py-3.5 text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all w-full sm:w-auto cursor-pointer"
+          disabled={isLoading}
+          className="inline-flex items-center justify-center gap-2 bg-lime text-navy font-bold rounded-full px-8 py-3.5 text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all w-full sm:w-auto cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
         >
-          Continue
+          {isLoading ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Checking…
+            </>
+          ) : (
+            "Continue"
+          )}
         </button>
         <p className="text-[11px] text-white/35 leading-relaxed mt-4 max-w-[560px]">
           By continuing, you consent to Lime Pages processing your personal
