@@ -6,6 +6,7 @@ import { CalendarClock, ArrowRight, CheckCircle2 } from "lucide-react";
 import {
   CONTRIBUTION_MONTH_ORDER,
   CONTRIBUTION_STATUS,
+  LEHUMO_FIRST_DUE_PERIOD,
   type LehumoContribution,
 } from "@/lib/definitions";
 
@@ -108,27 +109,45 @@ export function ContributionReminderCard({
 }: ContributionReminderCardProps) {
   const richShape = (contributionRows?.length ?? 0) > 0;
 
-  // Pre-launch (before 1 Jun 2026): render a quiet "first contribution
-  // due 1 Jun 2026" hint instead of returning null. Lets members see
-  // the period-aware reminder shape ahead of launch — it'll quietly
-  // morph into the urgent-or-paid states once the schedule kicks in.
+  // Pre-launch (before 1 Jun 2026): render a quiet "next contribution
+  // due X" hint instead of returning null. The "first" vs "next" copy
+  // branches on whether the member already has a paid row — a member
+  // who's prepaid June sees "Next contribution Jul 2026", a member who
+  // hasn't paid sees "First contribution Jun 2026".
   if (beforeLaunch) {
-    // Resolve the first unpaid period from the rich shape so the hint
-    // tracks any back-channel members who might already have a row
-    // marked Paid via admin tooling. Fall back to the canonical 1 Jun
-    // 2026 launch period when contributionRows is empty.
-    const firstDue = (() => {
+    // Resolve the first unpaid SCHEDULED period (>= LEHUMO_FIRST_DUE).
+    // Without the launch-period gate, the May 2026 seed row (Pending,
+    // pre-schedule) gets picked first for members onboarded before
+    // launch — surfacing "Due May 2026" copy that contradicts our own
+    // recon rule. Filter pre-launch rows out at the source.
+    const { firstDue, hasPaidYet } = (() => {
       if (richShape && contributionRows) {
         const sorted = [...contributionRows].sort((a, b) =>
           a.period.localeCompare(b.period),
         );
-        const next = sorted.find(
-          (c) => c.status !== CONTRIBUTION_STATUS.paid,
+        const paidScheduled = sorted.some(
+          (c) =>
+            c.status === CONTRIBUTION_STATUS.paid &&
+            c.period >= LEHUMO_FIRST_DUE_PERIOD,
         );
-        if (next) return next.period;
+        const next = sorted.find(
+          (c) =>
+            c.status !== CONTRIBUTION_STATUS.paid &&
+            c.period >= LEHUMO_FIRST_DUE_PERIOD,
+        );
+        return {
+          firstDue: next?.period ?? null,
+          hasPaidYet: paidScheduled,
+        };
       }
-      return "2026-06";
+      return { firstDue: "2026-06", hasPaidYet: false };
     })();
+
+    // No unpaid scheduled rows remain — member is caught up through
+    // the schedule horizon (or there's no schedule yet). PaymentCard's
+    // own state takes over so we don't show two competing "all good"
+    // surfaces.
+    if (!firstDue) return null;
 
     return (
       <motion.section
@@ -144,14 +163,15 @@ export function ContributionReminderCard({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#46CDCF]">
-              First contribution
+              {hasPaidYet ? "Next contribution" : "First contribution"}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-white">
               Due {periodToLong(firstDue)} · R1,000
             </p>
             <p className="mt-1 text-xs text-white/50">
-              No action needed yet — we&rsquo;ll send a reminder closer
-              to the date.
+              {hasPaidYet
+                ? "You're ahead of schedule — we'll send a reminder closer to the date."
+                : "No action needed yet — we'll send a reminder closer to the date."}
             </p>
           </div>
         </div>

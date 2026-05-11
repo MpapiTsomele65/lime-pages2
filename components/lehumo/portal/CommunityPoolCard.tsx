@@ -48,7 +48,17 @@ export function CommunityPoolCard({ stats, myContributed }: CommunityPoolCardPro
   }, [timeline]);
 
   const currentPoint = timeline.find((p) => p.month === currentMonth);
-  const currentBalance = currentPoint?.cumulativeBalance ?? stats.totalPool;
+  // "TOTAL POOL TODAY" should reflect every Rand that's already been
+  // banked, regardless of which calendar month the payment lands
+  // against. The timeline's currentMonth point reads zero pre-launch
+  // even though members may have prepaid June — taking the max here
+  // means prepayments surface immediately without breaking the
+  // post-launch case (where currentPoint.cumulativeBalance and
+  // stats.totalPool grow together).
+  const currentBalance = Math.max(
+    currentPoint?.cumulativeBalance ?? 0,
+    stats.totalPool,
+  );
 
   const statTiles = [
     {
