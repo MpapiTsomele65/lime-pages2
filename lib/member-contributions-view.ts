@@ -3,6 +3,7 @@ import "server-only";
 import {
   CONTRIBUTION_STATUS,
   MONTH_NAMES,
+  isBeforeLaunch,
   type LehumoContribution,
 } from "./definitions";
 
@@ -149,6 +150,32 @@ export function getSastCurrentPeriod(now: Date = new Date()): string {
     timeZone: "Africa/Johannesburg",
   });
   return ymd.slice(0, 7); // "YYYY-MM"
+}
+
+/**
+ * Resolves the `{ month, period }` a payment received NOW should be credited
+ * to. Pre-launch (current time < 1 Jun 2026 SAST) this always returns
+ * `{ month: "Jun", period: "2026-06" }` so smoke-test contributions and
+ * any early member onboards land in the official first collection month —
+ * no May 2026 ghost rows for recon to chase.
+ *
+ * After launch the helper falls through to the SAST-current month + period,
+ * matching the historic Paystack verify/webhook behaviour.
+ *
+ * Used by `app/api/lehumo/paystack/verify` and `app/api/lehumo/paystack/webhook`
+ * so both payment paths produce identical Contribution Keys regardless of
+ * which one wins the race.
+ */
+export function getCreditMonthAndPeriod(now: Date = new Date()): {
+  month: string;
+  period: string;
+} {
+  if (isBeforeLaunch(now)) {
+    return { month: "Jun", period: "2026-06" };
+  }
+  const period = getSastCurrentPeriod(now);
+  const monthIdx = Number(period.slice(5, 7)) - 1;
+  return { month: MONTH_NAMES[monthIdx] ?? "Jan", period };
 }
 
 /**

@@ -159,10 +159,9 @@ export function DashboardOverview({
                   Payment received — welcome aboard
                 </p>
                 <p className="mt-1 text-[12.5px] text-white/65 leading-relaxed">
-                  Your first contribution has cleared and your monthly debit
-                  order is now active. The {currentMonth} tile below will
-                  update within a moment — refresh if you don&rsquo;t see it
-                  reflected yet.
+                  {beforeLaunch
+                    ? "Your contribution has cleared and your monthly debit order is now set up. Collections officially start 1 June 2026 — your payment has been credited to June 2026 so your record stays clean."
+                    : "Your contribution has cleared and your monthly debit order is now active. Your dashboard will refresh within a moment to reflect this payment."}
                 </p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { verifyTransaction, getCurrentMonth } from "@/lib/paystack";
+import { verifyTransaction } from "@/lib/paystack";
 import {
   checkMonthPayment,
   setMemberActive,
@@ -11,8 +11,11 @@ import {
   sendPaymentSuccessEmail,
   sendContributionReceiptEmail,
 } from "@/lib/email";
-import { buildContributionKey, MONTH_NAMES } from "@/lib/definitions";
-import { getSastYear } from "@/lib/member-contributions-view";
+import { buildContributionKey } from "@/lib/definitions";
+import {
+  getCreditMonthAndPeriod,
+  getSastYear,
+} from "@/lib/member-contributions-view";
 
 // ─── Paystack callback verification ─────────────────────────────────
 // Hit by the Confirmation step on every page load when the user lands
@@ -34,16 +37,13 @@ import { getSastYear } from "@/lib/member-contributions-view";
 // React state, so the frontend has nothing to display unless we hand
 // the identity back.
 
-/** Build the YYYY-MM period from a 3-letter month name (Jan, Feb, …). */
-function monthToPeriod(month: string): string {
-  const idx = MONTH_NAMES.indexOf(month);
-  if (idx < 0) throw new Error(`Invalid month: ${month}`);
-  return `${getSastYear()}-${String(idx + 1).padStart(2, "0")}`;
-}
-
-/** Display copy for the period subject lines etc — e.g. "Jun 2026". */
-function formatMonthLabel(month: string): string {
-  return `${month} ${getSastYear()}`;
+/** Display copy for the period subject lines etc — e.g. "Jun 2026".
+ *  Uses the period (`YYYY-MM`) directly so pre-launch payments credited
+ *  to 2026-06 are labelled "Jun 2026" rather than the current SAST
+ *  calendar year. */
+function formatMonthLabel(month: string, period: string): string {
+  const year = period.slice(0, 4);
+  return `${month} ${year || getSastYear()}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -68,8 +68,11 @@ export async function GET(request: NextRequest) {
     }
 
     const memberRecordId = result.metadata.memberRecordId as string;
-    const month = getCurrentMonth();
-    const period = monthToPeriod(month);
+    // Pre-launch payments are credited to June 2026 (the official first
+    // collection month) — no May 2026 ghost contributions for recon to
+    // chase. Post-launch this falls through to the SAST-current month.
+    // See `getCreditMonthAndPeriod` for the gate logic.
+    const { month, period } = getCreditMonthAndPeriod();
 
     if (!memberRecordId) {
       return NextResponse.json({
@@ -114,8 +117,12 @@ export async function GET(request: NextRequest) {
 
     // Persist + flip to Active in lockstep. setMemberActive is a no-op
     // if the member's already Active, so the second branch (recurring
-    // payment) is harmless.
+    // payment) is harmless. Explicit `period` so the pre-launch override
+    // (2026-06) makes it through to the Contribution Key — without it,
+    // `checkMonthPayment` would re-derive the period from the SAST year
+    // and the May/Jun ambiguity would resurface.
     await checkMonthPayment(memberRecordId, month, {
+      period,
       // Paystack amount returns in kobo (cents); convert to ZAR for
       // the Contributions table's Amount Received column.
       amountReceived: result.amount / 100,
@@ -148,7 +155,7 @@ export async function GET(request: NextRequest) {
               fullName: memberBefore.fullName,
               memberNumber: memberBefore.memberNumber,
               amountZar,
-              monthLabel: formatMonthLabel(month),
+              monthLabel: formatMonthLabel(month, period),
               paymentReference: reference,
             });
       // Fire-and-forget — email errors must never block the verify
