@@ -202,6 +202,7 @@ export function AdminMemberTable({
               <th className="px-3 py-3 font-medium min-w-[140px]">Status</th>
               <th className="px-3 py-3 font-medium min-w-[140px]">KYC</th>
               <th className="px-3 py-3 font-medium min-w-[110px]">Beneficiary</th>
+              <th className="px-3 py-3 font-medium min-w-[110px]">Plan</th>
               <th className="px-3 py-3 font-medium min-w-[120px]">
                 Active Loan
               </th>
@@ -305,6 +306,18 @@ export function AdminMemberTable({
                   />
                 </td>
 
+                {/* Plan ticker — shows the member's chosen contribution
+                    plan (Basic / Standard / VIP) so admins know which
+                    payment ceremony applies (manual EFT vs auto-debit)
+                    when reconciling or chasing up. Colour-coded for
+                    quick scanning. The Cancel-Pending state from the
+                    subscription action layers on top as a small badge
+                    so admins see both "what plan" and "what's pending"
+                    in one cell. */}
+                <td className="px-3 py-3">
+                  <PlanCell member={m} />
+                </td>
+
                 {/* Active loan indicator — surfaces outstanding balance,
                     type (Self vs P2P) and overdue state if applicable.
                     Read-only here; loan issue/repay flows live in
@@ -352,7 +365,7 @@ export function AdminMemberTable({
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={5 + MONTH_NAMES.length}
+                  colSpan={6 + MONTH_NAMES.length}
                   className="px-4 py-12 text-center text-sm text-[#9CA3AF]"
                 >
                   {activeLoansOnly && !query.trim() && !missingBeneficiaryOnly
@@ -582,6 +595,78 @@ function LoanCell({ member }: { member: LehumoMember }) {
       {loanType && (
         <span className="rounded border border-[#E5E7EB] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[#6B7280]">
           {loanType}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Plan ticker — at-a-glance indicator of which contribution plan each
+ * member is on. Drives admin workflow: Standard members are on auto-
+ * debit (Paystack handles the monthly charge); Basic members pay
+ * manually via EFT (admin needs to log via the Log EFT modal); VIP is
+ * coming-soon.
+ *
+ * Layers two pieces of state into one cell:
+ *   1. Plan tier (Basic / Standard / VIP) — colour-coded pill
+ *   2. "Cancel pending" badge — small amber tag when the member has
+ *      downgraded but their Paystack subscription hasn't been cancelled
+ *      yet. Pairs with the AdminPendingActions surface at the top of
+ *      the dashboard so admins see the signal twice and aren't likely
+ *      to miss it before the next billing cycle.
+ */
+function PlanCell({ member }: { member: LehumoMember }) {
+  const plan = member.plan;
+  const hasCancelPending = member.subscriptionAction === "Cancel Pending";
+
+  if (!plan) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full border border-dashed border-[#E5E7EB] px-2 py-0.5 text-[11px] text-[#9CA3AF]"
+        title="No plan recorded — likely an early onboard before plan capture landed"
+      >
+        —
+      </span>
+    );
+  }
+
+  // Plan-specific styling + descriptive tooltip so an admin hovering
+  // gets the "what does this mean operationally?" context.
+  const planMeta = {
+    basic: {
+      label: "Basic",
+      classes:
+        "bg-[#46CDCF]/12 border-[#46CDCF]/30 text-[#0E7C8A]",
+      tooltip: "Manual EFT · R1,000/month · Admin reconciles deposits",
+    },
+    standard: {
+      label: "Standard",
+      classes: "bg-[#B8FF00]/15 border-[#B8FF00]/35 text-[#3F5A00]",
+      tooltip: "Paystack auto-debit · R1,020/month (R1,000 + 2% fee)",
+    },
+    vip: {
+      label: "VIP",
+      classes: "bg-[#F59E0B]/12 border-[#F59E0B]/30 text-[#92400E]",
+      tooltip: "VIP · R1,050/month (R1,000 + 5% fee) · Coming soon",
+    },
+  }[plan];
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span
+        className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${planMeta.classes}`}
+        title={planMeta.tooltip}
+      >
+        {planMeta.label}
+      </span>
+      {hasCancelPending && (
+        <span
+          className="inline-flex w-fit items-center gap-1 rounded-full border border-[#F59E0B]/35 bg-[#FFFBEB] px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-[#B45309]"
+          title="Member downgraded but Paystack auto-debit needs cancelling — see the Pending Actions card at the top of the dashboard"
+        >
+          <AlertTriangle className="h-2.5 w-2.5" />
+          Cancel pending
         </span>
       )}
     </div>
