@@ -96,6 +96,9 @@ export function PaymentCard({
         body: JSON.stringify({
           email,
           memberRecordId: memberId,
+          // Stay inside the portal on bounce-back — this card is for
+          // existing members topping up, not the onboarding wizard.
+          returnTo: "portal",
         }),
       });
 

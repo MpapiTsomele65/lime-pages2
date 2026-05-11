@@ -160,9 +160,11 @@ export function SetUpPaymentsCard({
    * Start the Paystack debit-order setup ceremony. Calls our /init route
    * which mints a Paystack subscription URL, then redirects the browser
    * off-site. Paystack handles card tokenisation + first charge in one
-   * hosted page, then bounces back to /lehumo/onboard?step=confirm with
-   * a verification reference. The wizard's StepConfirmation handles that
-   * callback and shows the post-payment success state.
+   * hosted page, then bounces back to /lehumo/portal?payment=success so
+   * the existing member lands inside their dashboard with a success
+   * banner — not bounced out to the public onboarding wizard. The
+   * `returnTo: "portal"` flag tells the init route to use the portal
+   * callback URL instead of the wizard's confirm step.
    */
   async function handleStandardSubscribe() {
     setIsStartingPaystack(true);
@@ -175,6 +177,7 @@ export function SetUpPaymentsCard({
           email,
           memberRecordId: memberId,
           plan,
+          returnTo: "portal",
         }),
       });
       const data = await res.json();

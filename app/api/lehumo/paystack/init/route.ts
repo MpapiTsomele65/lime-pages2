@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, memberRecordId, plan } = parsed.data;
+    const { email, memberRecordId, plan, returnTo } = parsed.data;
 
     // Resolve the plan code (only Standard uses subscriptions for now).
     // Basic = manual EFT (never hits this endpoint); VIP = coming soon.
@@ -85,11 +85,22 @@ export async function POST(request: NextRequest) {
     // plan's known kobo amount; fall back to R1,000 for legacy one-time use.
     const amount = (plan && getAmountForPlan(plan)) || 100000;
 
+    // Callback URL depends on where the payment was started. Portal
+    // members (existing, already inside the dashboard) bounce back to
+    // /lehumo/portal with a success flag so they see "Paid This Month"
+    // light up where they expect. New onboarding traffic stays on the
+    // wizard's Confirmation step. Default ("onboard") preserves the
+    // legacy behaviour for any caller that doesn't pass the param.
     stage = "initialize_transaction";
+    const callbackPath =
+      returnTo === "portal"
+        ? "/lehumo/portal?payment=success"
+        : "/lehumo/onboard?step=confirm";
+
     const result = await initializeTransaction({
       email,
       amount,
-      callbackUrl: `${siteUrl()}/lehumo/onboard?step=confirm`,
+      callbackUrl: `${siteUrl()}${callbackPath}`,
       metadata: {
         memberRecordId,
         plan: plan || "unknown",

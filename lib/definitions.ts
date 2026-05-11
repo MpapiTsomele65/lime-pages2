@@ -957,6 +957,17 @@ export const PaystackInitSchema = z.object({
   email: emailField,
   memberRecordId: z.string().startsWith("rec"),
   plan: z.enum(["basic", "standard", "vip"]).optional(),
+  /**
+   * Where Paystack should bounce the user back to after checkout. The
+   * onboarding wizard's StepPayment defaults to "onboard" (which lands
+   * on `/lehumo/onboard?step=confirm` so the wizard's Confirmation step
+   * picks up the reference and finishes the flow). The portal's
+   * SetUpPaymentsCard / PaymentCard pass "portal" so an existing member
+   * who's just configured their card lands back inside the dashboard
+   * with a success banner — not bounced out to the public onboarding
+   * wizard. Defaults to "onboard" for backwards compatibility.
+   */
+  returnTo: z.enum(["onboard", "portal"]).optional(),
 });
 
 /**

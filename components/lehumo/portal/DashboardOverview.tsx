@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowRight, Shield } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, CheckCircle2, Shield, X } from "lucide-react";
 import type { CommunityPoolStats, LehumoMember } from "@/lib/definitions";
 import { formatMemberNumber } from "@/lib/definitions";
 import { MemberProfileCard } from "./MemberProfileCard";
@@ -35,6 +37,13 @@ interface DashboardOverviewProps {
    *  contribution-due prompts and PaymentCard shows a "starts 1 June
    *  2026" placeholder instead of "Next due: Jan". */
   beforeLaunch: boolean;
+  /** Set to true when the page receives a `?payment=success` query
+   *  param from the Paystack callback URL — i.e. the member has just
+   *  completed card setup + first charge inside the portal. Renders the
+   *  celebration banner at the top of the dashboard and the URL params
+   *  are stripped client-side on mount so a refresh doesn't keep
+   *  retriggering it. */
+  paymentSuccess?: boolean;
 }
 
 export function DashboardOverview({
@@ -45,7 +54,21 @@ export function DashboardOverview({
   currentPeriod,
   daysLeftInMonth,
   beforeLaunch,
+  paymentSuccess = false,
 }: DashboardOverviewProps) {
+  const router = useRouter();
+  const [showSuccessBanner, setShowSuccessBanner] = useState(paymentSuccess);
+
+  // When the page mounts with `?payment=success&reference=…`, replace the
+  // URL with the bare /lehumo/portal path so a refresh doesn't keep
+  // showing the banner. Using router.replace keeps the in-memory state
+  // (and the React tree) intact — we just clean up the bar.
+  useEffect(() => {
+    if (paymentSuccess && typeof window !== "undefined") {
+      router.replace("/lehumo/portal", { scroll: false });
+    }
+  }, [paymentSuccess, router]);
+
   const firstName = member.fullName.split(" ")[0];
 
   // Lifetime contribution total. Prefer the rich 60-period shape (sums
@@ -110,6 +133,50 @@ export function DashboardOverview({
           Member {formatMemberNumber(member.memberNumber)}
         </span>
       </motion.div>
+
+      {/* Payment-success banner — only renders when the member has just
+          bounced back from Paystack with `?payment=success` set. Server
+          already kicked off a verify; this is the celebratory surface
+          + dismissible. The URL gets cleaned up on mount, so a refresh
+          drops this naturally. */}
+      <AnimatePresence>
+        {showSuccessBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.4, ease: iosEase }}
+            className="relative rounded-[20px] border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.08] to-[#46CDCF]/[0.04] p-5 pr-12"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#B8FF00]/15 text-[#B8FF00]">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold tracking-tight text-white">
+                  Payment received — welcome aboard
+                </p>
+                <p className="mt-1 text-[12.5px] text-white/65 leading-relaxed">
+                  Your first contribution has cleared and your monthly debit
+                  order is now active. The {currentMonth} tile below will
+                  update within a moment — refresh if you don&rsquo;t see it
+                  reflected yet.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSuccessBanner(false)}
+              className="absolute top-3 right-3 text-white/35 hover:text-white/80 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Account-setup completeness meter — three checks (KYC verified,
           beneficiary on file, first contribution). Hides itself once a
