@@ -34,9 +34,19 @@ export function QGMSummaryCard() {
   // useMemo so we don't re-enumerate every render. `now` is captured
   // once on mount — stale-by-a-few-seconds is harmless here (the next
   // QGM doesn't flip mid-session).
+  //
+  // `upcoming` is the next 3 meetings starting from `next` — slicing
+  // from the index of the upcoming meeting (rather than the start of
+  // the array) means past meetings drop out as time advances. Three
+  // rows keeps the card tidy and practical: members see the immediate
+  // one plus two on the horizon, without scrolling.
   const { next, upcoming, googleUrl } = useMemo(() => {
+    const all = listQGMs();
     const next = getNextQGM();
-    const upcoming = listQGMs().slice(0, 4);
+    const nextIdx = next
+      ? all.findIndex((q) => q.isoDate === next.isoDate)
+      : -1;
+    const upcoming = nextIdx >= 0 ? all.slice(nextIdx, nextIdx + 3) : [];
     const googleUrl = getGoogleCalendarUrl();
     return { next, upcoming, googleUrl };
   }, []);
