@@ -532,6 +532,35 @@ export function formatMemberNumber(n: number | string): string {
 }
 
 /**
+ * Build the EFT deposit reference a member should use on a manual bank
+ * transfer. Format: `Leh{NN} {Initial}.{Surname}` — e.g. `Leh01 M.Tsomele`.
+ *
+ * Locked to a single canonical format so admin recon can grep the bank
+ * statement reliably. If the name only has one part we drop the initial
+ * (e.g. `Leh22 Bontle`); if the input is empty we fall back to just the
+ * member number prefix so the reference is never blank.
+ *
+ * The space + dot in `M.Tsomele` reads cleanly on a bank statement and
+ * survives most banks' character filters — the alternatives (`M_Tsomele`,
+ * `MTsomele`, `Leh01-M-Tsomele`) either look odd or risk being mangled.
+ */
+export function formatEftReference(
+  memberNumber: number | string,
+  fullName: string,
+): string {
+  const prefix = formatMemberNumber(memberNumber);
+  const parts = (fullName ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return prefix;
+  if (parts.length === 1) return `${prefix} ${parts[0]}`;
+  const initial = parts[0][0]?.toUpperCase() ?? "";
+  const surname = parts[parts.length - 1];
+  return initial ? `${prefix} ${initial}.${surname}` : `${prefix} ${surname}`;
+}
+
+/**
  * Parse any supported member number input to its underlying positive integer.
  * Accepts "Leh01", "leh 1", "LEH7", "07", "7", etc. Returns null if the input
  * cannot be resolved to a positive integer.

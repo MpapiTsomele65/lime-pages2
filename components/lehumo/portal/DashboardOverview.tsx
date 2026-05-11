@@ -17,6 +17,7 @@ import { PaymentCard } from "./PaymentCard";
 import { SetUpPaymentsCard } from "./SetUpPaymentsCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
 import { CompletenessMeter } from "./CompletenessMeter";
+import { BankDepositCard } from "./BankDepositCard";
 import { EmergencyAccessCard } from "./EmergencyAccessCard";
 import { QGMSummaryCard } from "./QGMSummaryCard";
 
@@ -330,6 +331,14 @@ export function DashboardOverview({
           </motion.div>
         )}
       </div>
+
+      {/* Bank deposit / EFT details — visible to every member. Basic
+          plan members need this as their primary payment route; Standard
+          / VIP members fall back to it when their card has issues or
+          they prefer manual control. The member's personalised
+          reference (Leh## I.Surname) is generated client-side from
+          their profile so admin recon always matches a known member. */}
+      <BankDepositCard member={member} />
 
       {/* Emergency Access — surfaces the member's 20% self-loan position.
           Adapts to three states (locked / available / active-loan). For
