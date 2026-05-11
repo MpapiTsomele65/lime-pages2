@@ -18,6 +18,7 @@ import { SetUpPaymentsCard } from "./SetUpPaymentsCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
 import { CompletenessMeter } from "./CompletenessMeter";
 import { EmergencyAccessCard } from "./EmergencyAccessCard";
+import { QGMSummaryCard } from "./QGMSummaryCard";
 
 interface DashboardOverviewProps {
   member: LehumoMember;
@@ -263,6 +264,17 @@ export function DashboardOverview({
       {communityStats && (
         <CommunityPoolCard stats={communityStats} myContributed={myContributed} />
       )}
+
+      {/* Quarterly General Meeting — community-cadence touchpoint. Sits
+          between the pool overview (community money state) and the
+          personal dashboard grid (member's own account) so the flow
+          reads: "where the group's money is" → "when the group meets" →
+          "where my account stands". Both calendar exports use an RRULE
+          covering the entire QGM series so members add once and stay
+          tracked for every quarter. */}
+      <div id="qgm" className="scroll-mt-24">
+        <QGMSummaryCard />
+      </div>
 
       {/* Dashboard grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
