@@ -264,7 +264,11 @@ export function DashboardOverview({
 
       {/* Community pool overview */}
       {communityStats && (
-        <CommunityPoolCard stats={communityStats} myContributed={myContributed} />
+        <CommunityPoolCard
+          stats={communityStats}
+          myContributed={myContributed}
+          beforeLaunch={beforeLaunch}
+        />
       )}
 
       {/* Quarterly General Meeting — community-cadence touchpoint. Sits

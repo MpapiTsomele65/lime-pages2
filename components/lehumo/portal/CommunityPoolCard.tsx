@@ -9,6 +9,12 @@ interface CommunityPoolCardProps {
   stats: CommunityPoolStats;
   /** The signed-in member's own total contributed (R). */
   myContributed: number;
+  /** True until 1 Jun 2026 SAST. Pre-launch the "Members Contributing"
+   *  sub-text reframes from `0 paid in May` to `2 prepaid Jun 2026` —
+   *  more useful framing for the actual situation (collections haven't
+   *  started, but eager members have already paid into the launch
+   *  period). Falls back to false (post-launch behaviour) when omitted. */
+  beforeLaunch?: boolean;
 }
 
 function formatZAR(n: number): string {
@@ -17,7 +23,11 @@ function formatZAR(n: number): string {
   return `R${Math.round(n).toLocaleString()}`;
 }
 
-export function CommunityPoolCard({ stats, myContributed }: CommunityPoolCardProps) {
+export function CommunityPoolCard({
+  stats,
+  myContributed,
+  beforeLaunch = false,
+}: CommunityPoolCardProps) {
   const { timeline, currentMonth } = stats;
 
   // Build SVG path for the cumulative balance line + area fill.
@@ -60,12 +70,21 @@ export function CommunityPoolCard({ stats, myContributed }: CommunityPoolCardPro
     stats.totalPool,
   );
 
+  // Pre-launch sub-text reframes the "current month" view that's
+  // technically correct (0 members paid in May 2026) but emotionally
+  // negative — the truth is X members have prepaid the launch period.
+  // The Jun 2026 anchor is the canonical first collection month so
+  // matches the rest of the launch-policy copy across the portal.
+  const membersContributingSub = beforeLaunch
+    ? `${stats.membersContributedEver} prepaid Jun 2026`
+    : `${stats.membersContributingThisMonth} paid in ${currentMonth}`;
+
   const statTiles = [
     {
       icon: Users,
       label: "Members Contributing",
       value: `${stats.membersContributedEver} / ${stats.totalFoundingSlots}`,
-      sub: `${stats.membersContributingThisMonth} paid in ${currentMonth}`,
+      sub: membersContributingSub,
       color: "text-[#B8FF00]",
       tint: "bg-[#B8FF00]/[0.08] border-[#B8FF00]/20",
     },
