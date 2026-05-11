@@ -57,24 +57,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Has the member already paid any contribution? If so, switching
-    // plans needs admin help — there's a live Paystack subscription
-    // (potentially) and historical contributions tagged with the old
-    // plan. Block the switch and surface an actionable email path.
+    // Has the member already paid any contribution? Flag it for the
+    // client — when downgrading from Standard (which had a live
+    // Paystack subscription) to Basic, the UI surfaces an "email admin
+    // to cancel auto-debit" message because we don't have the
+    // subscription code stored to disable it programmatically yet.
+    //
+    // We deliberately DON'T block the switch on post-payment any more
+    // (previously this branch 409'd with "email admin"). Members
+    // asked for self-service control over how they pay — auto-debit
+    // vs manual EFT — so the flip happens server-side and the
+    // member's portal updates immediately. The Paystack subscription
+    // (if any) is a separate coordination step surfaced to the user.
     const hasContributions =
       (member.contributionRows?.some((row) => row.status === "Paid") ??
         false) ||
       Object.values(member.contributions).some(Boolean);
-    if (hasContributions) {
-      return NextResponse.json(
-        {
-          error:
-            "Plan changes after your first contribution need to go through admin — drop us a line at lehumo@limepages.co.za and we'll coordinate.",
-          code: "POST_PAYMENT_SWITCH",
-        },
-        { status: 409 },
-      );
-    }
+    const previousPlan =
+      member.plan === "basic" || member.plan === "standard" || member.plan === "vip"
+        ? member.plan
+        : null;
+    // When the member is moving off Standard with a live debit order,
+    // they need to know their auto-debit will keep running until
+    // admin cancels the Paystack subscription manually. (Once we
+    // start storing subscription_code on the member record, this
+    // branch can call Paystack's disable API directly and the flag
+    // goes away.)
+    const requiresAdminCancelSubscription =
+      previousPlan === "standard" && newPlan === "basic" && hasContributions;
 
     // Splice the new "Plan: X" segment into the existing notes blob.
     // Notes are pipe-delimited segments by convention (set by the
@@ -95,6 +105,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       plan: newPlan,
+      previousPlan,
+      requiresAdminCancelSubscription,
       memberId: updated.id,
     });
   } catch (err) {

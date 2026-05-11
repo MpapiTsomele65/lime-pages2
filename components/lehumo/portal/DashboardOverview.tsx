@@ -19,6 +19,7 @@ import { CommunityPoolCard } from "./CommunityPoolCard";
 import { CompletenessMeter } from "./CompletenessMeter";
 import { BankDepositCard } from "./BankDepositCard";
 import { EmergencyAccessCard } from "./EmergencyAccessCard";
+import { PlanManagementCard } from "./PlanManagementCard";
 import { QGMSummaryCard } from "./QGMSummaryCard";
 
 interface DashboardOverviewProps {
@@ -331,6 +332,19 @@ export function DashboardOverview({
           </motion.div>
         )}
       </div>
+
+      {/* Plan management — only shown post-first-payment, since pre-
+          payment the SetUpPaymentsCard above already owns the plan
+          choice. Once a member is past their first contribution,
+          this card becomes the persistent surface for switching
+          between Standard (auto-debit) and Basic (manual EFT) — so
+          they can pause their card debit any time without emailing
+          admin. Sits directly above BankDepositCard because the two
+          flow as a pair: pick how you'd like to pay, then (if Basic)
+          here are the bank details. */}
+      {!needsPaymentSetup && hasFirstContribution && (
+        <PlanManagementCard member={member} />
+      )}
 
       {/* Bank deposit / EFT details — visible to every member. Basic
           plan members need this as their primary payment route; Standard
