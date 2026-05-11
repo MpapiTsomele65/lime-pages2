@@ -154,6 +154,49 @@ export async function createCustomerSubscription(params: {
   return data.data;
 }
 
+// ─── Get Subscription Details ───────────────────────────────────────
+// Fetches a single Paystack subscription by code. Used by the admin
+// pending-actions surface to show a countdown to each member's next
+// billing date — knowing "you have 3 days to cancel" makes admin
+// prioritisation obvious.
+//
+// Returns null on lookup failure rather than throwing — the admin
+// dashboard should still render (with an "unknown" countdown) even
+// when one of N Paystack calls errors out.
+export async function getSubscriptionDetails(
+  subscriptionCode: string,
+): Promise<{
+  status: string;
+  nextPaymentDate: string | null;
+  amount: number | null;
+  email: string | null;
+} | null> {
+  try {
+    const res = await fetch(
+      `${PAYSTACK_BASE}/subscription/${encodeURIComponent(subscriptionCode)}`,
+      {
+        headers: getHeaders(),
+        // Don't cache — billing dates roll forward as charges land.
+        cache: "no-store",
+      },
+    );
+    const data = await res.json();
+    if (!data.status) return null;
+    return {
+      status: (data.data?.status as string) ?? "unknown",
+      nextPaymentDate: (data.data?.next_payment_date as string) ?? null,
+      amount: (data.data?.amount as number) ?? null,
+      email: (data.data?.customer?.email as string) ?? null,
+    };
+  } catch (err) {
+    console.error(
+      `[paystack getSubscriptionDetails] ${subscriptionCode} failed:`,
+      err,
+    );
+    return null;
+  }
+}
+
 // ─── Disable Subscription ───────────────────────────────────────────
 // Stops a recurring Paystack subscription so it won't charge again on
 // the next billing date. Used when a member downgrades from Standard

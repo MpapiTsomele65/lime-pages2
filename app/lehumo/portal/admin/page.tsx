@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getAdminSession } from "@/lib/admin-auth";
 import { listAllMembers } from "@/lib/airtable-admin";
+import { getSubscriptionDetails } from "@/lib/paystack";
 import { AdminShell } from "@/components/lehumo/admin/AdminShell";
 import { AdminMembersClient } from "@/components/lehumo/admin/AdminMembersClient";
 import { AdminAddMemberCard } from "@/components/lehumo/admin/AdminAddMemberCard";
@@ -32,6 +33,31 @@ export default async function AdminDashboardPage() {
   const stats = computeAdminStats(members, currentMonthIndex);
   const { currentMonth } = stats;
 
+  // Fetch each pending member's Paystack subscription details in
+  // parallel so the AdminPendingActions card can render a countdown
+  // to next billing for each one. Bounded by `pending.length` (usually
+  // 0–5) and runs concurrently, so the perf cost is one slow request
+  // not N sequential ones. Failures fall through to a null entry,
+  // which the card renders as "billing date unknown".
+  const subscriptionDetails = await Promise.all(
+    stats.subscriptionCancelPending.map(async (m) => {
+      if (!m.subscriptionCode) return { memberId: m.id, details: null };
+      const details = await getSubscriptionDetails(m.subscriptionCode);
+      return { memberId: m.id, details };
+    }),
+  );
+  const subscriptionDetailsByMember = Object.fromEntries(
+    subscriptionDetails.map((entry) => [
+      entry.memberId,
+      entry.details
+        ? {
+            nextPaymentDate: entry.details.nextPaymentDate,
+            status: entry.details.status,
+          }
+        : null,
+    ]),
+  );
+
   return (
     <AdminShell memberName={session.fullName || "Admin"}>
       <div className="space-y-8">
@@ -60,8 +86,13 @@ export default async function AdminDashboardPage() {
         {/* Pending actions — currently only the subscription-cancel queue.
             Renders at the top because these are time-sensitive (they bite
             on the next Paystack billing cycle). Self-hiding when the
-            queue is empty so it doesn't add noise to a clean dashboard. */}
-        <AdminPendingActions pending={stats.subscriptionCancelPending} />
+            queue is empty so it doesn't add noise to a clean dashboard.
+            Subscription details fetched server-side above are passed in
+            so each row can show a "X days until next bill" countdown. */}
+        <AdminPendingActions
+          pending={stats.subscriptionCancelPending}
+          subscriptionDetailsByMember={subscriptionDetailsByMember}
+        />
 
         {/* Stat tiles — quick at-a-glance counts. Richer breakdowns sit
             in the Pool / Community Health / Behind cards below. */}

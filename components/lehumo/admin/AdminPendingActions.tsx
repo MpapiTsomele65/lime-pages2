@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
+  Clock,
   ExternalLink,
   Loader2,
   RotateCcw,
@@ -15,12 +16,70 @@ import {
 import { formatMemberNumber, type LehumoMember } from "@/lib/definitions";
 import { resolveSubscriptionCancel } from "@/app/lehumo/portal/admin/actions";
 
+interface SubscriptionDetailsByMember {
+  [memberId: string]:
+    | { nextPaymentDate: string | null; status: string }
+    | null;
+}
+
 interface AdminPendingActionsProps {
   /** Members whose `subscriptionAction === "Cancel Pending"` — i.e.
    *  downgraded from Standard → Basic but the auto-cancel didn't go
    *  through. Sourced from `stats.subscriptionCancelPending` on the
    *  admin page. */
   pending: LehumoMember[];
+  /** Per-member Paystack subscription details fetched server-side on
+   *  page load — fuels the "X days until next bill" countdown. Maps
+   *  `memberId` to `{ nextPaymentDate, status }` or `null` when the
+   *  lookup failed / no code was stored. */
+  subscriptionDetailsByMember: SubscriptionDetailsByMember;
+}
+
+/**
+ * Build a human-friendly "in X days / hours / minutes" countdown
+ * between two timestamps. Returns null when the target is null /
+ * unparseable (no code stored, or Paystack lookup errored).
+ *
+ * Branches at three thresholds:
+ *   - > 36 hours: "in N days"
+ *   - 1–36 hours: "in N hours" + colour-coded urgency
+ *   - < 1 hour: "in N minutes" — the bell-rings tier
+ *   - past: "Billed N days/hours ago" so admins see they're late
+ */
+function formatCountdown(
+  targetIso: string | null,
+  now: Date,
+): { label: string; tone: "ok" | "warn" | "urgent" | "past" } | null {
+  if (!targetIso) return null;
+  const target = new Date(targetIso);
+  if (Number.isNaN(target.getTime())) return null;
+  const diffMs = target.getTime() - now.getTime();
+  const past = diffMs < 0;
+  const absMs = Math.abs(diffMs);
+  const minutes = Math.round(absMs / (60 * 1000));
+  const hours = Math.round(absMs / (60 * 60 * 1000));
+  const days = Math.round(absMs / (24 * 60 * 60 * 1000));
+
+  if (past) {
+    if (hours < 36) {
+      return {
+        label: `Billed ${hours}h ago`,
+        tone: "past",
+      };
+    }
+    return { label: `Billed ${days}d ago`, tone: "past" };
+  }
+
+  // Urgency tiers — colour the countdown so admin eye lands on the
+  // soonest cancellations first.
+  let tone: "ok" | "warn" | "urgent";
+  if (hours <= 24) tone = "urgent";
+  else if (days <= 3) tone = "warn";
+  else tone = "ok";
+
+  if (hours < 1) return { label: `in ${minutes}m`, tone };
+  if (hours < 36) return { label: `in ${hours}h`, tone };
+  return { label: `in ${days} ${days === 1 ? "day" : "days"}`, tone };
 }
 
 /**
@@ -43,10 +102,41 @@ interface AdminPendingActionsProps {
  * Hides itself entirely when the queue is empty — no zero-state noise
  * on a clean dashboard.
  */
-export function AdminPendingActions({ pending }: AdminPendingActionsProps) {
+export function AdminPendingActions({
+  pending,
+  subscriptionDetailsByMember,
+}: AdminPendingActionsProps) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
+
+  // Tick `now` every 30s so the countdowns roll forward without a
+  // full page reload. 30s is fine — admins aren't watching this card
+  // second-by-second, and we want the values to feel "live enough"
+  // when they leave the tab open over lunch.
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Soonest next-billing date across all pending rows — anchors the
+  // headline countdown so admins know the deadline at a glance
+  // without scanning each row.
+  const soonest = useMemo(() => {
+    let earliest: Date | null = null;
+    for (const m of pending) {
+      const iso = subscriptionDetailsByMember[m.id]?.nextPaymentDate;
+      if (!iso) continue;
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) continue;
+      if (!earliest || d < earliest) earliest = d;
+    }
+    return earliest;
+  }, [pending, subscriptionDetailsByMember]);
+  const soonestCountdown = soonest
+    ? formatCountdown(soonest.toISOString(), now)
+    : null;
 
   async function handle(
     memberId: string,
@@ -108,6 +198,30 @@ export function AdminPendingActions({ pending }: AdminPendingActionsProps) {
             not actioned, they&rsquo;ll be charged again at the next
             billing cycle.
           </p>
+          {/* Headline countdown — anchors urgency on the soonest
+              next-bill across the queue. Skipped silently when no
+              billing dates are available (every pending member is a
+              legacy with no code stored), since the per-row footer
+              already explains the "unknown" case. */}
+          {soonestCountdown && (
+            <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#0B1933] px-3 py-1 text-[11px] font-semibold text-white">
+              <Clock className="h-3 w-3" />
+              <span>Next billing cycle</span>
+              <span
+                className={
+                  soonestCountdown.tone === "urgent"
+                    ? "text-[#FCA5A5]"
+                    : soonestCountdown.tone === "warn"
+                      ? "text-[#FCD34D]"
+                      : soonestCountdown.tone === "past"
+                        ? "text-[#FCA5A5]"
+                        : "text-[#B8FF00]"
+                }
+              >
+                · {soonestCountdown.label}
+              </span>
+            </div>
+          )}
         </div>
         <a
           href="https://dashboard.paystack.com/#/subscriptions"
@@ -126,6 +240,19 @@ export function AdminPendingActions({ pending }: AdminPendingActionsProps) {
           const isBusy = busyId === m.id;
           const err = rowError[m.id];
           const hasCode = Boolean(m.subscriptionCode);
+          const subDetails = subscriptionDetailsByMember[m.id];
+          const rowCountdown = formatCountdown(
+            subDetails?.nextPaymentDate ?? null,
+            now,
+          );
+          const billingDateLabel = subDetails?.nextPaymentDate
+            ? new Date(subDetails.nextPaymentDate).toLocaleDateString("en-ZA", {
+                timeZone: "Africa/Johannesburg",
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : null;
           return (
             <li
               key={m.id}
@@ -138,6 +265,30 @@ export function AdminPendingActions({ pending }: AdminPendingActionsProps) {
                     <span className="ml-2 inline-flex items-center rounded-full bg-[#F8F9FA] border border-[#E5E7EB] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#6B7280]">
                       {formatMemberNumber(m.memberNumber)}
                     </span>
+                    {/* Per-row countdown chip — colour-tiered so the
+                        most urgent rows visually pop. Hidden when we
+                        couldn't resolve a next-bill date (legacy or
+                        Paystack lookup error). */}
+                    {rowCountdown && (
+                      <span
+                        className={`ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border ${
+                          rowCountdown.tone === "urgent" ||
+                          rowCountdown.tone === "past"
+                            ? "bg-red-50 border-red-200 text-red-700"
+                            : rowCountdown.tone === "warn"
+                              ? "bg-[#FFFBEB] border-[#F59E0B]/30 text-[#B45309]"
+                              : "bg-[#F0FDF4] border-[#86EFAC]/40 text-[#16A34A]"
+                        }`}
+                        title={
+                          billingDateLabel
+                            ? `Next bill: ${billingDateLabel}`
+                            : undefined
+                        }
+                      >
+                        <Clock className="h-3 w-3" />
+                        {rowCountdown.label}
+                      </span>
+                    )}
                   </p>
                   <p className="mt-1 text-[12px] text-[#6B7280]">
                     {m.email || "no email"}
@@ -146,6 +297,14 @@ export function AdminPendingActions({ pending }: AdminPendingActionsProps) {
                         {" · "}
                         <span className="font-mono text-[11.5px] text-[#9CA3AF]">
                           {m.subscriptionCode}
+                        </span>
+                      </>
+                    )}
+                    {billingDateLabel && (
+                      <>
+                        {" · "}
+                        <span className="text-[11.5px] text-[#9CA3AF]">
+                          Next bill {billingDateLabel}
                         </span>
                       </>
                     )}
