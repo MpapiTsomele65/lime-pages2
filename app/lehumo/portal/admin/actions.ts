@@ -8,13 +8,16 @@ import {
   logEftPayment as logEftPaymentAdmin,
   setMonthPayment,
 } from "@/lib/airtable-admin";
+import { disableSubscription } from "@/lib/paystack";
 import type { EftAllocationPlan } from "@/lib/eft-allocation";
+import { spliceSubscriptionIntoNotes } from "@/lib/definitions";
 import {
   createMember,
   findMemberByEmail,
   getMemberById,
   getNextMemberNumber,
   setMemberBeneficiary,
+  updateMember,
 } from "@/lib/airtable";
 import { sendKycVerifiedEmail, sendWelcomeEmail } from "@/lib/email";
 import {
@@ -123,6 +126,85 @@ export async function logEftPayment(
         ? err.message
         : "Failed to log EFT payment — please retry";
     return { ok: false, error: msg };
+  }
+}
+
+/**
+ * Resolve a pending "Cancel subscription" action against a member.
+ *
+ * Two paths:
+ *   - `mode: "retry"` — re-attempts the Paystack disable using the
+ *     stored subscription_code. Used when the original auto-cancel
+ *     failed (network blip, code stale). On success we clear both the
+ *     code and the action flag; on failure we keep the flag set with
+ *     an error message in the response.
+ *   - `mode: "mark-done"` — admin has cancelled the subscription
+ *     manually on the Paystack dashboard and is acknowledging the
+ *     action is complete. Clears the flag without calling Paystack
+ *     (so we don't error if the code is genuinely gone). Use when:
+ *     legacy member with no stored code, or Paystack-dashboard-only
+ *     cleanup that didn't fire a `subscription.disable` webhook.
+ *
+ * Both paths preserve every other notes segment (Plan, Commitment,
+ * Intent, etc.) via spliceSubscriptionIntoNotes.
+ */
+export type ResolveSubscriptionResult =
+  | { ok: true; member: LehumoMember; mode: "retry" | "mark-done" }
+  | { ok: false; error: string };
+
+export async function resolveSubscriptionCancel(
+  recordId: string,
+  mode: "retry" | "mark-done",
+): Promise<ResolveSubscriptionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as ResolveSubscriptionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  try {
+    const member = await getMemberById(recordId);
+    if (!member) return { ok: false, error: "Member not found" };
+
+    let patch: { code?: string | null; action?: "Cancel Pending" | null };
+
+    if (mode === "retry") {
+      const code = member.subscriptionCode;
+      if (!code) {
+        return {
+          ok: false,
+          error:
+            "No subscription code stored — use 'Mark as resolved' instead, or cancel directly on the Paystack dashboard.",
+        };
+      }
+      const result = await disableSubscription(code);
+      if (!result.ok) {
+        return {
+          ok: false,
+          error: `Paystack disable failed: ${result.error}. Try again, or cancel on the Paystack dashboard and use 'Mark as resolved'.`,
+        };
+      }
+      patch = { code: null, action: null };
+    } else {
+      // mark-done — clear the flag, leave the code untouched (so the
+      // history of what subscription was active stays inspectable).
+      patch = { action: null };
+    }
+
+    const newNotes = spliceSubscriptionIntoNotes(member.notes ?? "", patch);
+    await updateMember(recordId, {
+      [AIRTABLE_FIELDS.notes]: newNotes,
+    });
+
+    const updated = await getMemberById(recordId);
+    if (!updated) throw new Error("Member disappeared after update");
+    return { ok: true, member: updated, mode };
+  } catch (err) {
+    console.error("resolveSubscriptionCancel error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to resolve",
+    };
   }
 }
 

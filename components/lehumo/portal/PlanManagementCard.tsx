@@ -53,6 +53,7 @@ interface SwitchResponse {
   ok: boolean;
   plan?: MemberPlan;
   previousPlan?: MemberPlan | null;
+  subscriptionAutoCancelled?: boolean;
   requiresAdminCancelSubscription?: boolean;
   error?: string;
 }
@@ -81,6 +82,7 @@ export function PlanManagementCard({ member }: PlanManagementCardProps) {
   const [confirmation, setConfirmation] = useState<{
     target: MemberPlan;
     requiresAdminCancel: boolean;
+    autoCancelled: boolean;
   } | null>(null);
 
   async function handleSwitch(target: MemberPlan) {
@@ -113,6 +115,7 @@ export function PlanManagementCard({ member }: PlanManagementCardProps) {
       setConfirmation({
         target,
         requiresAdminCancel: Boolean(data.requiresAdminCancelSubscription),
+        autoCancelled: Boolean(data.subscriptionAutoCancelled),
       });
       // Refresh so the rest of the dashboard (SetUpPaymentsCard if
       // present, MemberProfileCard, etc.) re-renders with the new
@@ -235,11 +238,18 @@ export function PlanManagementCard({ member }: PlanManagementCardProps) {
                 <p className="text-[13px] font-semibold text-white">
                   Switched to {PLAN_LABELS[confirmation.target]}
                 </p>
-                {confirmation.requiresAdminCancel ? (
+                {confirmation.autoCancelled ? (
+                  <p className="mt-1.5 text-[12.5px] text-white/65 leading-relaxed">
+                    Your Paystack auto-debit has been cancelled — no
+                    further charges will run. Use the bank deposit
+                    details below for your next contribution and
+                    we&rsquo;ll allocate it on recon.
+                  </p>
+                ) : confirmation.requiresAdminCancel ? (
                   <>
                     <p className="mt-1.5 text-[12.5px] text-white/65 leading-relaxed">
                       Your Paystack auto-debit is still scheduled — we
-                      can&rsquo;t cancel it from here automatically yet.
+                      couldn&rsquo;t cancel it from here automatically.
                       Email admin (one click below) and your next
                       auto-charge will be stopped within 24 hours. In
                       the meantime you can pay this month&rsquo;s

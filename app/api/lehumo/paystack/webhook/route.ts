@@ -5,13 +5,18 @@ import {
   checkMonthPayment,
   setMemberActive,
   getMemberById,
+  updateMember,
 } from "@/lib/airtable";
 import { getContributionByKey } from "@/lib/contributions";
 import {
   sendPaymentSuccessEmail,
   sendContributionReceiptEmail,
 } from "@/lib/email";
-import { buildContributionKey } from "@/lib/definitions";
+import {
+  AIRTABLE_FIELDS,
+  buildContributionKey,
+  spliceSubscriptionIntoNotes,
+} from "@/lib/definitions";
 import {
   getCreditMonthAndPeriod,
   getSastYear,
@@ -128,6 +133,111 @@ export async function POST(request: NextRequest) {
               `[paystack webhook] email failed (active=${wasAlreadyActive}):`,
               err,
             ),
+          );
+        }
+      }
+    }
+
+    // ── subscription lifecycle events ─────────────────────────────────
+    // When a member's debit-order is first created (Standard plan card
+    // setup), Paystack fires `subscription.create` with the subscription
+    // code we need to disable it later. Capture it onto the member's
+    // notes blob so the plan-switch flow can auto-cancel without
+    // admin coordination.
+    if (payload.event === "subscription.create") {
+      const subscriptionCode = payload.data?.subscription_code as
+        | string
+        | undefined;
+      const customerEmail = (payload.data?.customer?.email as string)
+        ?.toLowerCase()
+        .trim();
+
+      if (subscriptionCode && customerEmail) {
+        try {
+          // Resolve member by email — we don't get memberRecordId on
+          // subscription events, only customer.email. The customer was
+          // created with the email we use as the member's primary ID
+          // on init, so this lookup is reliable.
+          const lookupRes = await fetch(
+            `${process.env.AIRTABLE_API_BASE ?? "https://api.airtable.com/v0"}/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(
+              `LOWER({Email})="${customerEmail}"`,
+            )}&maxRecords=1`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
+              },
+            },
+          );
+          const lookupData = await lookupRes.json();
+          const record = lookupData.records?.[0];
+          if (record) {
+            const newNotes = spliceSubscriptionIntoNotes(
+              record.fields?.[AIRTABLE_FIELDS.notes] ?? "",
+              { code: subscriptionCode },
+            );
+            await updateMember(record.id, {
+              [AIRTABLE_FIELDS.notes]: newNotes,
+            });
+            console.log(
+              `[paystack webhook] captured subscription_code=${subscriptionCode} for member=${record.id} (${customerEmail})`,
+            );
+          } else {
+            console.warn(
+              `[paystack webhook] subscription.create for unknown email=${customerEmail} sub=${subscriptionCode}`,
+            );
+          }
+        } catch (err) {
+          console.error(
+            `[paystack webhook] failed to capture subscription_code for ${customerEmail}:`,
+            err,
+          );
+        }
+      }
+    }
+
+    // Mirror cleanup path — when Paystack signals a subscription has
+    // been cancelled (admin used dashboard / Paystack-side cancellation
+    // / our own disable call), wipe the stored code and any "Cancel
+    // Pending" admin flag so the portal + admin dashboard reflect the
+    // resolved state on next refresh.
+    if (payload.event === "subscription.disable") {
+      const subscriptionCode = payload.data?.subscription_code as
+        | string
+        | undefined;
+      const customerEmail = (payload.data?.customer?.email as string)
+        ?.toLowerCase()
+        .trim();
+
+      if (subscriptionCode && customerEmail) {
+        try {
+          const lookupRes = await fetch(
+            `${process.env.AIRTABLE_API_BASE ?? "https://api.airtable.com/v0"}/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(
+              `LOWER({Email})="${customerEmail}"`,
+            )}&maxRecords=1`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
+              },
+            },
+          );
+          const lookupData = await lookupRes.json();
+          const record = lookupData.records?.[0];
+          if (record) {
+            const newNotes = spliceSubscriptionIntoNotes(
+              record.fields?.[AIRTABLE_FIELDS.notes] ?? "",
+              { code: null, action: null },
+            );
+            await updateMember(record.id, {
+              [AIRTABLE_FIELDS.notes]: newNotes,
+            });
+            console.log(
+              `[paystack webhook] cleared subscription state for member=${record.id} (${customerEmail}) on subscription.disable`,
+            );
+          }
+        } catch (err) {
+          console.error(
+            `[paystack webhook] failed to clear subscription state for ${customerEmail}:`,
+            err,
           );
         }
       }

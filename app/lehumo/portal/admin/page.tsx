@@ -8,6 +8,7 @@ import { AdminAddMemberCard } from "@/components/lehumo/admin/AdminAddMemberCard
 import { AdminPoolTracker } from "@/components/lehumo/admin/AdminPoolTracker";
 import { AdminCommunityHealth } from "@/components/lehumo/admin/AdminCommunityHealth";
 import { AdminBehindSnapshot } from "@/components/lehumo/admin/AdminBehindSnapshot";
+import { AdminPendingActions } from "@/components/lehumo/admin/AdminPendingActions";
 import { computeAdminStats } from "@/lib/admin-stats";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +56,12 @@ export default async function AdminDashboardPage() {
             <span className="text-[#0B1933] font-semibold">{session.email}</span>
           </div>
         </div>
+
+        {/* Pending actions — currently only the subscription-cancel queue.
+            Renders at the top because these are time-sensitive (they bite
+            on the next Paystack billing cycle). Self-hiding when the
+            queue is empty so it doesn't add noise to a clean dashboard. */}
+        <AdminPendingActions pending={stats.subscriptionCancelPending} />
 
         {/* Stat tiles — quick at-a-glance counts. Richer breakdowns sit
             in the Pool / Community Health / Behind cards below. */}

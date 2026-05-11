@@ -201,6 +201,19 @@ export function computeAdminStats(
     // Behind list
     behindNow,
     behindCount: behindNow.length,
+
+    // Subscription cancellation pending — members who downgraded from
+    // Standard → Basic but the auto-cancel against Paystack didn't
+    // succeed (no subscription_code stored, or disable API call
+    // failed). Admin needs to cancel these via the Paystack dashboard
+    // before the next billing cycle or those members get charged for
+    // a plan they've opted out of.
+    subscriptionCancelPending: members.filter(
+      (m) => m.subscriptionAction === "Cancel Pending",
+    ),
+    subscriptionCancelPendingCount: members.filter(
+      (m) => m.subscriptionAction === "Cancel Pending",
+    ).length,
   };
 }
 

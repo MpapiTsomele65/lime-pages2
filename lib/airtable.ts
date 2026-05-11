@@ -11,6 +11,7 @@ import {
   LOAN_TYPE_CHOICE_ID_TO_NAME,
   CONTRIBUTION_SOURCE,
   extractPlanFromNotes,
+  extractSubscriptionFromNotes,
   formatMemberNumber,
   idTypeToAirtable,
   todayDate,
@@ -131,6 +132,19 @@ export function parseRecord(record: any): LehumoMember {
     // Falls through to undefined for legacy members onboarded before
     // Step 2 was added or whose notes have been cleared.
     plan: extractPlanFromNotes(f[AIRTABLE_FIELDS.notes] || ""),
+    // Paystack subscription state — also derived from notes (see
+    // extractSubscriptionFromNotes). `code` is set by the
+    // subscription.create webhook handler; `action` is set when a
+    // member downgrades to Basic but auto-cancel isn't possible.
+    ...(() => {
+      const sub = extractSubscriptionFromNotes(
+        f[AIRTABLE_FIELDS.notes] || "",
+      );
+      return {
+        subscriptionCode: sub.code,
+        subscriptionAction: sub.action,
+      };
+    })(),
     // ── KYC fields (Tier 2A) — all optional, populated post-onboarding ──
     idType: resolveSelect(
       f[AIRTABLE_FIELDS.idType],

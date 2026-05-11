@@ -647,6 +647,16 @@ export interface LehumoMember {
   //    to the correct payment ceremony (manual EFT for basic, Paystack
   //    debit-order for standard, hold for VIP).
   plan?: MemberPlan;
+  // ── Paystack subscription state. Captured from the
+  //    `subscription.create` webhook event (sets `subscriptionCode`) and
+  //    cleared on `subscription.disable`. When a member downgrades from
+  //    Standard → Basic and we successfully cancel via the Paystack API,
+  //    code is cleared and action is null. If the API call fails or no
+  //    code is stored, `subscriptionAction` is set to `"Cancel Pending"`
+  //    so the admin panel can surface it before the next billing cycle.
+  //    Both stored as segments in the same `notes` blob as Plan.
+  subscriptionCode?: string | null;
+  subscriptionAction?: SubscriptionAction | null;
 }
 
 /**
@@ -680,6 +690,87 @@ export function extractPlanFromNotes(notes: string): MemberPlan | undefined {
     return candidate;
   }
   return undefined;
+}
+
+/**
+ * Subscription-related state stored inside the same pipe-delimited
+ * `notes` blob used for Plan / Commitment / Intent. Living here
+ * avoids an Airtable schema change while still giving us structured,
+ * machine-parseable data the admin pending-actions surface can filter
+ * on.
+ *
+ * Segment shape:
+ *   `SubCode: SUB_xxxxxxxx` — Paystack recurring-subscription
+ *     identifier captured from the `subscription.create` webhook event.
+ *     Cleared when the subscription is disabled.
+ *   `SubAction: Cancel Pending` — set when a member downgrades from
+ *     Standard → Basic but we couldn't auto-cancel their Paystack
+ *     subscription (no code stored, or the disable API call failed).
+ *     Cleared by the auto-cancel path on success, or by an admin
+ *     manually marking the row resolved.
+ */
+export type SubscriptionAction = "Cancel Pending";
+
+export interface SubscriptionState {
+  /** Paystack subscription code (SUB_xxx) if we know it. */
+  code: string | null;
+  /** Open admin action against this member's subscription, if any. */
+  action: SubscriptionAction | null;
+}
+
+const EMPTY_SUBSCRIPTION_STATE: SubscriptionState = { code: null, action: null };
+
+export function extractSubscriptionFromNotes(notes: string): SubscriptionState {
+  if (!notes) return { ...EMPTY_SUBSCRIPTION_STATE };
+  const codeMatch = /(?:^|\|)\s*SubCode:\s*([A-Za-z0-9_-]+)/i.exec(notes);
+  const actionMatch = /(?:^|\|)\s*SubAction:\s*([^|]+)/i.exec(notes);
+  const code = codeMatch ? codeMatch[1].trim() : null;
+  const rawAction = actionMatch ? actionMatch[1].trim() : null;
+  // Whitelist the action vocabulary so a stale or typo'd value doesn't
+  // light up the admin dashboard incorrectly.
+  const action: SubscriptionAction | null =
+    rawAction === "Cancel Pending" ? rawAction : null;
+  return { code, action };
+}
+
+/**
+ * Splice subscription segments back into the notes blob. Pass `null` for
+ * either field to remove it. Preserves every other segment (Plan,
+ * Commitment, Intent, etc.) so this is safe to call from the webhook,
+ * the plan-switch API, and admin "mark resolved" actions alike.
+ */
+export function spliceSubscriptionIntoNotes(
+  existingNotes: string,
+  patch: { code?: string | null; action?: SubscriptionAction | null },
+): string {
+  const segments = (existingNotes ?? "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const updateOrRemove = (
+    prefixRe: RegExp,
+    prefix: string,
+    value: string | null | undefined,
+  ) => {
+    // Drop any existing matching segment(s) — there should only be one
+    // but a stale duplicate shouldn't break the rewrite.
+    for (let i = segments.length - 1; i >= 0; i--) {
+      if (prefixRe.test(segments[i])) segments.splice(i, 1);
+    }
+    if (value !== undefined && value !== null && value !== "") {
+      segments.push(`${prefix}: ${value}`);
+    }
+  };
+
+  if (patch.code !== undefined) {
+    updateOrRemove(/^SubCode:\s*/i, "SubCode", patch.code);
+  }
+  if (patch.action !== undefined) {
+    updateOrRemove(/^SubAction:\s*/i, "SubAction", patch.action);
+  }
+
+  return segments.join(" | ");
 }
 
 /**

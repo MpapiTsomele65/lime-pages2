@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/session";
 import { getMemberByIdLite, updateMember } from "@/lib/airtable";
-import { AIRTABLE_FIELDS } from "@/lib/definitions";
+import { disableSubscription } from "@/lib/paystack";
+import {
+  AIRTABLE_FIELDS,
+  extractSubscriptionFromNotes,
+  spliceSubscriptionIntoNotes,
+} from "@/lib/definitions";
 
 /**
  * Member-portal plan switcher.
@@ -77,26 +82,66 @@ export async function POST(request: NextRequest) {
       member.plan === "basic" || member.plan === "standard" || member.plan === "vip"
         ? member.plan
         : null;
-    // When the member is moving off Standard with a live debit order,
-    // they need to know their auto-debit will keep running until
-    // admin cancels the Paystack subscription manually. (Once we
-    // start storing subscription_code on the member record, this
-    // branch can call Paystack's disable API directly and the flag
-    // goes away.)
-    const requiresAdminCancelSubscription =
+    const isStandardToBasicDowngrade =
       previousPlan === "standard" && newPlan === "basic" && hasContributions;
 
-    // Splice the new "Plan: X" segment into the existing notes blob.
-    // Notes are pipe-delimited segments by convention (set by the
-    // onboard route). Strip any existing Plan: segment (regardless of
-    // case / spacing variations) before appending the canonical one.
+    // ── Standard → Basic downgrade: try to disable the Paystack
+    //    subscription. If we have a stored subscription_code we call
+    //    Paystack's disable endpoint directly; on success the auto-
+    //    debit stops and we don't need admin help. If we don't have
+    //    the code (legacy members onboarded before the webhook started
+    //    capturing it) or the disable fails, we flag `SubAction:
+    //    Cancel Pending` on the member so the admin dashboard surfaces
+    //    them before the next billing cycle.
+    let subscriptionAutoCancelled = false;
+    let subscriptionPendingAdmin = false;
+    let subscriptionPatch: {
+      code?: string | null;
+      action?: "Cancel Pending" | null;
+    } | null = null;
+
+    if (isStandardToBasicDowngrade) {
+      const existing = extractSubscriptionFromNotes(member.notes ?? "");
+      if (existing.code) {
+        const result = await disableSubscription(existing.code);
+        if (result.ok) {
+          // Subscription disabled — clear both the code and any open
+          // "Cancel Pending" action.
+          subscriptionAutoCancelled = true;
+          subscriptionPatch = { code: null, action: null };
+        } else {
+          // Disable failed (network blip, code stale, etc.). Surface
+          // for admin attention; keep the code so admin can retry.
+          console.error(
+            `[plan switch] disableSubscription failed for member ${session.memberId}: ${result.error}`,
+          );
+          subscriptionPendingAdmin = true;
+          subscriptionPatch = { action: "Cancel Pending" };
+        }
+      } else {
+        // No code stored — legacy member, or onboarded before webhook
+        // capture landed. Flag for admin.
+        subscriptionPendingAdmin = true;
+        subscriptionPatch = { action: "Cancel Pending" };
+      }
+    }
+
+    // ── Splice the new "Plan: X" segment into the existing notes blob.
+    //    Notes are pipe-delimited segments by convention. Strip any
+    //    existing Plan: segment first so the splice replaces rather
+    //    than duplicates. Subscription segments are layered on after
+    //    via spliceSubscriptionIntoNotes (which preserves Plan + every
+    //    other unrelated segment).
     const existingNotes = member.notes ?? "";
     const stripped = existingNotes
       .split("|")
       .map((s) => s.trim())
       .filter((s) => s && !/^Plan:\s*/i.test(s));
     stripped.push(`Plan: ${newPlan}`);
-    const newNotes = stripped.join(" | ");
+    let newNotes = stripped.join(" | ");
+    if (subscriptionPatch) {
+      newNotes = spliceSubscriptionIntoNotes(newNotes, subscriptionPatch);
+    }
 
     const updated = await updateMember(session.memberId, {
       [AIRTABLE_FIELDS.notes]: newNotes,
@@ -106,7 +151,14 @@ export async function POST(request: NextRequest) {
       ok: true,
       plan: newPlan,
       previousPlan,
-      requiresAdminCancelSubscription,
+      // True if we attempted and succeeded at auto-cancelling the
+      // Paystack subscription. The UI uses this to confirm to the
+      // member that nothing else is required.
+      subscriptionAutoCancelled,
+      // True if the downgrade left a "Cancel Pending" flag for admin
+      // (either no subscription_code stored, or Paystack disable
+      // failed). UI surfaces the mailto fallback when this is set.
+      requiresAdminCancelSubscription: subscriptionPendingAdmin,
       memberId: updated.id,
     });
   } catch (err) {

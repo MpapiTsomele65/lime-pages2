@@ -154,6 +154,71 @@ export async function createCustomerSubscription(params: {
   return data.data;
 }
 
+// ─── Disable Subscription ───────────────────────────────────────────
+// Stops a recurring Paystack subscription so it won't charge again on
+// the next billing date. Used when a member downgrades from Standard
+// to Basic on the portal — we cancel their auto-debit programmatically
+// instead of relying on admin to do it from the Paystack dashboard.
+//
+// Paystack requires BOTH the subscription code (SUB_xxx) and the
+// email_token returned alongside it on creation. We persist the
+// subscription_code on the member (in the notes blob); the email_token
+// is re-fetched via GET /subscription/<code> at disable time, so the
+// caller only needs to know the code.
+export async function disableSubscription(
+  subscriptionCode: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Look up the subscription to grab its email_token.
+  let emailToken: string | null = null;
+  try {
+    const lookupRes = await fetch(
+      `${PAYSTACK_BASE}/subscription/${encodeURIComponent(subscriptionCode)}`,
+      { headers: getHeaders() },
+    );
+    const lookupData = await lookupRes.json();
+    if (!lookupData.status) {
+      return {
+        ok: false,
+        error: `Paystack lookup failed: ${lookupData.message ?? "unknown"}`,
+      };
+    }
+    emailToken = lookupData.data?.email_token ?? null;
+  } catch (err) {
+    return {
+      ok: false,
+      error: `Paystack lookup error: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  if (!emailToken) {
+    return { ok: false, error: "Paystack lookup returned no email_token" };
+  }
+
+  // POST /subscription/disable — required body is { code, token }.
+  // Idempotency: an already-cancelled subscription returns
+  // status:false with a "not active" message, which we still treat
+  // as success for the caller's intent.
+  try {
+    const res = await fetch(`${PAYSTACK_BASE}/subscription/disable`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ code: subscriptionCode, token: emailToken }),
+    });
+    const data = await res.json();
+    if (data.status) return { ok: true };
+    const msg = (data.message ?? "").toLowerCase();
+    if (msg.includes("not active") || msg.includes("already")) {
+      return { ok: true };
+    }
+    return { ok: false, error: `Paystack disable failed: ${data.message}` };
+  } catch (err) {
+    return {
+      ok: false,
+      error: `Paystack disable error: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
 // ─── Validate Webhook Signature ─────────────────────────────────────
 export function validateWebhookSignature(
   body: string,
