@@ -1,5 +1,6 @@
 import {
   CONTRIBUTION_STATUS,
+  LEHUMO_FIRST_DUE_PERIOD,
   type LehumoContribution,
 } from "./definitions";
 
@@ -33,26 +34,34 @@ import {
  * from both server and client components.
  */
 export interface ContributionLedger {
-  /** Count of contribution rows whose Period <= currentPeriod. Grows
-   *  by 1 per calendar month from Jun 2026 onwards, capped at the
-   *  total row count (typically 60). Pre-launch: 0. */
+  /** Count of scheduled rows (period ≥ first-due) whose Period <=
+   *  currentPeriod. Grows by 1 per calendar month from Jun 2026
+   *  onwards, capped at the schedule length (60 for the standard
+   *  5-year trust). Pre-launch: 0 — there's nothing the trust expects
+   *  yet, even if the table contains seed rows for earlier months. */
   monthsDue: number;
-  /** Count of `monthsDue` rows whose Status=Paid. ≤ monthsDue. */
+  /** Count of scheduled rows whose Status=Paid — INCLUDING those whose
+   *  period is in the future (prepayments). A member who has prepaid
+   *  June while May's `currentPeriod` is active shows 1 here, not 0. */
   monthsPaid: number;
-  /** monthsDue − monthsPaid. The headline "months behind" figure. */
+  /** max(0, monthsDue − monthsPaid). The headline "months behind"
+   *  figure. Clamps so prepayments don't render a negative count. */
   monthsOutstanding: number;
-  /** Sum of `amountExpected` across rows with Period <= currentPeriod
-   *  (in ZAR). What the trust expected by now. */
+  /** Sum of `amountExpected` across scheduled rows with Period <=
+   *  currentPeriod (in ZAR). What the trust expected by now. */
   cumulativeExpected: number;
-  /** Sum of `amountReceived` across `monthsDue` rows whose Status=Paid
-   *  (in ZAR). What the trust has actually banked from this member by
-   *  now. */
+  /** Sum of `amountReceived` across every scheduled Paid row (in ZAR),
+   *  including prepayments. Pairs with `cumulativeExpected` for the
+   *  outstanding math — prepayments correctly net against any current
+   *  arrears so a member who pays Jul up-front while Jun is overdue
+   *  still shows outstanding=0. */
   cumulativeReceived: number;
   /** max(0, cumulativeExpected − cumulativeReceived). The R-amount the
    *  member owes right now to be square against the schedule. */
   outstanding: number;
-  /** Total number of rows (lifetime). Typically 60 for the standard
-   *  5-year trust. */
+  /** Total scheduled rows (period ≥ first-due). 60 for the standard
+   *  5-year trust. Seed rows for pre-launch months are excluded so the
+   *  "X of Y" copy on the portal stays anchored to the real schedule. */
   totalMonths: number;
   /** Total `amountReceived` across all Paid rows, lifetime. Used by
    *  CommunityPoolCard's myContributed. */
@@ -122,6 +131,7 @@ export function computeContributionLedger(
 
   let monthsDue = 0;
   let monthsPaid = 0;
+  let totalScheduledMonths = 0;
   let cumulativeExpected = 0;
   let cumulativeReceived = 0;
   let lifetimeReceived = 0;
@@ -132,29 +142,54 @@ export function computeContributionLedger(
 
   for (const row of sorted) {
     const isPaid = row.status === CONTRIBUTION_STATUS.paid;
-    const isDue = row.period <= currentPeriod;
+    // `isScheduled` gates every "is this row part of the trust's
+    // collection schedule?" question. Pre-launch rows (period <
+    // 2026-06) live in the table for historical/seed reasons but aren't
+    // part of what the trust expects — so they don't inflate the goal,
+    // total-months count, or arrears math. They also don't surface as
+    // "next due" so a fresh member never sees "Next due: May 2026"
+    // before launch day.
+    const isScheduled = row.period >= LEHUMO_FIRST_DUE_PERIOD;
+    // `isDue` is the "should have been paid by now" check — a scheduled
+    // row at or before the SAST-current period.
+    const isDue = isScheduled && row.period <= currentPeriod;
 
-    lifetimeGoal += row.amountExpected ?? 0;
+    if (isScheduled) {
+      lifetimeGoal += row.amountExpected ?? 0;
+      totalScheduledMonths += 1;
+    }
 
+    // `lifetimeReceived` / `lastPaidPeriod` / `lastPaidAmount` track the
+    // member's actual cash flow — they're never filtered by schedule
+    // membership, so even a stray pre-launch payment (shouldn't happen
+    // under the credit-to-Jun policy, but defensively) still gets
+    // credited to the member's running total.
     if (isPaid) {
       lifetimeReceived += row.amountReceived ?? 0;
       lastPaidPeriod = row.period;
       lastPaidAmount = row.amountReceived ?? null;
     }
 
+    // `monthsPaid` / `cumulativeReceived` count every scheduled paid
+    // row — including prepayments where the row's period is after
+    // `currentPeriod`. That way a member who's prepaid the next month
+    // sees "1 of 60 paid" instead of "0 of 60 paid", and the
+    // outstanding math correctly nets prepayments against any current
+    // arrears.
+    if (isScheduled && isPaid) {
+      monthsPaid += 1;
+      cumulativeReceived += row.amountReceived ?? 0;
+    }
+
     if (isDue) {
       monthsDue += 1;
       cumulativeExpected += row.amountExpected ?? 0;
-      if (isPaid) {
-        monthsPaid += 1;
-        cumulativeReceived += row.amountReceived ?? 0;
-      }
     }
 
-    // First non-Paid row in chronological order is "next due".
-    // Includes overdue (period < currentPeriod, not yet paid) — that's
-    // intentional: members see the oldest outstanding period first.
-    if (!isPaid && nextDuePeriod === null) {
+    // First non-Paid scheduled row in chronological order is "next
+    // due". Pre-launch rows are skipped so members see the real
+    // schedule entry, not a synthetic May 2026 placeholder.
+    if (isScheduled && !isPaid && nextDuePeriod === null) {
       nextDuePeriod = row.period;
     }
   }
@@ -166,7 +201,7 @@ export function computeContributionLedger(
     cumulativeExpected,
     cumulativeReceived,
     outstanding: Math.max(0, cumulativeExpected - cumulativeReceived),
-    totalMonths: sorted.length,
+    totalMonths: totalScheduledMonths,
     lifetimeReceived,
     lifetimeGoal,
     lifetimeRemaining: Math.max(0, lifetimeGoal - lifetimeReceived),

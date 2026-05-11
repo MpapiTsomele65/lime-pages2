@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import {
   CONTRIBUTION_STATUS,
+  LEHUMO_FIRST_DUE_PERIOD,
   MONTH_NAMES,
   type LehumoContribution,
 } from "@/lib/definitions";
@@ -88,6 +89,11 @@ export function ContributionGrid({
       for (const row of contributionRows) {
         const m = /^(\d{4})-(\d{2})$/.exec(row.period);
         if (!m) continue;
+        // Skip pre-launch seed rows (period < 2026-06). They live in
+        // the table for historical reasons but aren't part of the
+        // collection schedule — rendering them as dim tiles in the
+        // 2026 strip confuses members ("why does May show as missed?").
+        if (row.period < LEHUMO_FIRST_DUE_PERIOD) continue;
         const yr = Number(m[1]);
         yrs.add(yr);
         const paid = row.status === CONTRIBUTION_STATUS.paid;

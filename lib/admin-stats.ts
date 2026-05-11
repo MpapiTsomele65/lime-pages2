@@ -79,11 +79,25 @@ export function computeAdminStats(
   );
   const totalContributed = totalMonthsTicked * MONTHLY_CONTRIBUTION_ZAR;
 
+  // Pre-launch gate. Collections officially start 1 Jun 2026 — before
+  // that there's no "this month" to be paid or "previous month" to be
+  // behind on. Zero everything out at the source so admin KPIs and the
+  // chase-up list don't surface phantom arrears from seed rows / smoke
+  // tests that landed in May 2026. The gate keys on `currentMonth`
+  // being earlier than June within the launch year, which matches the
+  // member portal's `isBeforeLaunch()` semantic for the only year
+  // where this matters (2026).
+  const PRE_LAUNCH_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May"];
+  const preLaunchMode = PRE_LAUNCH_MONTHS.includes(currentMonth);
+
   // ── This-month and previous-month contribution rates ──
-  const paidThisMonth = members.filter((m) => m.contributions[currentMonth]);
-  const paidPrevMonth = prevMonth
-    ? members.filter((m) => m.contributions[prevMonth])
-    : [];
+  const paidThisMonth = preLaunchMode
+    ? []
+    : members.filter((m) => m.contributions[currentMonth]);
+  const paidPrevMonth =
+    preLaunchMode || !prevMonth
+      ? []
+      : members.filter((m) => m.contributions[prevMonth]);
 
   const activeIds = new Set(activeMembers.map((m) => m.id));
   const activePaidThisMonth = paidThisMonth.filter((m) =>
@@ -103,15 +117,18 @@ export function computeAdminStats(
 
   // ── Falling behind: active members who haven't paid the current month,
   //    sorted by how many months they're behind (most behind first) so the
-  //    chase-up list surfaces the worst offenders at the top. ──
-  const behindNow = activeMembers
-    .filter((m) => !m.contributions[currentMonth])
-    .map((m) => {
-      const paidYTD = monthsPaidYearToDate(m, currentMonthIndex);
-      const monthsBehindYTD = currentMonthIndex + 1 - paidYTD;
-      return { member: m, paidYTD, monthsBehindYTD };
-    })
-    .sort((a, b) => b.monthsBehindYTD - a.monthsBehindYTD);
+  //    chase-up list surfaces the worst offenders at the top. Pre-launch
+  //    this list is empty by definition — no month is overdue yet. ──
+  const behindNow = preLaunchMode
+    ? []
+    : activeMembers
+        .filter((m) => !m.contributions[currentMonth])
+        .map((m) => {
+          const paidYTD = monthsPaidYearToDate(m, currentMonthIndex);
+          const monthsBehindYTD = currentMonthIndex + 1 - paidYTD;
+          return { member: m, paidYTD, monthsBehindYTD };
+        })
+        .sort((a, b) => b.monthsBehindYTD - a.monthsBehindYTD);
 
   // ── Lending ledger: pull each member's emergency-access state and
   //    aggregate the active-loan slice. computeEmergencyAccess is the

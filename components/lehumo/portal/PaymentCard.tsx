@@ -317,10 +317,28 @@ export function PaymentCard({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#46CDCF]">
                     Begins 1 June 2026
                   </p>
-                  <p className="text-xs text-white/55 mt-0.5">
-                    Your first R1,000 contribution unlocks the Pay
-                    button — nothing to do for now.
-                  </p>
+                  {/* Two pre-launch states:
+                      1. Member hasn't paid yet → "your first
+                         contribution unlocks Pay" CTA framing
+                      2. Member has prepaid (debit order set up early)
+                         → "you're set, first deduction 1 June" framing
+                      The second case is the prepaid-Standard flow
+                      where the Paystack debit order has already run
+                      once. Without this split the prepaid member
+                      reads contradictory copy: "Your first
+                      contribution unlocks the Pay button" right next
+                      to "Last paid: Jun 2026". */}
+                  {ledger?.lastPaidPeriod ? (
+                    <p className="text-xs text-white/55 mt-0.5">
+                      You&rsquo;re set — your first scheduled deduction
+                      lands 1 June 2026 and shows up here automatically.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-white/55 mt-0.5">
+                      Your first R1,000 contribution unlocks the Pay
+                      button — nothing to do for now.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (

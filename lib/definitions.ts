@@ -146,6 +146,18 @@ export const CONTRIBUTION_MONTH_ORDER: ReadonlyArray<string> = [
  */
 export const LEHUMO_LAUNCH_DATE_ISO = "2026-06-01T00:00:00+02:00";
 
+/**
+ * The first period the trust officially expects a contribution against.
+ * Anything before this (e.g. a pre-existing May 2026 row in the schedule,
+ * or a smoke-test row from May) is treated as "not yet on the books" by
+ * the contribution ledger — it doesn't inflate the goal, it doesn't show
+ * up as "due", and it doesn't push members into "1 month behind" copy
+ * pre-launch. Pre-launch payments are routed to this period via
+ * `getCreditMonthAndPeriod()` so members never accidentally credit a row
+ * the schedule isn't actually tracking.
+ */
+export const LEHUMO_FIRST_DUE_PERIOD = "2026-06";
+
 export function isBeforeLaunch(now: Date = new Date()): boolean {
   return now.getTime() < new Date(LEHUMO_LAUNCH_DATE_ISO).getTime();
 }
