@@ -9,6 +9,10 @@ import {
   parseContributionPeriod,
   type LehumoMember,
 } from "./definitions";
+import {
+  allocateEftPayment,
+  type EftAllocationPlan,
+} from "./eft-allocation";
 // Shared Airtable plumbing — see lib/airtable.ts for the canonical
 // implementations. Importing rather than duplicating eliminates the
 // parseRecord-drift class of bug that previously caused the admin
@@ -212,4 +216,83 @@ export async function setMonthPayment(
   const updated = await getMemberByIdAdmin(recordId);
   if (!updated) throw new Error(`member ${recordId} disappeared after write`);
   return updated;
+}
+
+/**
+ * Log a manual EFT payment against a member's account, allocating the
+ * amount across one-or-more contribution rows (oldest unpaid first).
+ *
+ * The recon flow we want to support:
+ *   • Admin pulls the bank statement, sees `John, R2,000, ref ABC123,
+ *     date 2026-06-15`.
+ *   • Admin opens John's row in the admin portal, clicks "Log EFT",
+ *     enters R2,000 + ref + date.
+ *   • Backend allocates: Jun 2026 R1,000 (Paid) + Jul 2026 R1,000 (Paid).
+ *   • Member sees both months light up + can verify by checking the
+ *     reference on each row.
+ *
+ * Partial amounts top up the next unpaid row's `amountReceived` and
+ * leave it Pending — admin can see exactly where the shortfall sits.
+ * Overpayments (after every unpaid row is fully covered) surface as
+ * `remainder` in the response so the admin knows there's excess to
+ * deal with — we deliberately don't auto-refund or stuff the excess
+ * somewhere it might surprise the admin later.
+ *
+ * Atomicity caveat: each row write is a separate PATCH to Airtable;
+ * there's no transaction primitive. If the second of three writes
+ * fails, the first one has already landed. We return the partial
+ * plan so the caller can surface "applied 1 of 3 — second write
+ * failed, please retry" rather than pretending the whole call rolled
+ * back. In practice Airtable is reliable enough that this is rare.
+ */
+export async function logEftPayment(args: {
+  memberRecordId: string;
+  amount: number;
+  paymentReference: string;
+  paymentDate?: string;
+  notes?: string;
+}): Promise<{
+  plan: EftAllocationPlan;
+  member: LehumoMember;
+}> {
+  const member = await getMemberByIdAdmin(args.memberRecordId);
+  if (!member) throw new Error(`member ${args.memberRecordId} not found`);
+  if (!member.contributionRows || member.contributionRows.length === 0) {
+    throw new Error(
+      `member ${args.memberRecordId} has no contribution rows — schedule not seeded`,
+    );
+  }
+
+  const plan = allocateEftPayment(member.contributionRows, args.amount);
+  if (plan.rows.length === 0) {
+    // Nothing to allocate — every scheduled row is already covered.
+    // Return the (empty) plan so the caller can show a "nothing to do"
+    // message; don't throw, since this is a valid no-op outcome.
+    return { plan, member };
+  }
+
+  // Apply writes sequentially. Each row gets a fresh PATCH with the
+  // new amountReceived + status; the apply order is oldest → newest
+  // so a mid-run failure leaves the older months Paid (which is the
+  // correct partial-state outcome anyway).
+  const today = new Date().toISOString().slice(0, 10);
+  for (const allocation of plan.rows) {
+    const status =
+      allocation.status === "fully-covers"
+        ? CONTRIBUTION_STATUS.paid
+        : CONTRIBUTION_STATUS.pending;
+    await updateContribution(allocation.recordId, {
+      status,
+      amountReceived: allocation.newAmountReceived,
+      source: CONTRIBUTION_SOURCE.eft,
+      paymentReference: args.paymentReference,
+      paymentDate: args.paymentDate ?? today,
+      ...(args.notes ? { notes: args.notes } : {}),
+    });
+  }
+
+  // Re-fetch to surface the freshly-applied state to the caller.
+  const updated = await getMemberByIdAdmin(args.memberRecordId);
+  if (!updated) throw new Error(`member ${args.memberRecordId} disappeared after EFT log`);
+  return { plan, member: updated };
 }

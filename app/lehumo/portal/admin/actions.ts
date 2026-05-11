@@ -5,8 +5,10 @@ import { z } from "zod";
 import { getAdminSession } from "@/lib/admin-auth";
 import {
   adminUpdateMember,
+  logEftPayment as logEftPaymentAdmin,
   setMonthPayment,
 } from "@/lib/airtable-admin";
+import type { EftAllocationPlan } from "@/lib/eft-allocation";
 import {
   createMember,
   findMemberByEmail,
@@ -51,6 +53,79 @@ async function requireAdmin(): Promise<{ ok: true } | AdminActionResult> {
  * admin member table row by row — the client updates local state
  * optimistically from the returned member record.
  */
+/**
+ * Log a manual EFT payment against a member. The amount is auto-allocated
+ * across one-or-more contribution rows (oldest unpaid first); a R2,000
+ * payment will land as "Jun 2026 paid + Jul 2026 paid", a R1,500 as
+ * "Jun 2026 paid + Jul 2026 partial (R500)", etc.
+ *
+ * Returns both the freshly-refetched member AND the allocation plan
+ * (which rows got what amount, what status, any unallocated remainder)
+ * so the admin UI can show a clear confirmation: "R2,000 applied to
+ * Jun 2026 + Jul 2026".
+ */
+const LogEftSchema = z.object({
+  amount: z
+    .number()
+    .positive("Amount must be greater than zero")
+    .max(100_000, "Amount looks unusually large — confirm with the bank first"),
+  paymentReference: z
+    .string()
+    .min(1, "Reference is required")
+    .max(200, "Reference is too long"),
+  paymentDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+    .optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export type LogEftPaymentResult =
+  | { ok: true; member: LehumoMember; plan: EftAllocationPlan }
+  | { ok: false; error: string };
+
+export async function logEftPayment(
+  recordId: string,
+  input: {
+    amount: number;
+    paymentReference: string;
+    paymentDate?: string;
+    notes?: string;
+  },
+): Promise<LogEftPaymentResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as LogEftPaymentResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  const parsed = LogEftSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  try {
+    const { plan, member } = await logEftPaymentAdmin({
+      memberRecordId: recordId,
+      amount: parsed.data.amount,
+      paymentReference: parsed.data.paymentReference,
+      paymentDate: parsed.data.paymentDate,
+      notes: parsed.data.notes,
+    });
+    return { ok: true, member, plan };
+  } catch (err) {
+    console.error("logEftPayment error:", err);
+    const msg =
+      err instanceof Error
+        ? err.message
+        : "Failed to log EFT payment — please retry";
+    return { ok: false, error: msg };
+  }
+}
+
 export async function toggleMonthPayment(
   recordId: string,
   month: string,

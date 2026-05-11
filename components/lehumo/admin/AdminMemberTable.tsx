@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  Banknote,
   Check,
   Loader2,
   Search,
@@ -24,12 +25,14 @@ import {
 } from "@/lib/definitions";
 import {
   adminSetMemberBeneficiary,
+  logEftPayment,
   toggleMonthPayment,
   updateMemberKyc,
   updateMemberStatus,
   type AdminActionResult,
 } from "@/app/lehumo/portal/admin/actions";
 import { BeneficiaryDialog } from "@/components/lehumo/admin/BeneficiaryDialog";
+import { LogEftDialog } from "@/components/lehumo/admin/LogEftDialog";
 
 interface AdminMemberTableProps {
   /** Live member list, owned by the parent AdminMembersClient
@@ -69,6 +72,16 @@ export function AdminMemberTable({
   // no stale-data overwrites possible.
   const [beneficiaryEditing, setBeneficiaryEditing] =
     useState<LehumoMember | null>(null);
+
+  // EFT logging dialog state. Same modal-open-on-member pattern as the
+  // beneficiary editor — null when closed, member object when open so
+  // the dialog's live preview can run client-side against that member's
+  // contribution rows.
+  const [eftLogging, setEftLogging] = useState<LehumoMember | null>(null);
+  // Banner shown briefly after a successful EFT log so the admin sees
+  // an inline confirmation of what landed where, without losing the
+  // table context. Auto-clears after ~6s.
+  const [eftConfirmation, setEftConfirmation] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -210,7 +223,13 @@ export function AdminMemberTable({
                 key={m.id}
                 className="border-t border-[#E5E7EB] hover:bg-[#F8F9FA]/60"
               >
-                {/* Member name + id */}
+                {/* Member name + id + Log EFT affordance. The EFT
+                    button sits below the email so it's discoverable
+                    without eating column width — it's a row-scoped
+                    action that fits naturally in the member-identity
+                    column. Disabled for members without any
+                    contribution rows seeded (shouldn't happen post-
+                    onboarding but defensive). */}
                 <td className="sticky left-0 z-10 bg-white px-4 py-3">
                   <div className="font-medium text-[#0B0B0B]">
                     {m.fullName || "—"}
@@ -218,6 +237,18 @@ export function AdminMemberTable({
                   <div className="text-xs text-[#6B7280]">
                     {formatMemberNumber(m.memberNumber)} · {m.email || "no email"}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setEftLogging(m)}
+                    disabled={
+                      !m.contributionRows || m.contributionRows.length === 0
+                    }
+                    className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10.5px] font-medium text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    title="Log a manual EFT payment against this member"
+                  >
+                    <Banknote className="h-3 w-3" />
+                    Log EFT
+                  </button>
                 </td>
 
                 {/* Status dropdown — colour-coded so admins can scan
@@ -354,6 +385,66 @@ export function AdminMemberTable({
         }}
         onCancel={() => setBeneficiaryEditing(null)}
       />
+
+      {/* Log EFT dialog — collects amount + reference + date, fires
+          the multi-row allocation server action, then merges the
+          freshly-refetched member into shared state so the row's
+          month toggles light up immediately. The confirmation banner
+          (rendered below the toolbar) surfaces what landed where. */}
+      <LogEftDialog
+        member={eftLogging}
+        onSubmit={async (member, fields) => {
+          const res = await logEftPayment(member.id, fields);
+          if (!res.ok) {
+            return res;
+          }
+          onMemberUpdate(res.member);
+          // Build the confirmation banner from the returned plan —
+          // "R2,000 → Jun 2026 R1,000 + Jul 2026 R1,000" style.
+          const rowParts = res.plan.rows
+            .map((r) => {
+              const periodLabel = (() => {
+                const [year, m] = r.period.split("-");
+                const months = [
+                  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+                ];
+                return `${months[Number(m) - 1] ?? m} ${year}`;
+              })();
+              const tag = r.status === "partial" ? " partial" : "";
+              return `${periodLabel} R${r.amountApplied.toLocaleString("en-ZA")}${tag}`;
+            })
+            .join(" + ");
+          const remainder = res.plan.hasOverpayment
+            ? ` · R${res.plan.remainder.toLocaleString("en-ZA")} unallocated`
+            : "";
+          setEftConfirmation(
+            `R${fields.amount.toLocaleString("en-ZA")} applied: ${rowParts || "nothing"}${remainder}`,
+          );
+          setTimeout(() => setEftConfirmation(null), 6000);
+          setEftLogging(null);
+          return res;
+        }}
+        onCancel={() => setEftLogging(null)}
+      />
+
+      {/* Persistent-ish confirmation banner — auto-dismisses after 6s
+          via the timeout in onSubmit above, or admin can dismiss
+          manually. Sits at the bottom of the table section so it
+          doesn't elbow the toolbar around. */}
+      {eftConfirmation && (
+        <div className="border-t border-[#B8FF00]/30 bg-[#B8FF00]/[0.08] px-5 py-3 text-sm text-[#0B1933] flex items-start gap-2">
+          <Check className="h-4 w-4 mt-0.5 text-[#0B1933] shrink-0" />
+          <span className="flex-1">{eftConfirmation}</span>
+          <button
+            onClick={() => setEftConfirmation(null)}
+            className="text-[#0B1933]/60 hover:text-[#0B1933]"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </section>
   );
 }
