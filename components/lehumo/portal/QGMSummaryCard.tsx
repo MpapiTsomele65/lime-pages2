@@ -67,20 +67,27 @@ export function QGMSummaryCard() {
       aria-labelledby="qgm-card-title"
     >
       <PortalCard className="p-6 md:p-7">
-        {/* Header row — icon + title + host chip */}
+        {/* Header row — icon + title + host chip. Eyebrow flips
+            between "Kick-off · save the date" and "Quarterly General
+            Meeting" so members know whether the upcoming meeting is
+            the one-off launch event or part of the recurring cadence. */}
         <div className="flex items-start gap-4 mb-5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#46CDCF]/15 text-[#46CDCF]">
             <Users className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 mb-1">
-              Quarterly General Meeting
+              {next.kind === "kick-off"
+                ? "Kick-off QGM · launch event"
+                : "Quarterly General Meeting"}
             </p>
             <h2
               id="qgm-card-title"
               className="text-[17px] font-semibold tracking-tight text-white leading-tight"
             >
-              Next general meeting
+              {next.kind === "kick-off"
+                ? "Kick-off meeting"
+                : "Next general meeting"}
             </h2>
           </div>
         </div>
@@ -98,8 +105,10 @@ export function QGMSummaryCard() {
             {next.displayLong}
           </p>
           <p className="mt-2 text-[12.5px] text-white/55 leading-relaxed">
-            {QGM_START_TIME_SAST}–{QGM_END_TIME_SAST} SAST · Virtual ·
-            Investment update, governance committee report, member Q&amp;A
+            {QGM_START_TIME_SAST}–{QGM_END_TIME_SAST} SAST · Virtual ·{" "}
+            {next.kind === "kick-off"
+              ? "Launch celebration, steering committee introduction, Q&A"
+              : "Investment update, governance committee report, member Q&A"}
           </p>
           <p className="mt-3 text-[11px] text-white/40">
             Hosted by{" "}
@@ -144,14 +153,22 @@ export function QGMSummaryCard() {
           <ul className="space-y-2">
             {upcoming.map((q) => {
               const isNext = q.isoDate === next.isoDate;
+              const isKickOff = q.kind === "kick-off";
               return (
                 <li
                   key={q.isoDate}
-                  className={`flex items-center justify-between text-[13px] ${
+                  className={`flex items-center justify-between gap-2 text-[13px] ${
                     isNext ? "text-white" : "text-white/55"
                   }`}
                 >
-                  <span className="tracking-tight">{q.displayLong}</span>
+                  <span className="tracking-tight">
+                    {q.displayLong}
+                    {isKickOff && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-[#46CDCF]/[0.12] border border-[#46CDCF]/20 px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-[#46CDCF]">
+                        Kick-off
+                      </span>
+                    )}
+                  </span>
                   {isNext && (
                     <span className="inline-flex items-center rounded-full bg-[#B8FF00]/[0.12] border border-[#B8FF00]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#B8FF00]">
                       Next

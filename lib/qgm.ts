@@ -13,8 +13,14 @@
  * `Africa/Johannesburg` formatters only for display.
  */
 
-/** First QGM date — Thursday 3 September 2026, 18:00 SAST. */
+/** First OFFICIAL quarterly meeting — Thursday 3 September 2026, 18:00 SAST.
+ *  The kick-off in June (see KICK_OFF_DATE_ISO) is a standalone launch event,
+ *  not part of the quarterly cadence. */
 export const QGM_FIRST_DATE_ISO = "2026-09-03";
+/** Kick-off QGM — Thursday 11 June 2026, 18:00 SAST. One-off launch
+ *  meeting where the steering committee is introduced and the cohort
+ *  marks the start of collections. Sits outside the quarterly cadence. */
+export const KICK_OFF_DATE_ISO = "2026-06-11";
 export const QGM_START_TIME_SAST = "18:00";
 export const QGM_END_TIME_SAST = "19:30";
 export const QGM_DURATION_MIN = 90;
@@ -22,6 +28,9 @@ export const QGM_HOST_EMAIL = "lehumo@limepages.co.za";
 export const QGM_TITLE = "Lehumo Quarterly General Meeting";
 export const QGM_DESCRIPTION =
   "Quarterly AGM-style update for Lehumo members. Investment performance review, governance committee updates, and member Q&A. Hosted by lehumo@limepages.co.za — meeting link will be circulated by email closer to the date.";
+export const KICK_OFF_TITLE = "Lehumo Kick-off QGM";
+export const KICK_OFF_DESCRIPTION =
+  "Kick-off meeting for the Lehumo founding cohort. We'll mark the official start of collections, introduce the Executive Steering Governance Committee, and walk through the next 12 months together. Hosted by lehumo@limepages.co.za — meeting link circulated by email closer to the date.";
 
 export interface QGMDate {
   /** ISO date string, e.g. `2026-09-03`. SAST-relative. */
@@ -34,6 +43,9 @@ export interface QGMDate {
   displayLong: string;
   /** Short SAST display, e.g. `3 Sept 2026`. */
   displayShort: string;
+  /** Meeting kind. `kick-off` = one-off launch event in June 2026;
+   *  `quarterly` = part of the recurring schedule starting Sept 2026. */
+  kind: "kick-off" | "quarterly";
 }
 
 /**
@@ -59,7 +71,10 @@ function firstThursday(year: number, monthZero: number): string {
  * variants using Africa/Johannesburg locale-aware formatting so the
  * portal renders the same string regardless of the viewer's timezone.
  */
-function toQGMDate(isoDate: string): QGMDate {
+function toQGMDate(
+  isoDate: string,
+  kind: "kick-off" | "quarterly" = "quarterly",
+): QGMDate {
   const start = new Date(`${isoDate}T${QGM_START_TIME_SAST}:00+02:00`);
   const end = new Date(`${isoDate}T${QGM_END_TIME_SAST}:00+02:00`);
   const displayLong = start.toLocaleDateString("en-ZA", {
@@ -75,7 +90,7 @@ function toQGMDate(isoDate: string): QGMDate {
     month: "short",
     year: "numeric",
   });
-  return { isoDate, start, end, displayLong, displayShort };
+  return { isoDate, start, end, displayLong, displayShort, kind };
 }
 
 /**
@@ -86,16 +101,20 @@ function toQGMDate(isoDate: string): QGMDate {
  */
 export function listQGMs(yearsAhead = 5): QGMDate[] {
   const out: QGMDate[] = [];
+  // Kick-off comes first (June 2026) — it's a standalone launch event.
+  out.push(toQGMDate(KICK_OFF_DATE_ISO, "kick-off"));
+
   const startYear = 2026;
-  // 0-indexed months: Feb=1, May=4, Aug=7, Nov=10. Mar/Jun/Sep/Dec in
-  // 1-indexed = months 3/6/9/12, so 0-indexed = 2/5/8/11.
+  // 0-indexed months: Mar=2, Jun=5, Sep=8, Dec=11.
   const QGM_MONTHS_ZERO = [2, 5, 8, 11];
 
   for (let y = startYear; y <= startYear + yearsAhead; y++) {
     for (const m of QGM_MONTHS_ZERO) {
-      // Skip months before September 2026 (the first scheduled meeting).
+      // Skip months before September 2026 — the first OFFICIAL quarterly
+      // meeting. The Kick-off in June (added above) is a one-off
+      // outside the recurring quarterly cadence.
       if (y === 2026 && m < 8) continue;
-      out.push(toQGMDate(firstThursday(y, m)));
+      out.push(toQGMDate(firstThursday(y, m), "quarterly"));
     }
   }
   return out;
@@ -125,45 +144,74 @@ export function getNextQGM(now: Date = new Date()): QGMDate | null {
  * Jun 2027, …
  */
 export function generateQGMIcs(): string {
-  // Anchor to the first meeting (Sept 3, 2026 18:00 SAST = 16:00 UTC).
-  const start = new Date(
+  // Two events emitted in a single VCALENDAR:
+  //   1. Kick-off QGM — one-off launch meeting in June 2026
+  //   2. Quarterly QGM series — recurring via RRULE from Sept 2026
+  // Apple Calendar / Google Calendar / Outlook all accept multiple
+  // VEVENT blocks per calendar file and surface them as separate
+  // events on the member's calendar.
+  const kickOffStart = new Date(
+    `${KICK_OFF_DATE_ISO}T${QGM_START_TIME_SAST}:00+02:00`,
+  );
+  const kickOffEnd = new Date(
+    `${KICK_OFF_DATE_ISO}T${QGM_END_TIME_SAST}:00+02:00`,
+  );
+  const quarterlyStart = new Date(
     `${QGM_FIRST_DATE_ISO}T${QGM_START_TIME_SAST}:00+02:00`,
   );
-  const end = new Date(
+  const quarterlyEnd = new Date(
     `${QGM_FIRST_DATE_ISO}T${QGM_END_TIME_SAST}:00+02:00`,
   );
 
   // Format as `YYYYMMDDTHHMMSSZ` (basic ISO 8601, no separators).
   const fmtUtc = (d: Date) =>
     d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-
-  // Stable UID so re-importing the .ics updates the existing series
-  // instead of creating duplicates.
-  const uid = "qgm-lehumo-2026-09-03@limepages.co.za";
   const dtstamp = fmtUtc(new Date());
 
-  // Each line should be wrapped at 75 octets per RFC 5545. None of our
-  // single-line fields are long enough to need folding, but we keep
-  // DESCRIPTION on its own line and replace newlines with `\n` (the ICS
-  // escape) so the calendar app renders the paragraph cleanly.
-  const description = QGM_DESCRIPTION.replace(/\n/g, "\\n");
+  // Stable UIDs so re-importing the .ics updates existing entries
+  // instead of creating duplicates.
+  const kickOffUid = `qgm-lehumo-kickoff-${KICK_OFF_DATE_ISO}@limepages.co.za`;
+  const quarterlyUid = `qgm-lehumo-${QGM_FIRST_DATE_ISO}@limepages.co.za`;
 
-  // CRLF line endings are required by RFC 5545. Apple Calendar tolerates
-  // LF but Outlook is stricter — emit CRLF to be safe.
+  // Replace newlines with `\n` (the ICS escape) so the calendar app
+  // renders descriptions cleanly.
+  const kickOffDescription = KICK_OFF_DESCRIPTION.replace(/\n/g, "\\n");
+  const quarterlyDescription = QGM_DESCRIPTION.replace(/\n/g, "\\n");
+
+  // CRLF line endings are required by RFC 5545 — Outlook is strict.
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Lime Pages//Lehumo QGM//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
+    // ── Kick-off QGM (one-off) ──────────────────────────────────
     "BEGIN:VEVENT",
-    `UID:${uid}`,
+    `UID:${kickOffUid}`,
     `DTSTAMP:${dtstamp}`,
-    `DTSTART:${fmtUtc(start)}`,
-    `DTEND:${fmtUtc(end)}`,
+    `DTSTART:${fmtUtc(kickOffStart)}`,
+    `DTEND:${fmtUtc(kickOffEnd)}`,
+    `SUMMARY:${KICK_OFF_TITLE}`,
+    `DESCRIPTION:${kickOffDescription}`,
+    "LOCATION:Virtual — link to follow by email",
+    `ORGANIZER;CN=Lehumo Trust:MAILTO:${QGM_HOST_EMAIL}`,
+    "STATUS:CONFIRMED",
+    "TRANSP:OPAQUE",
+    "BEGIN:VALARM",
+    "TRIGGER:-PT1H",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${KICK_OFF_TITLE} in 1 hour`,
+    "END:VALARM",
+    "END:VEVENT",
+    // ── Quarterly QGM series (recurring) ────────────────────────
+    "BEGIN:VEVENT",
+    `UID:${quarterlyUid}`,
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART:${fmtUtc(quarterlyStart)}`,
+    `DTEND:${fmtUtc(quarterlyEnd)}`,
     "RRULE:FREQ=MONTHLY;INTERVAL=3;BYDAY=1TH",
     `SUMMARY:${QGM_TITLE}`,
-    `DESCRIPTION:${description}`,
+    `DESCRIPTION:${quarterlyDescription}`,
     "LOCATION:Virtual — link to follow by email",
     `ORGANIZER;CN=Lehumo Trust:MAILTO:${QGM_HOST_EMAIL}`,
     "STATUS:CONFIRMED",
