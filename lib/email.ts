@@ -201,6 +201,7 @@ export async function sendPaymentSuccessEmail(params: {
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
+    bcc: ADMIN_BCC,
     subject: `Payment received \u2014 your Lehumo membership is now Active (${formatMemberNumber(memberNumber)})`,
     html: `
 <!DOCTYPE html>
@@ -310,6 +311,7 @@ export async function sendMemberNumberEmail(params: {
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
+    bcc: ADMIN_BCC,
     subject: `Your Lehumo Member ID — ${formatMemberNumber(memberNumber)}`,
     html: `
 <!DOCTYPE html>
@@ -415,6 +417,7 @@ export async function sendKycReceivedEmail(params: {
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
+    bcc: ADMIN_BCC,
     subject: `We've received your KYC documents \u2014 reviewing now (${formatMemberNumber(memberNumber)})`,
     html: `
 <!DOCTYPE html>
@@ -507,6 +510,7 @@ export async function sendKycVerifiedEmail(params: {
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
+    bcc: ADMIN_BCC,
     subject: `Your KYC is verified \u2014 welcome aboard, ${firstName}`,
     html: `
 <!DOCTYPE html>
