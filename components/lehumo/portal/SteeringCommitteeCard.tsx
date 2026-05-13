@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
+  ArrowRight,
   CheckCircle2,
   Loader2,
+  Lock,
   PencilLine,
   ShieldCheck,
   Users,
   X,
 } from "lucide-react";
+import Link from "next/link";
 
 import type { LehumoMember, SteeringSubmission } from "@/lib/definitions";
 
@@ -42,6 +45,17 @@ interface SteeringCommitteeCardProps {
  */
 export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
   const router = useRouter();
+  // Eligibility: only fully-registered (Status = Active) members can
+  // volunteer. Pre-Active members see the invite copy + a "complete
+  // your registration first" prompt instead of the form. Mirrors the
+  // server-side gate in /api/lehumo/portal/member/steering.
+  //
+  // Edge case: a previously-Active member who's now On Hold / Exited
+  // and HAS an existing submission — let them see the read-only
+  // summary + withdraw, but not edit. (Defensive — under normal
+  // operation this won't happen because the submission required
+  // Active at write time.)
+  const isActive = member.status === "Active";
   const existing: SteeringSubmission | null = member.steering ?? null;
   const [editing, setEditing] = useState(false);
   const [expertise, setExpertise] = useState(existing?.expertise ?? "");
@@ -134,7 +148,12 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
   }
 
   const hasSubmission = Boolean(existing);
-  const showForm = editing || !hasSubmission;
+  // Form is shown only when the member is eligible AND
+  // (in edit mode OR they don't have a submission yet). Pre-Active
+  // members without a prior submission see the gated state instead.
+  const showForm = isActive && (editing || !hasSubmission);
+  // Pre-Active members never see the form — they see the gated copy.
+  const showGated = !isActive && !hasSubmission;
   const submittedDateLabel = existing?.submittedAt
     ? new Date(existing.submittedAt).toLocaleDateString("en-ZA", {
         timeZone: "Africa/Johannesburg",
@@ -181,6 +200,46 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
           </div>
         </div>
 
+        {/* Gated state — non-Active members see the invite copy + a
+            "complete registration first" prompt instead of the form.
+            Status === "Active" requires KYC complete AND a first
+            contribution, which is the governance bar we want for
+            committee eligibility. The CTA routes them to the page
+            most likely to unblock them next. */}
+        {showGated && (
+          <div className="rounded-[16px] border border-white/[0.08] bg-white/[0.02] p-5">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-white/55">
+                <Lock className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold tracking-tight text-white">
+                  Volunteering opens after your registration is complete
+                </p>
+                <p className="mt-1 text-[12.5px] text-white/55 leading-relaxed">
+                  Steering Committee eligibility is reserved for members
+                  who&rsquo;ve completed their KYC and made their first
+                  contribution. You&rsquo;re currently{" "}
+                  <strong className="text-white/80">{member.status}</strong>
+                  {" "}— finish onboarding to unlock the form.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/lehumo/portal#payment"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#B8FF00] px-4 py-2 text-[12.5px] font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors"
+            >
+              Complete next step
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <p className="mt-3 text-[11px] text-white/35 leading-relaxed">
+              Already submitted KYC? It usually takes us under 24 hours
+              to verify. Once approved + your first contribution lands,
+              this card unlocks automatically.
+            </p>
+          </div>
+        )}
+
         {/* Submitted summary state — collapsed view */}
         {hasSubmission && !showForm && (
           <div className="rounded-[16px] border border-[#B8FF00]/25 bg-gradient-to-br from-[#B8FF00]/[0.07] to-[#46CDCF]/[0.03] p-5">
@@ -218,17 +277,24 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
               )}
             </div>
             <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditing(true);
-                  setError(null);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1.5 text-[12px] font-semibold text-white/80 hover:bg-white/[0.08] hover:text-white transition-colors"
-              >
-                <PencilLine className="h-3.5 w-3.5" />
-                Edit submission
-              </button>
+              {/* Edit is gated on Active — matches the server-side
+                  write gate. Members who submitted while Active but
+                  have since moved to On Hold / Exited can still
+                  withdraw, just not re-edit. (Vanishingly rare path
+                  under normal operation but safe by default.) */}
+              {isActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(true);
+                    setError(null);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1.5 text-[12px] font-semibold text-white/80 hover:bg-white/[0.08] hover:text-white transition-colors"
+                >
+                  <PencilLine className="h-3.5 w-3.5" />
+                  Edit submission
+                </button>
+              )}
               <button
                 type="button"
                 onClick={withdraw}

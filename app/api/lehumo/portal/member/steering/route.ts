@@ -73,6 +73,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
+    // ── Eligibility gate ─────────────────────────────────────────────
+    // Only fully-registered (Status = Active) members may volunteer
+    // for the Steering Committee. Active means KYC is complete AND
+    // the member has made their first contribution — skin-in-the-game
+    // is a sensible governance threshold. Pre-Active members still
+    // see the invite copy on the portal but the form submission is
+    // blocked here as a defensive backstop in case anyone bypasses
+    // the client-side gate (e.g. curl).
+    if (member.status !== "Active") {
+      return NextResponse.json(
+        {
+          error:
+            "Volunteering for the Steering Committee opens once you've completed your registration and made your first contribution. Finish onboarding and you'll see the form here.",
+          code: "NOT_ACTIVE",
+          currentStatus: member.status,
+        },
+        { status: 403 },
+      );
+    }
+
     const submittedAt = todayDate(); // YYYY-MM-DD
     const expertise = parsed.data.expertise.trim();
     const motivation = (parsed.data.motivation ?? "").trim();
