@@ -158,6 +158,16 @@ export const LEHUMO_LAUNCH_DATE_ISO = "2026-06-01T00:00:00+02:00";
  */
 export const LEHUMO_FIRST_DUE_PERIOD = "2026-06";
 
+/**
+ * Last period the trust officially expects a contribution against —
+ * end of the 60-month schedule (Jun 2026 → May 2031 inclusive).
+ * Used as the paired post-trust bookend to LEHUMO_FIRST_DUE_PERIOD:
+ * cron reminders skip when the current SAST period is past this
+ * value, so we don't email members about a phantom "2031-06" or
+ * later contribution after the trust wraps.
+ */
+export const LEHUMO_LAST_DUE_PERIOD = "2031-05";
+
 export function isBeforeLaunch(now: Date = new Date()): boolean {
   return now.getTime() < new Date(LEHUMO_LAUNCH_DATE_ISO).getTime();
 }
