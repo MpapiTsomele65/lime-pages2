@@ -949,3 +949,135 @@ export async function sendContributionFinalReminderEmail(params: {
 </html>`,
   });
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Steering Committee volunteer flow
+// ──────────────────────────────────────────────────────────────────────
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br />");
+}
+
+/**
+ * Member-side acknowledgement — fires after a Steering Committee
+ * volunteer submission lands. Confirms what we captured + what
+ * happens next (decision at the Kick-off QGM 11 Jun 2026).
+ */
+export async function sendSteeringMemberAck(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  expertise: string;
+  motivation: string;
+  isUpdate: boolean;
+}) {
+  const { to, fullName, memberNumber, expertise, motivation, isUpdate } = params;
+  const firstName = (fullName || "there").split(" ")[0];
+  const memberRef = formatMemberNumber(memberNumber);
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: isUpdate
+      ? `Steering Committee — submission updated (${memberRef})`
+      : `Steering Committee — application received (${memberRef})`,
+    html: `<!DOCTYPE html><html><head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;"><tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+<tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+<div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+<div style="font-size:13px;color:#46CDCF;margin-top:4px;">Executive Steering Governance Committee</div></td></tr>
+<tr><td style="padding:32px;">
+<h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Thanks for stepping up, ${escapeHtml(firstName)}.</h1>
+<p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 20px;">${isUpdate ? "We&rsquo;ve updated your" : "We&rsquo;ve recorded your"} application for the Lehumo Executive Steering Governance Committee. A six-person committee will be confirmed at our <strong style="color:#fff;">Kick-off QGM on Thursday, 11 June 2026</strong>. If more than six people volunteer, we&rsquo;ll run a quick election before then.</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(184,255,0,0.06);border:1px solid rgba(184,255,0,0.20);border-radius:14px;margin-bottom:18px;"><tr><td style="padding:18px 22px;">
+<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">Member</div>
+<div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:14px;">${escapeHtml(fullName)} &middot; ${memberRef}</div>
+<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">Expertise you bring</div>
+<div style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.65;${motivation ? "margin-bottom:14px;" : ""}">${escapeHtml(expertise)}</div>
+${motivation ? `<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">Why you want to serve</div><div style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.65;">${escapeHtml(motivation)}</div>` : ""}
+</td></tr></table>
+<p style="font-size:13.5px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 16px;">You can <strong style="color:#fff;">update or withdraw</strong> your submission any time from the portal &mdash; the Steering Committee card on your dashboard always reflects your latest entry.</p>
+<p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;margin:0;">Questions? Reply to this email or write to <a href="mailto:lehumo@limepages.co.za" style="color:#46CDCF;text-decoration:none;">lehumo@limepages.co.za</a>.</p>
+</td></tr>
+<tr><td style="padding:18px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+<div style="font-size:11px;color:rgba(255,255,255,0.35);">Lehumo Collective Investment Trust</div></td></tr>
+</table></td></tr></table></body></html>`,
+  });
+}
+
+/**
+ * Admin-side notification — fires alongside the member acknowledgement.
+ * Sent to lehumo@limepages.co.za with the full submission so admin can
+ * build the volunteer list before the kick-off QGM without polling
+ * Airtable.
+ */
+export async function sendSteeringAdminNotification(params: {
+  memberFullName: string;
+  memberNumber: number;
+  memberEmail: string;
+  expertise: string;
+  motivation: string;
+  isUpdate: boolean;
+}) {
+  const { memberFullName, memberNumber, memberEmail, expertise, motivation, isUpdate } = params;
+  const memberRef = formatMemberNumber(memberNumber);
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: "lehumo@limepages.co.za",
+    subject: isUpdate
+      ? `[Admin] Steering Committee — ${memberRef} ${memberFullName} updated submission`
+      : `[Admin] Steering Committee — ${memberRef} ${memberFullName} volunteered`,
+    html: `<!DOCTYPE html><html><head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0B1933;">
+<div style="max-width:560px;margin:32px auto;padding:0 20px;">
+<div style="background:#FFFBEB;border-left:4px solid #F59E0B;padding:14px 18px;border-radius:6px;margin-bottom:20px;">
+<div style="font-size:11px;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Steering Committee &mdash; ${isUpdate ? "updated submission" : "new volunteer"}</div>
+<div style="font-size:14px;color:#0B1933;line-height:1.6;">${escapeHtml(memberFullName)} &middot; <strong>${memberRef}</strong> &middot; <a href="mailto:${escapeHtml(memberEmail)}" style="color:#0B1933;">${escapeHtml(memberEmail)}</a></div>
+</div>
+<div style="background:#F8F9FA;border:1px solid #E5E7EB;border-radius:10px;padding:18px 22px;margin-bottom:14px;">
+<div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Expertise they bring</div>
+<div style="font-size:14px;color:#0B0B0B;line-height:1.65;">${escapeHtml(expertise)}</div>
+</div>
+${motivation ? `<div style="background:#F8F9FA;border:1px solid #E5E7EB;border-radius:10px;padding:18px 22px;margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Why they want to serve</div><div style="font-size:14px;color:#0B0B0B;line-height:1.65;">${escapeHtml(motivation)}</div></div>` : ""}
+<p style="font-size:12px;color:#6B7280;line-height:1.7;margin:18px 0 0;">Submission also stored on the member&rsquo;s Airtable record under the <code style="background:#E5E7EB;padding:1px 5px;border-radius:3px;">Notes</code> field (segments <code>SteeringExpertise</code> / <code>SteeringMotivation</code> / <code>SteeringSubmittedAt</code>). The volunteer card on the member&rsquo;s portal lets them update or withdraw.</p>
+</div></body></html>`,
+  });
+}
+
+/**
+ * Admin-side withdrawal notification. Lighter weight than the
+ * submission notification — just announces the change so the volunteer
+ * list stays accurate.
+ */
+export async function sendSteeringWithdrawAdminNotification(params: {
+  memberFullName: string;
+  memberNumber: number;
+  memberEmail: string;
+}) {
+  const { memberFullName, memberNumber, memberEmail } = params;
+  const memberRef = formatMemberNumber(memberNumber);
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: "lehumo@limepages.co.za",
+    subject: `[Admin] Steering Committee — ${memberRef} ${memberFullName} withdrew`,
+    html: `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#0B1933;">
+<div style="max-width:560px;margin:32px auto;padding:0 20px;">
+<div style="background:#FEF2F2;border-left:4px solid #DC2626;padding:14px 18px;border-radius:6px;">
+<div style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Steering Committee &mdash; withdrawal</div>
+<div style="font-size:14px;color:#0B1933;line-height:1.6;">${escapeHtml(memberFullName)} &middot; <strong>${memberRef}</strong> &middot; <a href="mailto:${escapeHtml(memberEmail)}" style="color:#0B1933;">${escapeHtml(memberEmail)}</a> has withdrawn their volunteer submission.</div>
+</div>
+</div></body></html>`,
+  });
+}

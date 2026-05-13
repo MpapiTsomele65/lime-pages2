@@ -657,6 +657,11 @@ export interface LehumoMember {
   //    Both stored as segments in the same `notes` blob as Plan.
   subscriptionCode?: string | null;
   subscriptionAction?: SubscriptionAction | null;
+  // ── Steering Committee volunteer submission. Null until the member
+  //    opts in via the portal's SteeringCommitteeCard; populated with
+  //    expertise + optional motivation + ISO submitted-at stamp once
+  //    they hit Apply. Same notes-blob pattern as Plan / SubCode.
+  steering?: SteeringSubmission | null;
 }
 
 /**
@@ -716,6 +721,64 @@ export interface SubscriptionState {
   code: string | null;
   /** Open admin action against this member's subscription, if any. */
   action: SubscriptionAction | null;
+}
+
+/**
+ * Steering Committee volunteer submission. Members opt in via the
+ * portal's SteeringCommitteeCard and the data lands in the same
+ * pipe-delimited `notes` blob as Plan / SubCode etc.:
+ *   `SteeringExpertise: <text>` (required)
+ *   `SteeringMotivation: <text>` (optional)
+ *   `SteeringSubmittedAt: <ISO date>` (server-stamped)
+ *
+ * Pipe characters in user input are stripped before write to keep the
+ * segment delimiter intact.
+ */
+export interface SteeringSubmission {
+  expertise: string;
+  motivation: string;
+  submittedAt: string; // ISO date YYYY-MM-DD
+}
+
+export function extractSteeringFromNotes(
+  notes: string,
+): SteeringSubmission | null {
+  if (!notes) return null;
+  const expertise = /(?:^|\|)\s*SteeringExpertise:\s*([^|]+)/i.exec(notes);
+  if (!expertise) return null;
+  const motivation = /(?:^|\|)\s*SteeringMotivation:\s*([^|]+)/i.exec(notes);
+  const submittedAt = /(?:^|\|)\s*SteeringSubmittedAt:\s*([^|]+)/i.exec(notes);
+  return {
+    expertise: expertise[1].trim(),
+    motivation: motivation ? motivation[1].trim() : "",
+    submittedAt: submittedAt ? submittedAt[1].trim() : "",
+  };
+}
+
+export function spliceSteeringIntoNotes(
+  existingNotes: string,
+  patch: { expertise: string; motivation?: string; submittedAt: string } | null,
+): string {
+  const segments = (existingNotes ?? "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Strip any existing Steering segments before re-appending (handles
+  // both first-write and edit-after-submit cleanly).
+  const keep = segments.filter(
+    (s) => !/^Steering(Expertise|Motivation|SubmittedAt):/i.test(s),
+  );
+  if (patch) {
+    // Sanitise: strip `|` from user input so the segment delimiter
+    // can't be injected by a copy-paste of pipe characters.
+    const safe = (s: string) => s.replace(/\|/g, "/").trim();
+    keep.push(`SteeringExpertise: ${safe(patch.expertise)}`);
+    if (patch.motivation && patch.motivation.trim()) {
+      keep.push(`SteeringMotivation: ${safe(patch.motivation)}`);
+    }
+    keep.push(`SteeringSubmittedAt: ${patch.submittedAt}`);
+  }
+  return keep.join(" | ");
 }
 
 const EMPTY_SUBSCRIPTION_STATE: SubscriptionState = { code: null, action: null };

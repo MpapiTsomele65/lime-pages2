@@ -11,6 +11,7 @@ import {
   LOAN_TYPE_CHOICE_ID_TO_NAME,
   CONTRIBUTION_SOURCE,
   extractPlanFromNotes,
+  extractSteeringFromNotes,
   extractSubscriptionFromNotes,
   formatMemberNumber,
   idTypeToAirtable,
@@ -145,6 +146,10 @@ export function parseRecord(record: any): LehumoMember {
         subscriptionAction: sub.action,
       };
     })(),
+    // Steering Committee volunteer submission — null when the member
+    // hasn't opted in. Populated once they hit Apply on the portal
+    // SteeringCommitteeCard.
+    steering: extractSteeringFromNotes(f[AIRTABLE_FIELDS.notes] || ""),
     // ── KYC fields (Tier 2A) — all optional, populated post-onboarding ──
     idType: resolveSelect(
       f[AIRTABLE_FIELDS.idType],

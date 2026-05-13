@@ -21,6 +21,7 @@ import { BankDepositCard } from "./BankDepositCard";
 import { EmergencyAccessCard } from "./EmergencyAccessCard";
 import { PlanManagementCard } from "./PlanManagementCard";
 import { QGMSummaryCard } from "./QGMSummaryCard";
+import { SteeringCommitteeCard } from "./SteeringCommitteeCard";
 
 interface DashboardOverviewProps {
   member: LehumoMember;
@@ -281,6 +282,12 @@ export function DashboardOverview({
       <div id="qgm" className="scroll-mt-24">
         <QGMSummaryCard />
       </div>
+
+      {/* Steering Committee volunteer flow — paired with the QGM card
+          because both are governance touchpoints, and the committee is
+          announced at the kick-off QGM. Members can opt in, edit, or
+          withdraw any time before the decision date. */}
+      <SteeringCommitteeCard member={member} />
 
       {/* Dashboard grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
