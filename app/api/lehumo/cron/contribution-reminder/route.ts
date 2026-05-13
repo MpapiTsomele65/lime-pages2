@@ -6,7 +6,7 @@ import {
   sendContributionReminderEmail,
   sendContributionFinalReminderEmail,
 } from "@/lib/email";
-import type { MemberPlan } from "@/lib/definitions";
+import { LEHUMO_FIRST_DUE_PERIOD, type MemberPlan } from "@/lib/definitions";
 
 // ─── Plan → monthly amount ─────────────────────────────────────────
 // Mirrors SetUpPaymentsCard's PLAN_DETAILS so the reminder copy and
@@ -98,6 +98,32 @@ export async function GET(request: NextRequest) {
   console.log(
     `[cron contribution-reminder ${reqId}] starting kind=${kind} period=${period}`,
   );
+
+  // ── Pre-launch gate ─────────────────────────────────────────────
+  // Lehumo collections officially start at LEHUMO_FIRST_DUE_PERIOD
+  // (2026-06). The 15th-of-May / 25th-of-May runs would otherwise
+  // resolve `period` to 2026-05 and email everyone who hasn't paid
+  // a May contribution — but nothing's due in May, so the reminder
+  // copy would actively confuse the cohort (especially prepaid
+  // members who'd see "you owe May" right after seeing "you've
+  // prepaid June" on the portal). Short-circuit here with a clean
+  // log line so admins know the cron ran but had nothing to do.
+  if (period < LEHUMO_FIRST_DUE_PERIOD) {
+    console.log(
+      `[cron contribution-reminder ${reqId}] skipped — period ${period} is pre-launch (< ${LEHUMO_FIRST_DUE_PERIOD}); no reminders sent`,
+    );
+    return NextResponse.json({
+      ok: true,
+      kind,
+      period,
+      monthLabel,
+      sent: 0,
+      skipped: 0,
+      errors: 0,
+      reqId,
+      note: `Pre-launch — nothing is due before ${LEHUMO_FIRST_DUE_PERIOD}. No reminders sent.`,
+    });
+  }
 
   let sent = 0;
   let skipped = 0;
