@@ -346,17 +346,63 @@ export async function getMemberByIdLite(
   return parseRecord(await res.json());
 }
 
+/**
+ * Allocate the next Member # for a new registration.
+ *
+ * "Lowest gap" policy: returns the smallest positive integer that
+ * isn't already used by an existing member record. Fills holes left
+ * by deleted / merged member records so the founding-30 roster stays
+ * tidy.
+ *
+ * Walked through Lehumo's current state:
+ *   used = {1..22, 24..26, 29, 31}
+ *   gaps = [23, 27, 28, 30]
+ *   → first new signup gets 23, then 27, then 28, then 30, then 32.
+ *
+ * Trade-off vs the old MAX+1 allocator: we lose implicit chronological
+ * ordering by member number. That's fine because every Airtable row
+ * carries `createdTime` anyway, so "Nth member onboarded" is still
+ * recoverable from the source of truth.
+ *
+ * Race-condition note: two simultaneous registrations could both read
+ * the same gap set and pick the same number → duplicate Leh##. Airtable
+ * has no unique-constraint primitive to prevent this; for a founding
+ * cohort of ~30 the collision probability is vanishingly small in
+ * practice. If we ever need stronger guarantees, a Vercel KV / Redis
+ * counter or an Airtable "Member Counter" record with optimistic
+ * concurrency would be the upgrade path.
+ */
 export async function getNextMemberNumber(): Promise<number> {
-  const url = `${getBaseUrl()}?fields%5B%5D=${AIRTABLE_FIELDS.memberNumber}&sort%5B0%5D%5Bfield%5D=Member+%23&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1&returnFieldsByFieldId=true`;
+  const used = new Set<number>();
+  let offset: string | undefined;
+  do {
+    const params = new URLSearchParams({
+      pageSize: "100",
+      returnFieldsByFieldId: "true",
+    });
+    params.append("fields[]", AIRTABLE_FIELDS.memberNumber);
+    if (offset) params.set("offset", offset);
+    const res = await fetch(`${getBaseUrl()}?${params.toString()}`, {
+      headers: getHeaders(),
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`Airtable error: ${res.status}`);
+    const data = await res.json();
+    for (const r of data.records ?? []) {
+      const n = r.fields?.[AIRTABLE_FIELDS.memberNumber];
+      if (typeof n === "number" && n > 0 && Number.isInteger(n)) {
+        used.add(n);
+      }
+    }
+    offset = data.offset;
+  } while (offset);
 
-  const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
-  if (!res.ok) throw new Error(`Airtable error: ${res.status}`);
-
-  const data = await res.json();
-  if (!data.records || data.records.length === 0) return 1;
-
-  const maxNum = data.records[0].fields[AIRTABLE_FIELDS.memberNumber] || 0;
-  return maxNum + 1;
+  // Walk up from 1 until we hit a number nobody owns yet. Bounded by
+  // (used.size + 1) — even with every existing number contiguous from
+  // 1, the answer is at most size+1.
+  let candidate = 1;
+  while (used.has(candidate)) candidate++;
+  return candidate;
 }
 
 export async function createMember(fields: {
