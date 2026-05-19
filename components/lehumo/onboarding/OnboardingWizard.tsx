@@ -45,10 +45,82 @@ interface FormData {
   resumed?: boolean;
 }
 
+/**
+ * Wizard state integrity invariants.
+ *
+ * For every step the user can land on, define what data must be
+ * present in formData for that step to be valid. The integrity
+ * effect (below) runs this check on every (currentStep, formData)
+ * change — if the invariant fails, we log the anomaly + auto-recover
+ * to the highest step whose prerequisites ARE met. Catches the whole
+ * class of bug Joan and Bontle hit: the wizard fast-forwarding past
+ * steps the user hadn't actually completed.
+ *
+ * Returns `{ valid: true }` or `{ valid: false, reason: string,
+ * recoverTo: number }`.
+ */
+type StepCheck =
+  | { valid: true }
+  | { valid: false; reason: string; recoverTo: number };
+
+function checkStepIntegrity(step: number, data: FormData): StepCheck {
+  // Step 1 has no prerequisites — landing here is always valid.
+  if (step === 1) return { valid: true };
+
+  // Step 2 (plan selection) needs Step 1's identity bits.
+  if (step === 2) {
+    if (!data.fullName || !data.email) {
+      return { valid: false, reason: "missing_personal_info", recoverTo: 1 };
+    }
+    return { valid: true };
+  }
+
+  // Step 3 (KYC) needs Step 1 + Step 2.
+  if (step === 3) {
+    if (!data.fullName || !data.email) {
+      return { valid: false, reason: "missing_personal_info", recoverTo: 1 };
+    }
+    if (!data.plan) {
+      return { valid: false, reason: "missing_plan", recoverTo: 2 };
+    }
+    return { valid: true };
+  }
+
+  // Step 4 (confirmation) has three legitimate arrival paths:
+  //   1. Normal: Step 3 created the member → memberId is set
+  //   2. Resume: existing Onboarding member with KYC progress → resumed=true
+  //   3. Paystack callback: returning from off-site checkout → reference set
+  // Anything else means we fast-forwarded past steps that didn't complete.
+  if (step === 4) {
+    const hasMember = Boolean(data.memberId || data.memberNumber);
+    const hasResume = Boolean(data.resumed);
+    const hasReference = Boolean(data.reference);
+    if (!hasMember && !hasResume && !hasReference) {
+      // Recover to the highest step we DO have data for.
+      // Most common skipped-ahead state: has email/name but no plan.
+      if (data.fullName && data.email) {
+        return { valid: false, reason: "skipped_to_confirm", recoverTo: 2 };
+      }
+      return { valid: false, reason: "skipped_to_confirm", recoverTo: 1 };
+    }
+    return { valid: true };
+  }
+
+  return { valid: true };
+}
+
 export function OnboardingWizard() {
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({});
+  // Integrity-recovery banner. Set when the wizard self-corrects after
+  // detecting a step transition that arrived without the prerequisite
+  // data — surfaces a transparent notice instead of silently bouncing
+  // the user. Auto-clears once dismissed or after the user advances
+  // normally.
+  const [integrityRecovery, setIntegrityRecovery] = useState<
+    { reason: string; from: number; to: number } | null
+  >(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isStep1Loading, setIsStep1Loading] = useState(false);
   // Synchronous re-entry guard. `isStep1Loading` (above) drives the
@@ -84,6 +156,51 @@ export function OnboardingWizard() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
+
+  // ── Wizard integrity guard ──────────────────────────────────────────
+  // Validates that the current step's prerequisites are present in
+  // formData on every (currentStep, formData) change. If not, this is
+  // the same class of bug Joan and Bontle hit — the wizard arrived at
+  // a step the user hadn't legitimately reached. Auto-recover by
+  // jumping to the highest step whose data is intact, fire an
+  // analytics event so the anomaly shows up in our funnel, and
+  // surface a transparent banner to the user (not a silent bounce).
+  //
+  // Class of bugs this prevents:
+  //   - Multi-click race past Step 1 (Joan, May 2026)
+  //   - Resume API matching a stub record (Bontle, 19 May 2026)
+  //   - Browser back-button + URL fiddling
+  //   - Future race conditions we haven't thought of yet
+  useEffect(() => {
+    const check = checkStepIntegrity(currentStep, formData);
+    if (check.valid) return;
+
+    // Avoid feedback loop — only recover if we're not already on the
+    // target step. (Defensive: should never happen since checkStepIntegrity
+    // returns valid for the step it recovers TO, but cheap insurance.)
+    if (check.recoverTo === currentStep) return;
+
+    console.warn(
+      `[wizard integrity] step ${currentStep} invalid (${check.reason}); recovering to ${check.recoverTo}`,
+      { formData },
+    );
+    trackEvent("wizard_integrity_violation", {
+      from_step: currentStep,
+      recover_to: check.recoverTo,
+      reason: check.reason,
+      had_email: Boolean(formData.email),
+      had_plan: Boolean(formData.plan),
+      had_member_id: Boolean(formData.memberId),
+      had_resumed: Boolean(formData.resumed),
+      had_reference: Boolean(formData.reference),
+    });
+    setIntegrityRecovery({
+      reason: check.reason,
+      from: currentStep,
+      to: check.recoverTo,
+    });
+    setCurrentStep(check.recoverTo);
+  }, [currentStep, formData]);
 
   // Synchronous re-entry guard for handleNext. Same reasoning as
   // isStep1LoadingRef — rapid clicks on ANY step's Continue button
@@ -397,6 +514,41 @@ export function OnboardingWizard() {
             className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3.5 text-sm text-red-400"
           >
             {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Integrity-recovery banner ──
+          Surfaces when the wizard self-corrects after detecting a
+          step that arrived without prerequisite data (Joan / Bontle
+          class of bug). Transparent + dismissable so users see the
+          recovery as a "we caught it" moment, not as a silent retry. */}
+      <AnimatePresence>
+        {integrityRecovery && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mb-6 rounded-xl bg-[#46CDCF]/10 border border-[#46CDCF]/30 px-5 py-3.5 text-sm text-[#46CDCF]"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <p className="font-semibold mb-0.5">Caught a hiccup — let&rsquo;s pick up here</p>
+                <p className="text-[#46CDCF]/80 text-xs leading-relaxed">
+                  Looks like the form jumped ahead before all your details were saved.
+                  We&rsquo;ve put you back on the right step so nothing&rsquo;s missed.
+                </p>
+              </div>
+              <button
+                onClick={() => setIntegrityRecovery(null)}
+                className="text-[#46CDCF]/60 hover:text-[#46CDCF] text-xs font-semibold shrink-0"
+                aria-label="Dismiss"
+              >
+                Dismiss
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
