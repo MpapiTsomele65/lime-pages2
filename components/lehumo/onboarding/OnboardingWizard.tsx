@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { StepPersonalInfo } from "./StepPersonalInfo";
@@ -51,6 +51,17 @@ export function OnboardingWizard() {
   const [formData, setFormData] = useState<FormData>({});
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isStep1Loading, setIsStep1Loading] = useState(false);
+  // Synchronous re-entry guard. `isStep1Loading` (above) drives the
+  // button's disabled state for the UI, but React state updates are
+  // BATCHED — two rapid clicks within the same event-loop tick both
+  // read `false` before either flushes `true`. Refs update
+  // immediately on assignment, no reconciliation tick required, so
+  // they're the right primitive for "did another click already win
+  // the race?". Joan's original Step 1 → Step 4 jump was caused by
+  // exactly this — the state-based guard was insufficient. Now both
+  // are checked: ref blocks concurrent calls; state still drives the
+  // visible disabled+spinner so users get the right feedback.
+  const isStep1LoadingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   // Auto-jump to confirmation step if URL has ?step=confirm&reference=xxx
@@ -74,13 +85,29 @@ export function OnboardingWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
 
+  // Synchronous re-entry guard for handleNext. Same reasoning as
+  // isStep1LoadingRef — rapid clicks on ANY step's Continue button
+  // could fire handleNext multiple times before React re-renders the
+  // disabled state. The functional setState (prev + 1) then increments
+  // multiple times, fast-forwarding past steps. Ref-guard releases on
+  // the next tick so users can still advance legitimately step-by-step.
+  const isAdvancingRef = useRef(false);
   const handleNext = useCallback(
     (data?: Partial<FormData>) => {
+      if (isAdvancingRef.current) return;
+      isAdvancingRef.current = true;
       if (data) {
         setFormData((prev) => ({ ...prev, ...data }));
       }
       setError(null);
       setCurrentStep((prev) => Math.min(prev + 1, 4));
+      // Release on the next macrotask — gives React a render cycle to
+      // mount the next step component (which has its own
+      // not-yet-clicked button state). 80ms is roughly two animation
+      // frames; well below human "rapid-click" cadence.
+      setTimeout(() => {
+        isAdvancingRef.current = false;
+      }, 80);
     },
     []
   );
@@ -98,14 +125,18 @@ export function OnboardingWizard() {
   // contribution.
   const handleStep1Next = useCallback(
     async (data: Partial<FormData>) => {
-      // Guard against concurrent calls (double-click / rapid taps).
-      // isStep1Loading is set synchronously before the first await so
-      // subsequent clicks find it true and bail out immediately —
-      // prevents the wizard from advancing multiple steps at once.
-      if (isStep1Loading) return;
+      // Synchronous re-entry guard. Ref check beats the state check
+      // because refs don't wait for React's batched render cycle —
+      // rapid clicks within the same tick all see `true` after the
+      // first one sets it. Without this, three concurrent invocations
+      // each call handleNext, each setCurrentStep(prev + 1), and the
+      // wizard fast-forwards to Step 4. (Joan's bug, May 2026.)
+      if (isStep1LoadingRef.current) return;
+      isStep1LoadingRef.current = true;
 
       if (!data.fullName || !data.email) {
         handleNext(data);
+        isStep1LoadingRef.current = false;
         return;
       }
 
@@ -194,13 +225,15 @@ export function OnboardingWizard() {
 
         handleNext(data);
       } finally {
-        // Always clear the loading gate — whether we advanced, showed an
-        // error, or hit a network failure. This ensures the button is
-        // re-enabled for the next attempt rather than stuck in a spinner.
+        // Clear both the visible (state) and synchronous (ref) gates
+        // so a legitimate retry can fire. The ref MUST be cleared too
+        // — otherwise a user who hit an error on attempt #1 would be
+        // permanently blocked from attempt #2.
         setIsStep1Loading(false);
+        isStep1LoadingRef.current = false;
       }
     },
-    [handleNext, isStep1Loading],
+    [handleNext],
   );
 
   // Create account after KYC (step 3) — before moving to Payment (step 4).
