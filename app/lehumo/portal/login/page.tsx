@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+// Force dynamic rendering — the page reads URL search params
+// (`?email=` + `?from=` for the onboarding redirect path), which
+// Next.js can't statically prerender. The login page is also
+// fundamentally user-specific (handles auth state, OAuth flows),
+// so prerendering wouldn't add value anyway.
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -25,7 +30,21 @@ declare global {
   }
 }
 
+// Suspense boundary wraps the useSearchParams call so the build can
+// generate a static fallback shell while the search-params-aware
+// component bails to client-side. Without this, Next.js 16 fails the
+// build with "useSearchParams should be wrapped in a suspense
+// boundary." Fallback is intentionally minimal — just an empty
+// shell so the layout doesn't jump as the real form mounts.
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0B1933]" />}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Pre-fill from `?email=` query param. Used by the onboarding wizard
