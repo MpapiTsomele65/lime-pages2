@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { StepPersonalInfo } from "./StepPersonalInfo";
 import { StepPlanSelection } from "./StepPlanSelection";
@@ -110,6 +110,7 @@ function checkStepIntegrity(step: number, data: FormData): StepCheck {
 }
 
 export function OnboardingWizard() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({});
@@ -320,9 +321,16 @@ export function OnboardingWizard() {
           if (res.status === 409) {
             const errBody = await res.json().catch(() => ({}));
             if (errBody.code === "ALREADY_ACTIVE") {
-              setError(
-                "This email is already registered as an active Lehumo member. " +
-                  "Please log in with your member number to access your account.",
+              // Auto-route to login. Pre-fill the email so the
+              // member only has to type their member number, and add
+              // ?from=onboard so the login page shows a friendly
+              // "Welcome back" banner explaining the redirect (not a
+              // silent jump from /onboard to /portal/login).
+              trackEvent("onboarding_redirect_to_login", {
+                reason: "already_active",
+              });
+              router.push(
+                `/lehumo/portal/login?from=onboard&email=${encodeURIComponent(data.email)}`,
               );
               return;
             }
@@ -350,7 +358,7 @@ export function OnboardingWizard() {
         isStep1LoadingRef.current = false;
       }
     },
-    [handleNext],
+    [handleNext, router],
   );
 
   // Create account after KYC (step 3) — before moving to Payment (step 4).

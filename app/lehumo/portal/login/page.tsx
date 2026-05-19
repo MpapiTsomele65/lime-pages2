@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Script from "next/script";
@@ -27,9 +27,20 @@ declare global {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
+  // Pre-fill from `?email=` query param. Used by the onboarding wizard
+  // when it detects an existing active member trying to re-onboard —
+  // we route them here with the email already set so the only thing
+  // they have to remember is their member number.
+  const initialEmail = searchParams.get("email") ?? "";
+  const [email, setEmail] = useState(initialEmail);
   const [memberNumber, setMemberNumber] = useState("");
   const [error, setError] = useState("");
+  // Surface a friendly notice when the user landed here via the
+  // onboarding wizard's "you're already a member" redirect. Quietly
+  // reassures them about the redirect instead of leaving them
+  // wondering why they jumped from /onboard to /portal/login.
+  const fromOnboarding = searchParams.get("from") === "onboard";
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState("");
   const googleBtnRef = useRef<HTMLDivElement>(null);
@@ -242,6 +253,28 @@ export default function LoginPage() {
                 Collective Investment Trust
               </p>
             </div>
+
+            {/* Recognition banner — only when we arrived via the
+                "already a member" redirect from the onboarding wizard.
+                Explains the redirect so users know why they're here. */}
+            {fromOnboarding && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+                className="mb-6 rounded-xl border border-[#B8FF00]/30 bg-[#B8FF00]/[0.06] px-4 py-3"
+                role="status"
+                aria-live="polite"
+              >
+                <p className="text-[13px] font-semibold text-[#B8FF00] mb-0.5">
+                  Welcome back
+                </p>
+                <p className="text-[12px] text-white/65 leading-relaxed">
+                  Your membership is already active. Sign in with your
+                  member number to access your portal.
+                </p>
+              </motion.div>
+            )}
 
             {/* ── OAuth buttons ── */}
             {hasOAuth && (
