@@ -85,7 +85,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Status === "Onboarding" — the resume happy path.
+    // Status === "Onboarding" — but is the onboarding actually in
+    // progress? Pre-rebuild member imports (Apr 2026) created stub
+    // records with Status="Onboarding" + KYC="Not Started" — they
+    // look identical to "completed Steps 1-3, just needs payment"
+    // until you check the KYC column. Without this gate, those stub
+    // members hit Step 1, get matched by email, and skip directly
+    // to Step 4 (confirmation) without ever picking a plan or
+    // uploading KYC docs. (Bontle's bug, 19 May 2026.)
+    //
+    // The fix: treat "Not Started" KYC as "not yet on the resumable
+    // path" and fall through to NOT_RESUMABLE (404). Anything past
+    // Not Started (Docs Requested / In Progress / Complete) means
+    // the member has interacted with KYC and is a legit resume
+    // target — they've genuinely done the work that lets us skip
+    // them past Steps 2 and 3.
+    if (member.kycStatus === "Not Started") {
+      return NextResponse.json(
+        {
+          error: "Onboarding not yet started",
+          code: "NOT_RESUMABLE",
+          // Echo back for the wizard's own diagnostics — helps if a
+          // member can't onboard and we need to trace why.
+          status: member.status,
+          kycStatus: member.kycStatus,
+        },
+        { status: 404 },
+      );
+    }
+
+    // Status === "Onboarding" with KYC at least kicked off — the
+    // genuine resume happy path. Skip Steps 2 + 3 in the wizard;
+    // land them on Step 4 (confirmation / payment setup) with
+    // their existing member identity attached.
     return NextResponse.json({
       memberId: member.id,
       memberNumber: member.memberNumber,
