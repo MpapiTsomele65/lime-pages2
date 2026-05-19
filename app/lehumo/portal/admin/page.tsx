@@ -10,7 +10,9 @@ import { AdminPoolTracker } from "@/components/lehumo/admin/AdminPoolTracker";
 import { AdminCommunityHealth } from "@/components/lehumo/admin/AdminCommunityHealth";
 import { AdminBehindSnapshot } from "@/components/lehumo/admin/AdminBehindSnapshot";
 import { AdminPendingActions } from "@/components/lehumo/admin/AdminPendingActions";
+import { AdminCampaignTracker } from "@/components/lehumo/admin/AdminCampaignTracker";
 import { computeAdminStats } from "@/lib/admin-stats";
+import { computeCampaignReports } from "@/lib/campaign-analytics";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,10 @@ export default async function AdminDashboardPage() {
   // lib/admin-stats.ts for the full breakdown.
   const stats = computeAdminStats(members, currentMonthIndex);
   const { currentMonth } = stats;
+
+  // Cohort email-blast conversion reports. Pure server-side computation
+  // against the same members snapshot — no extra Airtable round-trips.
+  const campaignReports = computeCampaignReports(members);
 
   // Fetch each pending member's Paystack subscription details in
   // parallel so the AdminPendingActions card can render a countdown
@@ -93,6 +99,11 @@ export default async function AdminDashboardPage() {
           pending={stats.subscriptionCancelPending}
           subscriptionDetailsByMember={subscriptionDetailsByMember}
         />
+
+        {/* Cohort email-blast conversion. Computed against the same
+            members snapshot as the stats tiles, so no extra Airtable
+            round-trips. Self-hides when no campaigns are defined. */}
+        <AdminCampaignTracker reports={campaignReports} />
 
         {/* Stat tiles — quick at-a-glance counts. Richer breakdowns sit
             in the Pool / Community Health / Behind cards below. */}
