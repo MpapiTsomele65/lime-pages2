@@ -7,6 +7,12 @@ import {
 import { createSession } from "@/lib/session";
 import { LoginFormSchema } from "@/lib/definitions";
 import { verifyPassword } from "@/lib/password";
+import {
+  checkRateLimit,
+  clearFailures,
+  rateLimitKeyForEmail,
+  recordFailure,
+} from "@/lib/rate-limit";
 
 /**
  * Portal login.
@@ -54,13 +60,38 @@ export async function POST(request: NextRequest) {
 
     const { email, memberNumber, password } = parsed.data;
 
+    // ── Rate limit gate ──────────────────────────────────────────────
+    // Per-email sliding window: 5 failures / 15 min triggers lockout.
+    // Checked BEFORE the credential lookup so an attacker can't probe
+    // the database past the cap, and so response time stays uniform
+    // regardless of whether the email exists. The 429 carries
+    // `Retry-After` for browsers + bots to back off cleanly.
+    const limitKey = rateLimitKeyForEmail(email);
+    const gate = checkRateLimit(limitKey);
+    if (!gate.ok) {
+      const minutes = Math.ceil(gate.retryAfterSec / 60);
+      return NextResponse.json(
+        {
+          error: `Too many sign-in attempts. Try again in ~${minutes} minute${minutes === 1 ? "" : "s"}, or email lehumo@limepages.co.za if you're locked out.`,
+          code: "RATE_LIMITED",
+          retryAfterSec: gate.retryAfterSec,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(gate.retryAfterSec) },
+        },
+      );
+    }
+
     // ── Password path ────────────────────────────────────────────────
     if (password !== undefined) {
       const member = await findMemberByEmail(email);
 
       // No such email — same 401 as a wrong password, so the response
       // shape doesn't distinguish "email exists" from "password wrong".
+      // Counts as a failure so unknown-email brute force is bounded.
       if (!member) {
+        recordFailure(limitKey);
         return NextResponse.json(
           { error: "Invalid credentials" },
           { status: 401 },
@@ -72,6 +103,10 @@ export async function POST(request: NextRequest) {
       // email exists, but the alternative ("Invalid credentials") would
       // leave them stuck in password mode forever, fighting their
       // wrong assumption. Clear error wins for this audience.
+      // NOT counted as a failure — picking the wrong path is a UX
+      // accident, not a brute-force attempt, and locking the member
+      // out for it would punish exactly the people the UI is trying
+      // to help.
       if (!member.passwordHash) {
         return NextResponse.json(
           {
@@ -85,12 +120,17 @@ export async function POST(request: NextRequest) {
 
       const ok = await verifyPassword(password, member.passwordHash);
       if (!ok) {
+        recordFailure(limitKey);
         return NextResponse.json(
           { error: "Invalid credentials" },
           { status: 401 },
         );
       }
 
+      // Success — clear any prior failures so a member who fat-
+      // fingered a couple of times doesn't carry the count into
+      // their next session.
+      clearFailures(limitKey);
       await createSession(
         member.id,
         member.email,
@@ -115,6 +155,7 @@ export async function POST(request: NextRequest) {
 
     const member = await findMemberByEmailAndNumber(email, memberNumber);
     if (!member) {
+      recordFailure(limitKey);
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 },
@@ -123,7 +164,9 @@ export async function POST(request: NextRequest) {
 
     // Member-number matched, but they've set a password — the
     // member-number path is retired for them. Surface a clear hint
-    // so the UI can swap to the password input.
+    // so the UI can swap to the password input. Same "not counted"
+    // logic as the password-path version above — picking the wrong
+    // path is UX, not attack.
     if (member.passwordHash) {
       return NextResponse.json(
         {
@@ -135,6 +178,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    clearFailures(limitKey);
     await createSession(
       member.id,
       member.email,

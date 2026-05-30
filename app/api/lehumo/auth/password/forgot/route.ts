@@ -4,6 +4,11 @@ import { SignJWT } from "jose";
 import { findMemberByEmail } from "@/lib/airtable";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { PasswordForgotSchema } from "@/lib/definitions";
+import {
+  checkRateLimit,
+  recordFailure,
+  rateLimitKeyForEmail,
+} from "@/lib/rate-limit";
 import { siteUrl } from "@/lib/site-url";
 
 /**
@@ -51,6 +56,33 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, memberNumber } = parsed.data;
+
+    // Rate-limit by email — shares the same in-memory window as the
+    // login route, so an attacker can't spam both endpoints to amplify
+    // the limit. The "always return success" privacy posture below
+    // still holds, so a successful rate-limit response is the only
+    // information leak (which we deem acceptable: the alternative is
+    // silent enumeration + cost-attack on Resend).
+    const limitKey = rateLimitKeyForEmail(`forgot:${email}`);
+    const gate = checkRateLimit(limitKey);
+    if (!gate.ok) {
+      const minutes = Math.ceil(gate.retryAfterSec / 60);
+      return NextResponse.json(
+        {
+          error: `Too many reset attempts. Try again in ~${minutes} minute${minutes === 1 ? "" : "s"}, or email lehumo@limepages.co.za if you're locked out.`,
+          code: "RATE_LIMITED",
+          retryAfterSec: gate.retryAfterSec,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(gate.retryAfterSec) },
+        },
+      );
+    }
+    // Count every call against the limit — including the "no such
+    // member" case below — so an attacker can't probe through the
+    // 6th+ request once they've burned 5 known-good emails.
+    recordFailure(limitKey);
 
     const member = await findMemberByEmail(email);
 

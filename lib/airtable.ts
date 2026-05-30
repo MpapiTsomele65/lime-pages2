@@ -221,7 +221,15 @@ export async function findMemberByEmail(
   email: string,
 ): Promise<LehumoMember | null> {
   const safe = normaliseEmail(email);
-  const formula = encodeURIComponent(`{Email}='${safe}'`);
+  // CRITICAL: wrap the column ref in `LOWER(...)` so the comparison is
+  // case-insensitive. Airtable's Email field type stores values
+  // case-PRESERVED ("Heshunkosazana@gmail.com"), but emails are
+  // case-insensitive by RFC. Without LOWER, a record stored with a
+  // capital first letter never matches a lowercased search input,
+  // which is what spawned the Nkosazana Leh03/Leh27 duplicate (one
+  // record had capital H, the other lowercase; neither lookup found
+  // the other, so a second member record got created on re-onboarding).
+  const formula = encodeURIComponent(`LOWER({Email})='${safe}'`);
   const url = `${getBaseUrl()}?filterByFormula=${formula}&maxRecords=1&returnFieldsByFieldId=true`;
 
   const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
@@ -240,8 +248,13 @@ export async function findMemberByEmailAndNumber(
   memberNumber: number,
 ): Promise<LehumoMember | null> {
   const safe = normaliseEmail(email);
+  // Same case-insensitive comparison as findMemberByEmail above —
+  // wrapping in LOWER() so login + onboarding don't break when a
+  // record's email casing drifts. Without this, a member who typed
+  // their email with a capital first letter at signup couldn't log
+  // in with the lowercase version (or vice versa).
   const formula = encodeURIComponent(
-    `AND({Email}='${safe}', {Member #}=${memberNumber})`,
+    `AND(LOWER({Email})='${safe}', {Member #}=${memberNumber})`,
   );
   const url = `${getBaseUrl()}?filterByFormula=${formula}&maxRecords=1&returnFieldsByFieldId=true`;
 
