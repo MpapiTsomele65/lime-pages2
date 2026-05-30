@@ -8,6 +8,7 @@ import {
   formatMemberNumber,
   splicePasswordHashIntoNotes,
 } from "@/lib/definitions";
+import { sendPasswordChangedEmail } from "@/lib/email";
 import { checkPasswordStrength, hashPassword } from "@/lib/password";
 
 /**
@@ -151,6 +152,24 @@ export async function POST(request: NextRequest) {
     await updateMember(member.id, {
       [AIRTABLE_FIELDS.notes]: newNotes,
     });
+
+    // Fire-and-forget security notification. The magic-link reset is
+    // exactly the flow an attacker would use after compromising
+    // someone's email, so this email is the highest-value canary in
+    // the whole system: if the real owner sees "your password was
+    // changed" without having done it, they can react before further
+    // damage. Always sent as "changed" (the member already had a
+    // password — that's why they're hitting reset). Failures are
+    // logged but don't block the response since the credential state
+    // is already persisted.
+    sendPasswordChangedEmail({
+      to: member.email,
+      fullName: member.fullName,
+      memberNumber: member.memberNumber,
+      kind: "changed",
+    }).catch((err) =>
+      console.error("sendPasswordChangedEmail (reset) failed:", err),
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

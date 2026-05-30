@@ -13,6 +13,7 @@ import {
   hashPassword,
   verifyPassword,
 } from "@/lib/password";
+import { sendPasswordChangedEmail } from "@/lib/email";
 
 /**
  * Member portal — manage the optional self-service password.
@@ -115,6 +116,29 @@ export async function POST(request: NextRequest) {
     await updateMember(member.id, {
       [AIRTABLE_FIELDS.notes]: newNotes,
     });
+
+    // Fire-and-forget security notification. Three transition kinds:
+    //   - no prior hash + new hash       → "set"
+    //   - prior hash + new hash          → "changed"
+    //   - prior hash + null (opt-out)    → "removed"
+    // Resend failures are logged but do NOT bubble up — the user's
+    // credential state is already persisted, and blocking the
+    // response on email delivery would surface "your password was
+    // saved but the page errored" which is worse than a missed alert.
+    const kind =
+      hashToStore === null
+        ? "removed"
+        : member.passwordHash
+          ? "changed"
+          : "set";
+    sendPasswordChangedEmail({
+      to: member.email,
+      fullName: member.fullName,
+      memberNumber: member.memberNumber,
+      kind,
+    }).catch((err) =>
+      console.error("sendPasswordChangedEmail failed:", err),
+    );
 
     return NextResponse.json({
       success: true,

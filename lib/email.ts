@@ -1175,3 +1175,159 @@ export async function sendPasswordResetEmail(params: {
 </html>`,
   });
 }
+
+/* ─── Password set / changed / removed notification ─── */
+/**
+ * Notify the member when their portal password state changes.
+ *
+ * Banks send these because they're the canary in the coal mine: if an
+ * attacker compromises a session and silently rotates the credential,
+ * the email is the only signal the real owner sees. Same logic here —
+ * we send for all three state transitions (set / changed / removed)
+ * with explicit subject lines so a glance at the inbox tells the
+ * member what happened without opening anything.
+ *
+ * BCC to lehumo@limepages.co.za for the audit trail (same as every
+ * other transactional send). If support ever has to investigate "I
+ * didn't set that password", the timestamped BCC in the lehumo@
+ * inbox is the receipt.
+ *
+ * Failure is non-blocking: callers fire-and-forget so a Resend
+ * outage doesn't break the password change itself. The user's
+ * credential state is already persisted by the time we send.
+ */
+export async function sendPasswordChangedEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  /** Which state transition just happened. Drives subject + body copy. */
+  kind: "set" | "changed" | "removed";
+}) {
+  const { to, fullName, memberNumber, kind } = params;
+  const firstName = fullName.split(" ")[0] || "there";
+  const securityUrl = `${siteUrl()}/lehumo/portal/security`;
+  const resend = getResend();
+
+  // SAST timestamp so the body reads as the time the member would
+  // recognise (not UTC). Format: "30 May 2026, 14:32".
+  const nowSast = new Date().toLocaleString("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const verbPast =
+    kind === "set" ? "set" : kind === "changed" ? "changed" : "removed";
+  const verbHeadline =
+    kind === "set"
+      ? "Your Lehumo password was set"
+      : kind === "changed"
+        ? "Your Lehumo password was changed"
+        : "Your Lehumo password was removed";
+
+  const bodyLead =
+    kind === "set"
+      ? "You just set a password on your Lehumo portal account. From now on, you&rsquo;ll sign in with email + password instead of email + member number."
+      : kind === "changed"
+        ? "You just changed the password on your Lehumo portal account. Your old password no longer works."
+        : "You just removed the password from your Lehumo portal account. You&rsquo;ll sign in with email + member number again until you set a new password.";
+
+  const tipColour = kind === "removed" ? "#F59E0B" : "#46CDCF";
+  const tipBg =
+    kind === "removed" ? "rgba(245,158,11,0.06)" : "rgba(70,205,207,0.06)";
+  const tipBorder =
+    kind === "removed" ? "rgba(245,158,11,0.25)" : "rgba(70,205,207,0.2)";
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: `${verbHeadline} — ${formatMemberNumber(memberNumber)}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Hi ${firstName},</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 20px;">
+                ${bodyLead}
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <table cellpadding="0" cellspacing="0" style="width:100%;">
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Account</td>
+                        <td style="font-size:13px;font-weight:600;color:#B8FF00;padding:4px 0;text-align:right;">${formatMemberNumber(memberNumber)}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Email</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${to}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">When</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">${nowSast} SAST</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:13px;color:rgba(255,255,255,0.45);padding:4px 0;">Action</td>
+                        <td style="font-size:13px;font-weight:600;color:#ffffff;padding:4px 0;text-align:right;">Password ${verbPast}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:${tipBg};border:1px solid ${tipBorder};border-radius:14px;margin-bottom:8px;">
+                <tr>
+                  <td style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.65);line-height:1.6;">
+                    <strong style="color:${tipColour};">Didn&rsquo;t do this?</strong>
+                    Email <a href="mailto:lehumo@limepages.co.za" style="color:#46CDCF;text-decoration:none;">lehumo@limepages.co.za</a> immediately
+                    and we&rsquo;ll lock your account while we investigate.
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center" style="padding:4px 0;">
+                    <a href="${securityUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:50px;">
+                      Manage security &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                This is a security notification. We send it every time the portal password is set, changed, or removed.<br/>
+                <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}
