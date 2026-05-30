@@ -157,10 +157,11 @@ const FAQ: FaqItem[] = [
           zero fees — you transfer R1,000 manually each month, and emergency
           loan access unlocks at month 12.{" "}
           <span className="text-white font-semibold">Standard</span> adds a{" "}
-          <span className="text-lime font-semibold">2% service fee</span>{" "}
-          (~R20/month) for the Paystack debit-order automation, portal
-          hosting, KYC processing and reconciliation — and unlocks emergency
-          loan access six months earlier (month 6).
+          <span className="text-lime font-semibold">3.5% service fee</span>{" "}
+          (R35/month) which covers the Paystack collection cost — so the
+          trust isn&rsquo;t subsidising the payment processor on every
+          monthly debit. Standard also unlocks emergency loan access six
+          months earlier (month 6).
         </p>
         <p className="mt-3">
           The <span className="text-white font-semibold">VIP tier (5% service fee, ~R50/month)</span>{" "}

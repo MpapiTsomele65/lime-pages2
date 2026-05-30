@@ -38,8 +38,8 @@ const PLAN_DETAILS: Record<
   },
   standard: {
     name: "Standard",
-    monthly: "R1,020/month",
-    fee: "2% service fee",
+    monthly: "R1,035/month",
+    fee: "3.5% service fee",
     payment: "Automated Debit Order",
   },
   vip: {
@@ -348,7 +348,7 @@ export function SetUpPaymentsCard({
                       Paystack debit order
                     </p>
                     <p className="text-[11px] text-white/40 mt-0.5">
-                      Set it once — auto-debit R1,020 every month
+                      Set it once — auto-debit R1,035 every month
                     </p>
                   </div>
                 </div>
@@ -356,7 +356,7 @@ export function SetUpPaymentsCard({
               <div className="px-5 py-4">
                 <p className="text-sm text-white/70 leading-relaxed">
                   Click below to set up your debit order on Paystack&apos;s
-                  secure checkout. Your first R1,020 contribution is
+                  secure checkout. Your first R1,035 contribution is
                   charged today, and Paystack auto-debits the same amount on
                   the same date every month after that.
                 </p>
@@ -384,7 +384,7 @@ export function SetUpPaymentsCard({
                       strokeWidth={2.5}
                     />
                     <span>
-                      R1,000 invested + 2% service fee — fully
+                      R1,000 invested + 3.5% service fee — fully
                       transparent
                     </span>
                   </li>
@@ -426,7 +426,7 @@ export function SetUpPaymentsCard({
                   Redirecting to Paystack…
                 </>
               ) : (
-                <>Subscribe — R1,020/month</>
+                <>Subscribe — R1,035/month</>
               )}
             </button>
           </>
@@ -465,7 +465,7 @@ export function SetUpPaymentsCard({
         {/* ── Plan switcher footer ────────────────────────────────────
             Available pre-first-payment so members can change their
             mind — e.g. picked Standard during onboarding, sees the
-            2% service fee, decides Basic EFT is more their
+            3.5% service fee, decides Basic EFT is more their
             speed. Hides the option for the current plan. The server
             blocks switches once the first contribution lands and
             surfaces an email-the-admin path. */}
@@ -492,7 +492,7 @@ export function SetUpPaymentsCard({
                 disabled={isSwitchingPlan}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#46CDCF]/20 bg-[#46CDCF]/[0.05] px-3.5 py-1.5 text-xs font-semibold text-[#46CDCF] hover:bg-[#46CDCF]/[0.12] disabled:opacity-50 transition-colors"
               >
-                Switch to Standard · R1,020 debit
+                Switch to Standard · R1,035 debit
               </button>
             )}
           </div>

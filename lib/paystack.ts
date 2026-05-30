@@ -68,7 +68,10 @@ export async function initializeTransaction(params: {
 // Must match the amount configured on the corresponding Paystack Plan.
 //
 // Pricing (May 2026):
-//   - Standard: R1,020 = 102,000 kobo (R1,000 contribution + 2% service fee)
+//   - Standard: R1,035 = 103,500 kobo (R1,000 contribution + 3.5% service fee
+//                                       — matches Paystack's collection cost
+//                                       so the trust isn't subsidising the
+//                                       processor on every charge)
 //   - VIP:      R1,050 = 105,000 kobo (R1,000 contribution + 5% service fee)
 //
 // IMPORTANT: when these amounts are changed, the Paystack Plan
@@ -79,7 +82,7 @@ export async function initializeTransaction(params: {
 export function getAmountForPlan(plan: string): number | null {
   switch (plan) {
     case "standard":
-      return 102000;
+      return 103500;
     case "vip":
       return 105000;
     default:

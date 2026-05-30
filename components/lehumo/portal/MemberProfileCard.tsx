@@ -26,7 +26,7 @@ const STATUS_STYLES: Record<MemberStatus, string> = {
 // the SetUpPaymentsCard breakdown so the two surfaces stay consistent.
 const PLAN_DISPLAY: Record<MemberPlan, string> = {
   basic: "Basic · R1,000/month",
-  standard: "Standard · R1,020/month (R1,000 + 2%)",
+  standard: "Standard · R1,035/month (R1,000 + 3.5%)",
   vip: "VIP · R1,050/month (R1,000 + 5%)",
 };
 

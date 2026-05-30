@@ -643,7 +643,7 @@ function PlanCell({ member }: { member: LehumoMember }) {
     standard: {
       label: "Standard",
       classes: "bg-[#B8FF00]/15 border-[#B8FF00]/35 text-[#3F5A00]",
-      tooltip: "Paystack auto-debit · R1,020/month (R1,000 + 2% fee)",
+      tooltip: "Paystack auto-debit · R1,035/month (R1,000 + 3.5% fee — covers Paystack collection cost)",
     },
     vip: {
       label: "VIP",

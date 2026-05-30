@@ -19,7 +19,7 @@ import {
 // which is the recommended default tier.
 const PLAN_AMOUNTS_ZAR: Record<MemberPlan, number> = {
   basic: 1000,
-  standard: 1020, // R1,000 + 2% service fee
+  standard: 1035, // R1,000 + 3.5% service fee (matches Paystack collection cost)
   vip: 1050, // R1,000 + 5% service fee
 };
 

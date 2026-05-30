@@ -66,7 +66,7 @@ const PLAN_LABELS: Record<MemberPlan, string> = {
 
 const PLAN_DESCRIPTIONS: Record<MemberPlan, string> = {
   basic: "Manual EFT · R1,000/month · You control the timing",
-  standard: "Automatic debit · R1,020/month · 2% service fee for the convenience",
+  standard: "Automatic debit · R1,035/month · 3.5% service fee (covers Paystack collection cost)",
   vip: "Coming soon · R1,050/month · 5% service fee",
 };
 

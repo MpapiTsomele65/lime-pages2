@@ -680,7 +680,7 @@ export interface LehumoMember {
  * Custom) — those are per-row admin classifications. This is the
  * member's standing tier:
  *   - `basic`   — R1,000/month, manual EFT
- *   - `standard`— R1,020/month (R1,000 + 2% service fee), Paystack debit order
+ *   - `standard`— R1,035/month (R1,000 + 3.5% service fee), Paystack debit order
  *   - `vip`     — R1,050/month (R1,000 + 5% service fee), Paystack + inner-circle perks
  */
 export type MemberPlan = "basic" | "standard" | "vip";
