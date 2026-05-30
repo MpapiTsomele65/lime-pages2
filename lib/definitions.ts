@@ -1177,6 +1177,22 @@ export interface CommunityPoolStats {
    *  natural portal activity (next-of-kin updates, KYC address
    *  submission) without being too narrow. */
   membersProfileUpdated: number;
+  // ── Monthly goal vs received (current collection period) ──
+  /** The contribution period the monthly goal targets (`YYYY-MM`).
+   *  Pre-launch (current SAST period < 2026-06) this anchors to
+   *  June 2026 so the bar shows the upcoming launch month's goal.
+   *  Post-launch it follows the current SAST period. */
+  monthlyGoalPeriod: string;
+  /** Human label for the period above, e.g. "June 2026" or "July 2026". */
+  monthlyGoalLabel: string;
+  /** Goal amount in ZAR — `membersOnboarded × R1,000`. Reflects the
+   *  cohort's collective ambition for the month: if every onboarded
+   *  member contributes their base R1,000, this is what lands. */
+  monthlyGoalAmount: number;
+  /** Sum of `amountReceived` across all Paid contribution rows whose
+   *  Period matches `monthlyGoalPeriod`. Could be zero pre-launch
+   *  if no member has prepaid yet. */
+  monthlyReceivedAmount: number;
 }
 
 export interface SessionPayload {

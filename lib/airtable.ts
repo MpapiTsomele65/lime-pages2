@@ -16,6 +16,7 @@ import {
   formatMemberNumber,
   hasBeneficiary,
   idTypeToAirtable,
+  LEHUMO_FIRST_DUE_PERIOD,
   todayDate,
   type LehumoMember,
   type MemberStatus,
@@ -927,6 +928,47 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
       hasBeneficiary(m) || Boolean(m.residentialAddress && m.residentialAddress.trim()),
   ).length;
 
+  // ── Monthly goal vs received ──────────────────────────────────
+  // Target period: pre-launch (SAST < 2026-06) anchors to the launch
+  // month so the bar shows what's coming. Post-launch follows the
+  // current SAST period.
+  const sastPeriodNow = now.toLocaleDateString("en-CA", {
+    timeZone: "Africa/Johannesburg",
+  }).slice(0, 7);
+  const monthlyGoalPeriod =
+    sastPeriodNow < LEHUMO_FIRST_DUE_PERIOD
+      ? LEHUMO_FIRST_DUE_PERIOD
+      : sastPeriodNow;
+
+  // Human label: "June 2026", "July 2026" etc. Built from the period
+  // directly rather than re-deriving from now() so the label stays
+  // accurate across pre/post-launch transitions.
+  const [goalYear, goalMonthNum] = monthlyGoalPeriod.split("-");
+  const goalMonthIdx = Number(goalMonthNum) - 1;
+  const monthlyGoalLabel = `${
+    new Date(2000, goalMonthIdx, 1).toLocaleString("en-ZA", { month: "long" })
+  } ${goalYear}`;
+
+  // Goal = onboarded members × R1,000. Uses R1,000 base (not the
+  // per-plan amount including service fees) since the fee covers
+  // processor cost, not pool capital. Pool growth tracks principal.
+  const monthlyGoalAmount = membersOnboarded * MONTHLY_CONTRIBUTION_ZAR;
+
+  // Received = sum of `amountReceived` on Paid rows for the target
+  // period. Re-uses the already-fetched paidContribs (no second
+  // Airtable round trip).
+  let monthlyReceivedAmount = 0;
+  try {
+    const periodPaidRows = await listPaidContributions();
+    monthlyReceivedAmount = periodPaidRows
+      .filter((c) => c.period === monthlyGoalPeriod)
+      .reduce((sum, c) => sum + (c.amountReceived ?? 0), 0);
+  } catch {
+    // Same fallback as the cohort hydration above — the rest of the
+    // dashboard renders fine even if this fetch hiccups.
+    monthlyReceivedAmount = 0;
+  }
+
   return {
     totalFoundingSlots: FOUNDING_SLOTS,
     activeMembers,
@@ -939,5 +981,9 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
     timeline,
     membersOnboarded,
     membersProfileUpdated,
+    monthlyGoalPeriod,
+    monthlyGoalLabel,
+    monthlyGoalAmount,
+    monthlyReceivedAmount,
   };
 }
