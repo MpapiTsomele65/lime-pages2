@@ -1,13 +1,26 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { CalendarClock, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CalendarClock,
+  ArrowRight,
+  CheckCircle2,
+  Check,
+  ChevronDown,
+  Copy,
+  CreditCard,
+  Landmark,
+  Loader2,
+} from "lucide-react";
 
 import {
   CONTRIBUTION_MONTH_ORDER,
   CONTRIBUTION_STATUS,
   LEHUMO_FIRST_DUE_PERIOD,
+  formatEftReference,
   type LehumoContribution,
+  type LehumoMember,
 } from "@/lib/definitions";
 
 interface ContributionReminderCardProps {
@@ -33,6 +46,235 @@ interface ContributionReminderCardProps {
    *  period-aware "next due" hint (e.g. `Jun 2026`). Falls back to the
    *  12-month projected `contributions` shape when undefined. */
   contributionRows?: LehumoContribution[];
+  /** Member — drives the Make Payment expansion (EFT reference for
+   *  the bank-details panel; plan to decide whether to show the
+   *  Paystack option; email + id for the one-off Paystack init call). */
+  member: LehumoMember;
+}
+
+// Bank details — mirror BankDepositCard's source of truth so admin
+// recon sees consistent reference shape across surfaces. If the trust
+// ever changes account, both this file + BankDepositCard need the
+// same update.
+const BANK_DETAILS = {
+  accountHolder: "Lime Pages Pty Ltd",
+  bankName: "Capitec Business Account",
+  accountNumber: "1054 7373 47",
+  branchCode: "470010",
+} as const;
+
+/**
+ * Expandable "Make Payment" panel — inline payment options revealed
+ * below the reminder copy when a member clicks the action button. EFT
+ * is offered to everyone with the member's personalised reference
+ * pre-filled; Standard/VIP members additionally get a "Pay R1,035 via
+ * Paystack" button that triggers a one-off charge (separate from any
+ * existing auto-debit subscription).
+ */
+function MakePaymentPanel({ member }: { member: LehumoMember }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const [paystackBusy, setPaystackBusy] = useState(false);
+  const [paystackError, setPaystackError] = useState<string | null>(null);
+
+  const reference = formatEftReference(member.memberNumber, member.fullName);
+  const isStandardOrVip = member.plan === "standard" || member.plan === "vip";
+  const paystackAmount = member.plan === "vip" ? "R1,050" : "R1,035";
+
+  function copy(text: string, key: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
+
+  async function payViaPaystack() {
+    if (paystackBusy) return;
+    setPaystackBusy(true);
+    setPaystackError(null);
+    try {
+      const res = await fetch("/api/lehumo/paystack/init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: member.email,
+          memberRecordId: member.id,
+          plan: member.plan,
+          returnTo: "portal",
+          oneOff: true, // critical — don't create a duplicate subscription
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.authorization_url) {
+        throw new Error(data.error || "Could not start payment.");
+      }
+      window.location.href = data.authorization_url;
+    } catch (err) {
+      setPaystackError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+      setPaystackBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3">
+      {/* Paystack option — Standard/VIP only. Sits ABOVE the EFT
+          option because it's the one-click path; EFT requires copying
+          details into a banking app, which is slower. */}
+      {isStandardOrVip && (
+        <div className="rounded-[14px] border border-[#B8FF00]/25 bg-[#B8FF00]/[0.05] p-4">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#B8FF00]/15 text-[#B8FF00]">
+              <CreditCard className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-white">
+                Pay {paystackAmount} via Paystack
+              </p>
+              <p className="mt-0.5 text-[11.5px] text-white/55 leading-relaxed">
+                One-off card charge — separate from your auto-debit. R1,000
+                to the pool, R35 covers card processing.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={payViaPaystack}
+            disabled={paystackBusy}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-full bg-[#B8FF00] py-2.5 px-4 text-[13px] font-bold text-[#0B1933] hover:bg-[#a8ef00] disabled:opacity-50 transition-colors"
+          >
+            {paystackBusy ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Connecting to Paystack…
+              </>
+            ) : (
+              <>
+                Pay {paystackAmount} via Paystack
+                <ArrowRight className="h-3.5 w-3.5" />
+              </>
+            )}
+          </button>
+          {paystackError && (
+            <p className="mt-2 text-[11.5px] text-red-300">{paystackError}</p>
+          )}
+        </div>
+      )}
+
+      {/* EFT option — always available. Shows the member's
+          personalised reference with copy-to-clipboard, plus the
+          bank fields needed to set up an EFT in any banking app. */}
+      <div className="rounded-[14px] border border-[#46CDCF]/25 bg-[#46CDCF]/[0.04] p-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#46CDCF]/15 text-[#46CDCF]">
+            <Landmark className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-white">
+              Pay R1,000 via EFT
+            </p>
+            <p className="mt-0.5 text-[11.5px] text-white/55 leading-relaxed">
+              Transfer R1,000 from any SA bank using the details below.
+              Use the reference exactly so admin can match it to you.
+            </p>
+          </div>
+        </div>
+
+        {/* Reference — most important field, copy-button prominent */}
+        <div className="rounded-lg bg-[#B8FF00]/[0.08] border border-[#B8FF00]/20 p-3 mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#B8FF00] mb-0.5">
+              Your reference (use EXACTLY)
+            </p>
+            <p className="text-[14px] font-bold font-mono text-white truncate">
+              {reference}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => copy(reference, "reference")}
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10.5px] font-semibold transition-colors ${
+              copied === "reference"
+                ? "border-[#B8FF00]/40 bg-[#B8FF00]/[0.12] text-[#B8FF00]"
+                : "border-white/[0.1] bg-white/[0.04] text-white/70 hover:bg-white/[0.08]"
+            }`}
+            aria-label={copied === "reference" ? "Copied" : "Copy"}
+          >
+            {copied === "reference" ? (
+              <Check className="h-3 w-3" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+            {copied === "reference" ? "Copied" : "Copy"}
+          </button>
+        </div>
+
+        {/* Bank fields */}
+        <dl className="space-y-2 text-[11.5px]">
+          <BankRow label="Account holder" value={BANK_DETAILS.accountHolder} />
+          <BankRow label="Bank" value={BANK_DETAILS.bankName} />
+          <BankRow
+            label="Account #"
+            value={BANK_DETAILS.accountNumber}
+            mono
+            copyKey="account"
+            copied={copied === "account"}
+            onCopy={() =>
+              copy(BANK_DETAILS.accountNumber.replace(/\s/g, ""), "account")
+            }
+          />
+          <BankRow
+            label="Branch code"
+            value={BANK_DETAILS.branchCode}
+            mono
+            copyKey="branch"
+            copied={copied === "branch"}
+            onCopy={() => copy(BANK_DETAILS.branchCode, "branch")}
+          />
+        </dl>
+      </div>
+    </div>
+  );
+}
+
+function BankRow({
+  label,
+  value,
+  mono,
+  copyKey,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  copyKey?: string;
+  copied?: boolean;
+  onCopy?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <dt className="text-white/45 shrink-0">{label}</dt>
+      <dd
+        className={`flex items-center gap-1.5 min-w-0 text-right ${mono ? "font-mono" : ""} text-white/85`}
+      >
+        <span className="truncate">{value}</span>
+        {copyKey && onCopy && (
+          <button
+            type="button"
+            onClick={onCopy}
+            className={`inline-flex shrink-0 items-center justify-center rounded-full border w-5 h-5 transition-colors ${
+              copied
+                ? "border-[#B8FF00]/40 bg-[#B8FF00]/[0.12] text-[#B8FF00]"
+                : "border-white/[0.1] bg-white/[0.04] text-white/50 hover:bg-white/[0.08]"
+            }`}
+            aria-label={copied ? "Copied" : "Copy"}
+          >
+            {copied ? <Check className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5" />}
+          </button>
+        )}
+      </dd>
+    </div>
+  );
 }
 
 const MONTH_FULL_NAMES: Record<string, string> = {
@@ -106,8 +348,13 @@ export function ContributionReminderCard({
   currentPeriod,
   beforeLaunch = false,
   contributionRows,
+  member,
 }: ContributionReminderCardProps) {
   const richShape = (contributionRows?.length ?? 0) > 0;
+  // Make Payment expansion — toggled by the action button. Shared
+  // across pre-launch / unpaid states; not relevant on the paid /
+  // all-paid celebratory states (those return early).
+  const [showPayment, setShowPayment] = useState(false);
 
   // Pre-launch (before 1 Jun 2026): render a quiet "next contribution
   // due X" hint instead of returning null. The "first" vs "next" copy
@@ -157,7 +404,7 @@ export function ContributionReminderCard({
         className="rounded-[24px] border border-[#46CDCF]/25 bg-gradient-to-br from-[#46CDCF]/[0.06] via-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(70,205,207,0.12)] p-5 md:p-6"
         aria-label="Contribution schedule"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#46CDCF]/15 text-[#46CDCF]">
             <CalendarClock className="h-4 w-4" />
           </div>
@@ -174,7 +421,36 @@ export function ContributionReminderCard({
                 : "No action needed yet — we'll send a reminder closer to the date."}
             </p>
           </div>
+          {/* Make Payment toggle — pre-launch members can choose to
+              pay ahead of the due date. Especially useful for Basic
+              members who want to lock in their first contribution
+              before launch, or Standard/VIP who want a one-off
+              advance separate from their auto-debit. */}
+          <button
+            type="button"
+            onClick={() => setShowPayment((v) => !v)}
+            aria-expanded={showPayment}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#B8FF00]/30 bg-[#B8FF00]/[0.08] px-3.5 py-1.5 text-[12px] font-semibold text-[#B8FF00] hover:bg-[#B8FF00]/[0.14] transition-colors self-start"
+          >
+            {showPayment ? "Close" : "Make payment"}
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform ${showPayment ? "rotate-180" : ""}`}
+            />
+          </button>
         </div>
+        <AnimatePresence initial={false}>
+          {showPayment && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <MakePaymentPanel member={member} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.section>
     );
   }
@@ -293,14 +569,31 @@ export function ContributionReminderCard({
           </div>
         </div>
 
-        <a
-          href="#payment"
+        <button
+          type="button"
+          onClick={() => setShowPayment((v) => !v)}
+          aria-expanded={showPayment}
           className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#B8FF00] px-5 py-2.5 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors self-start sm:self-auto"
         >
-          Pay R1,000
-          <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-        </a>
+          {showPayment ? "Close" : "Make payment"}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${showPayment ? "rotate-180" : ""}`}
+          />
+        </button>
       </div>
+      <AnimatePresence initial={false}>
+        {showPayment && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+            style={{ overflow: "hidden" }}
+          >
+            <MakePaymentPanel member={member} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.section>
   );
 }

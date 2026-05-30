@@ -58,14 +58,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, memberRecordId, plan, returnTo } = parsed.data;
+    const { email, memberRecordId, plan, returnTo, oneOff } = parsed.data;
 
     // Resolve the plan code (only Standard uses subscriptions for now).
     // Basic = manual EFT (never hits this endpoint); VIP = coming soon.
+    // One-off mode skips the plan code entirely — Paystack treats the
+    // request as a single-transaction charge so we don't spawn a
+    // duplicate subscription for members who already have one.
     stage = "resolve_plan";
-    const planCode = plan ? getPlanCodeForPlan(plan) : null;
+    const planCode = oneOff ? null : plan ? getPlanCodeForPlan(plan) : null;
 
-    if (plan === "standard" && !planCode) {
+    if (!oneOff && plan === "standard" && !planCode) {
       // Subscription explicitly requested but the env var is missing —
       // surface a clear error rather than silently falling back to a
       // one-time charge at a guessed price.
@@ -104,7 +107,11 @@ export async function POST(request: NextRequest) {
       metadata: {
         memberRecordId,
         plan: plan || "unknown",
-        type: planCode ? "subscription_first_charge" : "one_time_contribution",
+        type: oneOff
+          ? "one_off_advance_payment"
+          : planCode
+            ? "subscription_first_charge"
+            : "one_time_contribution",
       },
       planCode: planCode || undefined,
     });

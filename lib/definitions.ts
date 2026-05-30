@@ -1247,6 +1247,15 @@ export const PaystackInitSchema = z.object({
    * wizard. Defaults to "onboard" for backwards compatibility.
    */
   returnTo: z.enum(["onboard", "portal"]).optional(),
+  /**
+   * One-off charge mode. When true, the init route skips the plan
+   * code lookup so Paystack treats it as a single-transaction charge
+   * (no subscription created, no auto-debit, no recurring billing).
+   * Used by the portal's ContributionReminderCard "Pay R1,035 via
+   * Paystack" action — Standard/VIP members already have a
+   * subscription, so we don't want to spawn a duplicate. Defaults
+   * to false (backwards-compatible subscription behaviour). */
+  oneOff: z.boolean().optional(),
 });
 
 /**

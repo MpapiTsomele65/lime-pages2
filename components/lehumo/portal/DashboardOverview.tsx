@@ -260,6 +260,7 @@ export function DashboardOverview({
           currentPeriod={currentPeriod}
           daysLeftInMonth={daysLeftInMonth}
           beforeLaunch={beforeLaunch}
+          member={member}
         />
       )}
 
