@@ -720,6 +720,14 @@ export interface LehumoMember {
   //    expertise + optional motivation + ISO submitted-at stamp once
   //    they hit Apply. Same notes-blob pattern as Plan / SubCode.
   steering?: SteeringSubmission | null;
+  // ── Optional self-service password. When set, members can sign in
+  //    with email + password as an alternative to email + memberNumber
+  //    (the legacy path still works — see login route). Stored in the
+  //    notes blob as `PwHash: <saltHex>:<keyHex>` (scrypt). The portal's
+  //    /security page lets a member set / change / remove it; an email
+  //    magic-link flow handles forgotten-password resets. We never put
+  //    the plaintext password in logs, sessions, or telemetry.
+  passwordHash?: string | null;
 }
 
 /**
@@ -891,6 +899,48 @@ export function spliceSubscriptionIntoNotes(
     updateOrRemove(/^SubAction:\s*/i, "SubAction", patch.action);
   }
 
+  return segments.join(" | ");
+}
+
+/**
+ * Optional self-service password hash. Stored in the same pipe-delimited
+ * notes blob as Plan / SubCode / Steering, in the shape:
+ *   `PwHash: <saltHex>:<keyHex>`
+ *
+ * Both halves are hex (a-f0-9) so they never contain `|` or other
+ * segment delimiters. The matcher is anchored to the boundary so a
+ * future field whose name starts with "Pw" doesn't accidentally match.
+ * Returns `null` when no password is set — that's the signal the login
+ * route uses to fall back to the email + member-number path.
+ */
+export function extractPasswordHashFromNotes(notes: string): string | null {
+  if (!notes) return null;
+  const match = /(?:^|\|)\s*PwHash:\s*([a-f0-9]+:[a-f0-9]+)/i.exec(notes);
+  return match ? match[1].trim() : null;
+}
+
+/**
+ * Splice a `PwHash:` segment into the notes blob, replacing any existing
+ * one. Pass `null` to remove it (member opted out of password login).
+ * Preserves every other segment so this is safe to call from the
+ * password set / change / remove + reset routes.
+ */
+export function splicePasswordHashIntoNotes(
+  existingNotes: string,
+  hash: string | null,
+): string {
+  const segments = (existingNotes ?? "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Drop any existing PwHash segment(s) — rewrite-from-scratch keeps
+  // the path identical whether we're setting, changing, or removing.
+  for (let i = segments.length - 1; i >= 0; i--) {
+    if (/^PwHash:\s*/i.test(segments[i])) segments.splice(i, 1);
+  }
+  if (hash && hash.trim()) {
+    segments.push(`PwHash: ${hash.trim()}`);
+  }
   return segments.join(" | ");
 }
 
@@ -1204,7 +1254,66 @@ export interface SessionPayload {
 }
 
 // ─── Zod Schemas ────────────────────────────────────────────────────
-export const LoginFormSchema = z.object({
+/**
+ * Login payload. Either `memberNumber` OR `password` must be supplied
+ * alongside the email — the route handler enforces that "exactly one"
+ * rule. We keep both optional at the schema level so the schema can
+ * accept either path; the cross-field check lives next to the handler
+ * where the user-facing error copy belongs.
+ */
+export const LoginFormSchema = z
+  .object({
+    email: emailField,
+    memberNumber: z
+      .union([z.string(), z.number()])
+      .transform((v) => parseMemberNumber(v))
+      .refine((v): v is number => v !== null, {
+        message: "Please enter a valid member number (e.g. Leh01)",
+      })
+      .optional(),
+    password: z
+      .string()
+      .min(1, "Password is required")
+      .max(200, "Password is too long")
+      .optional(),
+  })
+  .refine(
+    (data) => (data.memberNumber !== undefined) !== (data.password !== undefined),
+    {
+      message:
+        "Provide either your member number or your password — not both, not neither.",
+      path: ["memberNumber"],
+    },
+  );
+
+/**
+ * Set / change / remove the optional self-service password (member
+ * portal). `current` is required when a password is already set so a
+ * stolen session can't silently rotate the credential. `next` is
+ * either the new plaintext (8+ chars) or null to opt out entirely.
+ */
+export const PasswordChangeSchema = z
+  .object({
+    current: z.string().min(1).max(200).optional(),
+    next: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(200, "Password is too long")
+      .nullable(),
+  })
+  .refine(
+    (data) => data.next === null || typeof data.next === "string",
+    { message: "Provide a password or pass null to remove it", path: ["next"] },
+  );
+
+/**
+ * Forgot-password payload. Email + member number both required —
+ * matches the user-chosen reset flow ("Email magic link + must re-enter
+ * member number"). The route handler always returns success to prevent
+ * email enumeration; only members whose email+number actually match
+ * receive the link.
+ */
+export const PasswordForgotSchema = z.object({
   email: emailField,
   memberNumber: z
     .union([z.string(), z.number()])
@@ -1212,6 +1321,19 @@ export const LoginFormSchema = z.object({
     .refine((v): v is number => v !== null, {
       message: "Please enter a valid member number (e.g. Leh01)",
     }),
+});
+
+/**
+ * Reset-password payload — consumed when the user clicks the magic
+ * link in their email and submits a new password. The token carries
+ * the memberId + purpose claim; the route handler verifies + applies.
+ */
+export const PasswordResetSchema = z.object({
+  token: z.string().min(10, "Reset link is missing or malformed."),
+  next: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(200, "Password is too long"),
 });
 
 export const OnboardingFormSchema = z.object({

@@ -5,8 +5,15 @@ export async function middleware(request: NextRequest) {
   const session = request.cookies.get("lehumo_session")?.value;
   const { pathname } = request.nextUrl;
   const isLoginPage = pathname === "/lehumo/portal/login";
+  // Anything nested under /login (forgot-password, reset, future
+  // captcha pages …) is public. We special-case the bare /login above
+  // so the "already logged in → bounce to dashboard" rule applies
+  // ONLY to the entry point, not to mid-reset traffic — a member who
+  // clicks a magic link while still logged in should reach the reset
+  // form, not get punted back to the dashboard.
+  const isLoginSubPage = pathname.startsWith("/lehumo/portal/login/");
   const isForgotPage = pathname === "/lehumo/portal/forgot";
-  const isPublicPage = isLoginPage || isForgotPage;
+  const isPublicPage = isLoginPage || isLoginSubPage || isForgotPage;
 
   // No session → redirect to login (unless on a public page)
   if (!session && !isPublicPage) {

@@ -10,6 +10,7 @@ import {
   RELATIONSHIP_CHOICE_ID_TO_NAME,
   LOAN_TYPE_CHOICE_ID_TO_NAME,
   CONTRIBUTION_SOURCE,
+  extractPasswordHashFromNotes,
   extractPlanFromNotes,
   extractSteeringFromNotes,
   extractSubscriptionFromNotes,
@@ -152,6 +153,14 @@ export function parseRecord(record: any): LehumoMember {
     // hasn't opted in. Populated once they hit Apply on the portal
     // SteeringCommitteeCard.
     steering: extractSteeringFromNotes(f[AIRTABLE_FIELDS.notes] || ""),
+    // Optional self-service password hash — set by the portal's
+    // /security card. `null` means no password is set; login falls
+    // back to the email + member-number path. We deliberately surface
+    // this on every read so route handlers and UI can check
+    // `!!member.passwordHash` without re-parsing the notes blob.
+    passwordHash: extractPasswordHashFromNotes(
+      f[AIRTABLE_FIELDS.notes] || "",
+    ),
     // ── KYC fields (Tier 2A) — all optional, populated post-onboarding ──
     idType: resolveSelect(
       f[AIRTABLE_FIELDS.idType],

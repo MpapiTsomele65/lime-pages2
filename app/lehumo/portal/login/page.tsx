@@ -54,6 +54,15 @@ function LoginPageInner() {
   const initialEmail = searchParams.get("email") ?? "";
   const [email, setEmail] = useState(initialEmail);
   const [memberNumber, setMemberNumber] = useState("");
+  const [password, setPassword] = useState("");
+  // Which second factor the form is collecting. Default is
+  // "memberNumber" because every member has one of those; passwords
+  // are opt-in. Server errors with code MUST_USE_PASSWORD /
+  // MUST_USE_MEMBER_NUMBER flip this automatically so the member
+  // doesn't have to figure out which path they're on.
+  const [mode, setMode] = useState<"memberNumber" | "password">(
+    "memberNumber",
+  );
   const [error, setError] = useState("");
   // Surface a friendly notice when the user landed here via the
   // onboarding wizard's "you're already a member" redirect. Quietly
@@ -64,6 +73,15 @@ function LoginPageInner() {
   const [oauthLoading, setOauthLoading] = useState("");
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
+  function switchMode(next: "memberNumber" | "password") {
+    setMode(next);
+    setError("");
+    // Clear the OTHER credential so the form doesn't carry a stale
+    // value into the new path's submit body.
+    if (next === "memberNumber") setPassword("");
+    else setMemberNumber("");
+  }
+
   /* ── Standard login ── */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,17 +89,39 @@ function LoginPageInner() {
     setLoading(true);
 
     try {
+      // Build the payload based on the active mode so the server
+      // sees exactly one credential (the schema's `.refine` enforces
+      // this — sending both would 400).
+      const payload: {
+        email: string;
+        memberNumber?: string;
+        password?: string;
+      } = { email: email.trim() };
+      if (mode === "password") {
+        payload.password = password;
+      } else {
+        payload.memberNumber = memberNumber.trim();
+      }
+
       const res = await fetch("/api/lehumo/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          memberNumber: memberNumber.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const data = await res.json();
+        // Auto-flip the form if the server tells us this account is
+        // on the other path. The error copy already explains it; the
+        // flip just saves the member a click and pre-positions the
+        // cursor on the right field.
+        if (data.code === "MUST_USE_PASSWORD") {
+          setMode("password");
+          setMemberNumber("");
+        } else if (data.code === "MUST_USE_MEMBER_NUMBER") {
+          setMode("memberNumber");
+          setPassword("");
+        }
         setError(data.error || "Invalid credentials. Please try again.");
         setLoading(false);
         return;
@@ -379,7 +419,7 @@ function LoginPageInner() {
                 <div className="flex items-center gap-3 mb-6">
                   <div className="flex-1 h-px bg-white/[0.08]" />
                   <span className="text-xs text-white/25 font-medium">
-                    or sign in with Member ID
+                    or sign in with email
                   </span>
                   <div className="flex-1 h-px bg-white/[0.08]" />
                 </div>
@@ -417,33 +457,82 @@ function LoginPageInner() {
                 />
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label
-                    htmlFor="memberNumber"
-                    className="text-sm font-medium text-white/70"
+              {mode === "memberNumber" ? (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label
+                      htmlFor="memberNumber"
+                      className="text-sm font-medium text-white/70"
+                    >
+                      Member ID
+                    </label>
+                    <Link
+                      href="/lehumo/portal/forgot"
+                      className="text-xs text-teal/70 hover:text-teal transition-colors"
+                    >
+                      Forgot your ID?
+                    </Link>
+                  </div>
+                  <input
+                    id="memberNumber"
+                    type="text"
+                    required
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    value={memberNumber}
+                    onChange={(e) => setMemberNumber(e.target.value)}
+                    placeholder="e.g. Leh01"
+                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/50 focus:ring-1 focus:ring-[#B8FF00]/30 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => switchMode("password")}
+                    className="mt-2.5 text-xs text-white/45 hover:text-white/75 transition-colors"
                   >
-                    Member ID
-                  </label>
-                  <Link
-                    href="/lehumo/portal/forgot"
-                    className="text-xs text-teal/70 hover:text-teal transition-colors"
-                  >
-                    Forgot your ID?
-                  </Link>
+                    Set up a password?{" "}
+                    <span className="text-[#46CDCF]">
+                      Sign in with password
+                    </span>
+                  </button>
                 </div>
-                <input
-                  id="memberNumber"
-                  type="text"
-                  required
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  value={memberNumber}
-                  onChange={(e) => setMemberNumber(e.target.value)}
-                  placeholder="e.g. Leh01"
-                  className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/50 focus:ring-1 focus:ring-[#B8FF00]/30 transition-colors"
-                />
-              </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label
+                      htmlFor="password"
+                      className="text-sm font-medium text-white/70"
+                    >
+                      Password
+                    </label>
+                    <Link
+                      href="/lehumo/portal/login/forgot-password"
+                      className="text-xs text-teal/70 hover:text-teal transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Your portal password"
+                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/50 focus:ring-1 focus:ring-[#B8FF00]/30 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => switchMode("memberNumber")}
+                    className="mt-2.5 text-xs text-white/45 hover:text-white/75 transition-colors"
+                  >
+                    No password set?{" "}
+                    <span className="text-[#46CDCF]">
+                      Sign in with member ID
+                    </span>
+                  </button>
+                </div>
+              )}
 
               <button
                 type="submit"

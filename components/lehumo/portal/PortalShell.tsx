@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { LogOut, Shield, User } from "lucide-react";
+import { Lock, LogOut, Shield, User } from "lucide-react";
 
 interface PortalShellProps {
   memberName: string;
@@ -63,6 +63,15 @@ export function PortalShell({
               <User className="h-3.5 w-3.5" />
               <span className="font-medium">{memberName}</span>
             </div>
+
+            <Link
+              href="/lehumo/portal/security"
+              className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-[11.5px] font-medium text-white/60 hover:text-white hover:border-white/15 hover:bg-white/[0.05] transition-all duration-200"
+              aria-label="Security settings"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Security</span>
+            </Link>
 
             {isAdmin && (
               <Link

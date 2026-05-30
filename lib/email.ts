@@ -1081,3 +1081,97 @@ export async function sendSteeringWithdrawAdminNotification(params: {
 </div></body></html>`,
   });
 }
+
+/* ─── Password reset magic link ─── */
+/**
+ * Email a member a 15-minute magic link to reset their portal password.
+ *
+ * The link's token carries the memberId + purpose claim, signed with
+ * SESSION_SECRET so it can't be forged. The route handler that consumes
+ * the link also re-checks the member number (we collected it on the
+ * forgot form) before applying the new password — defence-in-depth so
+ * a forwarded inbox alone doesn't grant account takeover.
+ *
+ * BCC'd to lehumo@limepages.co.za like every other transactional send
+ * so admin has the audit trail.
+ */
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  resetUrl: string;
+  expiresInMinutes: number;
+}) {
+  const { to, fullName, memberNumber, resetUrl, expiresInMinutes } = params;
+  const firstName = fullName.split(" ")[0] || "there";
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: `Reset your Lehumo portal password — ${formatMemberNumber(memberNumber)}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+          <tr>
+            <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+              <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Hi ${firstName},</h1>
+              <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 0 24px;">
+                You (or someone using your email) asked to reset the password
+                on your Lehumo portal account
+                <strong style="color:#B8FF00;">${formatMemberNumber(memberNumber)}</strong>.
+                Click below to pick a new one. This link expires in
+                <strong style="color:#ffffff;">${expiresInMinutes} minutes</strong>.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 24px;">
+                    <a href="${resetUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:50px;">
+                      Reset password &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(70,205,207,0.06);border:1px solid rgba(70,205,207,0.2);border-radius:14px;margin-bottom:8px;">
+                <tr>
+                  <td style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;">
+                    <strong style="color:#46CDCF;">Didn&rsquo;t request this?</strong>
+                    Ignore this email &mdash; your password stays unchanged. Your
+                    existing member-number login also continues to work either way.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+                If the button doesn&rsquo;t work, copy this link into your browser:<br/>
+                <span style="color:rgba(70,205,207,0.7);word-break:break-all;">${resetUrl}</span>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+}
