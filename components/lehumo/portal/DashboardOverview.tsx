@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Shield, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Lock, Shield, X } from "lucide-react";
 import type { CommunityPoolStats, LehumoMember } from "@/lib/definitions";
 import { formatMemberNumber } from "@/lib/definitions";
 import { MemberProfileCard } from "./MemberProfileCard";
@@ -123,7 +123,7 @@ export function DashboardOverview({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, ease: iosEase }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"
       >
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35 mb-1.5">
@@ -133,9 +133,29 @@ export function DashboardOverview({
             Welcome back, {firstName}
           </h1>
         </div>
-        <span className="inline-flex items-center self-start rounded-full bg-[#B8FF00]/[0.12] border border-[#B8FF00]/20 px-3 py-1.5 text-[11px] font-semibold text-[#B8FF00] tracking-tight">
-          Member {formatMemberNumber(member.memberNumber)}
-        </span>
+        {/* Right column: member chip + (optional) "Enhance your
+            security" CTA stacked beneath it. The CTA only renders for
+            members who haven't already opted in to the optional
+            password layer — once `member.passwordHash` is on file,
+            they've taken the action and the nudge would just be
+            noise. End-aligned on sm+ so both pieces hug the right
+            edge under the dashboard heading. */}
+        <div className="flex flex-col items-start sm:items-end gap-2">
+          <span className="inline-flex items-center rounded-full bg-[#B8FF00]/[0.12] border border-[#B8FF00]/20 px-3 py-1.5 text-[11px] font-semibold text-[#B8FF00] tracking-tight">
+            Member {formatMemberNumber(member.memberNumber)}
+          </span>
+          {!member.passwordHash && (
+            <Link
+              href="/lehumo/portal/security"
+              className="group inline-flex items-center gap-1.5 rounded-full border border-[#46CDCF]/30 bg-[#46CDCF]/[0.08] px-3 py-1.5 text-[11px] font-semibold text-[#46CDCF] hover:bg-[#46CDCF]/[0.15] hover:border-[#46CDCF]/50 transition-all tracking-tight"
+              aria-label="Enhance your security — set up a portal password"
+            >
+              <Lock className="h-3 w-3" />
+              Enhance your security
+              <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          )}
+        </div>
       </motion.div>
 
       {/* Payment-success banner — only renders when the member has just
