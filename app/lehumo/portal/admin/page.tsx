@@ -112,8 +112,11 @@ export default async function AdminDashboardPage() {
         <AdminCampaignTracker reports={campaignReports} />
 
         {/* Stat tiles — quick at-a-glance counts. Richer breakdowns sit
-            in the Pool / Community Health / Behind cards below. */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+            in the Pool / Community Health / Behind cards below.
+            lg:grid-cols-6 keeps all six tiles on a single row above the
+            breakpoint; on md it wraps to 3+3, on sm to 2+2+2 — every
+            tile gets the same width regardless of viewport. */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
           <StatTile
             label="Total Members"
             value={stats.totalMembers.toString()}
@@ -150,6 +153,19 @@ export default async function AdminDashboardPage() {
             label="Beneficiary Missing"
             value={stats.beneficiaryMissing.toString()}
             sub={`${stats.beneficiaryOnFile} on file`}
+          />
+          {/* Password adoption — surfaces uptake of the optional
+              self-service password layer. Sub-line shows raw + % so an
+              admin can read "3 of 27 pipeline = 11%" at a glance and
+              decide whether to nudge the rest via the WhatsApp group. */}
+          <StatTile
+            label="Password Set"
+            value={stats.passwordProtected.toString()}
+            sub={
+              stats.pipelineCount > 0
+                ? `${stats.passwordProtectedPct}% of ${stats.pipelineCount} active`
+                : undefined
+            }
           />
         </div>
 

@@ -10,7 +10,10 @@ import {
 } from "@/lib/airtable-admin";
 import { disableSubscription } from "@/lib/paystack";
 import type { EftAllocationPlan } from "@/lib/eft-allocation";
-import { spliceSubscriptionIntoNotes } from "@/lib/definitions";
+import {
+  splicePasswordHashIntoNotes,
+  spliceSubscriptionIntoNotes,
+} from "@/lib/definitions";
 import {
   createMember,
   findMemberByEmail,
@@ -204,6 +207,62 @@ export async function resolveSubscriptionCancel(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Failed to resolve",
+    };
+  }
+}
+
+/**
+ * Admin escape-hatch: clear a member's optional portal password.
+ *
+ * The reset flow ("Forgot password" magic link) covers 99% of cases on
+ * its own — but it requires the member to access their registered
+ * email AND remember their member number. If they've lost both (e.g.
+ * email account hacked, or they joined under a defunct work address),
+ * the only way out is admin intervention.
+ *
+ * This action wipes the `PwHash:` segment from the member's notes
+ * blob, returning them to the legacy email + member-number sign-in
+ * path. They can set a new password from /lehumo/portal/security
+ * once they're back in.
+ *
+ * No email is sent to the member: admin should always do this from a
+ * support conversation where the member has confirmed identity out of
+ * band (call / WhatsApp / in person). Surfacing it via email could
+ * also tip off an attacker who's compromised the email account.
+ */
+export async function adminClearMemberPassword(
+  recordId: string,
+): Promise<AdminActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as AdminActionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  try {
+    const member = await getMemberById(recordId);
+    if (!member) return { ok: false, error: "Member not found" };
+
+    if (!member.passwordHash) {
+      // Already cleared — idempotent. Return the current member so the
+      // table can refresh its row state without an error toast.
+      return { ok: true, member };
+    }
+
+    const newNotes = splicePasswordHashIntoNotes(member.notes ?? "", null);
+    await updateMember(recordId, {
+      [AIRTABLE_FIELDS.notes]: newNotes,
+    });
+
+    const updated = await getMemberById(recordId);
+    if (!updated) throw new Error("Member disappeared after update");
+    return { ok: true, member: updated };
+  } catch (err) {
+    console.error("adminClearMemberPassword error:", err);
+    return {
+      ok: false,
+      error:
+        err instanceof Error ? err.message : "Failed to clear password",
     };
   }
 }

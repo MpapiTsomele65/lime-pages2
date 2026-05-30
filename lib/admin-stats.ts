@@ -68,6 +68,12 @@ export function computeAdminStats(
   const kycPending = pipelineMembers.length - kycComplete;
   const beneficiaryOnFile = pipelineMembers.filter(hasBeneficiary).length;
   const beneficiaryMissing = pipelineMembers.length - beneficiaryOnFile;
+  // Optional self-service password adoption (the security primitive
+  // members opt into from /lehumo/portal/security). Counted against
+  // the pipeline so prospects / exited members don't skew adoption %.
+  const passwordProtected = pipelineMembers.filter(
+    (m) => Boolean(m.passwordHash),
+  ).length;
   const madeFirstContribution = pipelineMembers.filter((m) =>
     Object.values(m.contributions).some(Boolean),
   ).length;
@@ -173,6 +179,8 @@ export function computeAdminStats(
     beneficiaryOnFile,
     beneficiaryMissing,
     beneficiaryPct: Math.round((beneficiaryOnFile / pipelineCount) * 100),
+    passwordProtected,
+    passwordProtectedPct: Math.round((passwordProtected / pipelineCount) * 100),
     madeFirstContribution,
     firstContributionPct: Math.round(
       (madeFirstContribution / pipelineCount) * 100,

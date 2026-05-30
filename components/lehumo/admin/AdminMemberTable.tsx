@@ -5,6 +5,7 @@ import {
   Banknote,
   Check,
   Loader2,
+  Lock,
   Search,
   X,
   HeartHandshake,
@@ -24,6 +25,7 @@ import {
   type KycStatus,
 } from "@/lib/definitions";
 import {
+  adminClearMemberPassword,
   adminSetMemberBeneficiary,
   logEftPayment,
   toggleMonthPayment,
@@ -238,18 +240,38 @@ export function AdminMemberTable({
                   <div className="text-xs text-[#6B7280]">
                     {formatMemberNumber(m.memberNumber)} · {m.email || "no email"}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setEftLogging(m)}
-                    disabled={
-                      !m.contributionRows || m.contributionRows.length === 0
-                    }
-                    className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10.5px] font-medium text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    title="Log a manual EFT payment against this member"
-                  >
-                    <Banknote className="h-3 w-3" />
-                    Log EFT
-                  </button>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setEftLogging(m)}
+                      disabled={
+                        !m.contributionRows ||
+                        m.contributionRows.length === 0
+                      }
+                      className="inline-flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10.5px] font-medium text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      title="Log a manual EFT payment against this member"
+                    >
+                      <Banknote className="h-3 w-3" />
+                      Log EFT
+                    </button>
+                    {/* Password chip — only when the member has opted
+                        in to the optional password layer. Click → confirm
+                        → server clears the PwHash segment from notes,
+                        returning the member to email + member-number
+                        sign-in. Used when a member's both forgotten
+                        their password AND can't access their email. */}
+                    {m.passwordHash && (
+                      <PasswordChip
+                        member={m}
+                        busy={busyKey === `${m.id}:pw-clear`}
+                        onClear={() =>
+                          runAction(`${m.id}:pw-clear`, () =>
+                            adminClearMemberPassword(m.id),
+                          )
+                        }
+                      />
+                    )}
+                  </div>
                 </td>
 
                 {/* Status dropdown — colour-coded so admins can scan
@@ -670,6 +692,78 @@ function PlanCell({ member }: { member: LehumoMember }) {
         </span>
       )}
     </div>
+  );
+}
+
+/**
+ * Password chip — visible only when the member has opted in to the
+ * optional password layer (`member.passwordHash` is truthy).
+ *
+ * Idle state: a quiet lime chip ("Password set") so admin can see at a
+ * glance who's protected. Hovering surfaces the "Clear" affordance,
+ * which expands to a two-step confirm (so a stray click on a busy
+ * table can't accidentally lock a member out).
+ *
+ * Confirm copy is deliberately explicit about the consequence so the
+ * admin always knows what they're agreeing to: clearing the hash
+ * returns the member to the legacy email + member-number sign-in
+ * path. Used when a member's both lost their password AND their email
+ * — the magic-link reset can't help in that case.
+ */
+function PasswordChip({
+  member,
+  busy,
+  onClear,
+}: {
+  member: LehumoMember;
+  busy: boolean;
+  onClear: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+
+  if (busy) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-[#B8FF00]/30 bg-[#B8FF00]/10 px-2 py-0.5 text-[10.5px] font-medium text-[#0B1933]">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Clearing…
+      </span>
+    );
+  }
+
+  if (confirming) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[10.5px] font-medium text-red-800">
+        <AlertTriangle className="h-3 w-3" />
+        Clear password?
+        <button
+          type="button"
+          onClick={onClear}
+          className="ml-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-red-700 transition-colors"
+          title={`Clear ${member.fullName}'s password — they'll sign in with their member number until they set a new one.`}
+        >
+          Confirm
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="rounded-full border border-red-200 bg-white px-2 py-0.5 text-[10px] font-medium text-red-700 hover:bg-red-50 transition-colors"
+        >
+          Cancel
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setConfirming(true)}
+      className="inline-flex items-center gap-1 rounded-full border border-[#B8FF00]/40 bg-[#B8FF00]/10 px-2 py-0.5 text-[10.5px] font-medium text-[#0B1933] hover:bg-[#B8FF00]/20 transition-colors"
+      title={`${member.fullName} has set a portal password. Click to clear it (only if they're locked out and can't use the email reset link).`}
+    >
+      <Lock className="h-3 w-3" />
+      Password set
+    </button>
   );
 }
 
