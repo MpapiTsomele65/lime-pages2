@@ -67,9 +67,12 @@ const BANK_DETAILS = {
  * Expandable "Make Payment" panel — inline payment options revealed
  * below the reminder copy when a member clicks the action button. EFT
  * is offered to everyone with the member's personalised reference
- * pre-filled; Standard/VIP members additionally get a "Pay R1,035 via
- * Paystack" button that triggers a one-off charge (separate from any
- * existing auto-debit subscription).
+ * pre-filled; Standard/VIP members who haven't yet set up their
+ * Paystack auto-debit see a "Setup recurring payments" block that
+ * routes them into Paystack to add a card. Once Paystack has the card
+ * on file, it'll debit the same amount on the 25th of every month —
+ * so this block is hidden for members who already have an active
+ * subscription (`subscriptionCode` is set) to avoid duplicates.
  */
 function MakePaymentPanel({ member }: { member: LehumoMember }) {
   const [copied, setCopied] = useState<string | null>(null);
@@ -78,7 +81,13 @@ function MakePaymentPanel({ member }: { member: LehumoMember }) {
 
   const reference = formatEftReference(member.memberNumber, member.fullName);
   const isStandardOrVip = member.plan === "standard" || member.plan === "vip";
+  // Only offer the Paystack setup path to Standard/VIP members who
+  // don't already have a subscription. If `subscriptionCode` is set,
+  // their auto-debit is live — surfacing another "set up" CTA would
+  // risk a duplicate subscription on their card.
+  const needsRecurringSetup = isStandardOrVip && !member.subscriptionCode;
   const paystackAmount = member.plan === "vip" ? "R1,050" : "R1,035";
+  const paystackFeeNote = member.plan === "vip" ? "R50" : "R35";
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text).then(() => {
@@ -100,7 +109,10 @@ function MakePaymentPanel({ member }: { member: LehumoMember }) {
           memberRecordId: member.id,
           plan: member.plan,
           returnTo: "portal",
-          oneOff: true, // critical — don't create a duplicate subscription
+          // No `oneOff` — we WANT a subscription created here. Adding
+          // the card on Paystack should kick off the monthly auto-debit
+          // straight away. The button is gated on
+          // `!member.subscriptionCode` above so we don't stack two.
         }),
       });
       const data = await res.json();
@@ -118,10 +130,11 @@ function MakePaymentPanel({ member }: { member: LehumoMember }) {
 
   return (
     <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3">
-      {/* Paystack option — Standard/VIP only. Sits ABOVE the EFT
-          option because it's the one-click path; EFT requires copying
-          details into a banking app, which is slower. */}
-      {isStandardOrVip && (
+      {/* Paystack setup — Standard/VIP members who haven't yet got
+          their auto-debit running. Sits ABOVE the EFT option because
+          it's the one-tap fix that turns this monthly chore into a
+          set-and-forget. Hidden once `subscriptionCode` is on file. */}
+      {needsRecurringSetup && (
         <div className="rounded-[14px] border border-[#B8FF00]/25 bg-[#B8FF00]/[0.05] p-4">
           <div className="flex items-start gap-3 mb-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#B8FF00]/15 text-[#B8FF00]">
@@ -129,11 +142,13 @@ function MakePaymentPanel({ member }: { member: LehumoMember }) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-semibold text-white">
-                Pay {paystackAmount} via Paystack
+                Setup recurring payments
               </p>
               <p className="mt-0.5 text-[11.5px] text-white/55 leading-relaxed">
-                One-off card charge — separate from your auto-debit. R1,000
-                to the pool, R35 covers card processing.
+                Add your card on Paystack once — they&rsquo;ll debit{" "}
+                {paystackAmount} on the 25th of every month. R1,000 to the
+                pool, {paystackFeeNote} covers card processing. Cancel
+                anytime from your dashboard.
               </p>
             </div>
           </div>
@@ -149,7 +164,7 @@ function MakePaymentPanel({ member }: { member: LehumoMember }) {
               </>
             ) : (
               <>
-                Pay {paystackAmount} via Paystack
+                Set up auto-debit
                 <ArrowRight className="h-3.5 w-3.5" />
               </>
             )}
