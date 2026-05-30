@@ -1,9 +1,49 @@
 "use client";
 
-import { KYC_STATUS } from "@/lib/definitions";
+import { CalendarClock, AlertCircle } from "lucide-react";
+
+import { KYC_STATUS, getKycDeadlineInfo } from "@/lib/definitions";
 
 interface KycStatusTrackerProps {
   status: string;
+}
+
+// Reframes the KYC card from "this is blocking your registration" to
+// "you've got runway until 15 Aug". Renders nothing when KYC is
+// Complete — no countdown noise for members who've already done it.
+function KycDeadlineChip({ status }: { status: string }) {
+  if (status === KYC_STATUS.complete) return null;
+  const { daysRemaining, isPast, tier } = getKycDeadlineInfo();
+  const palette = {
+    ok: {
+      classes: "bg-[#B8FF00]/[0.08] border-[#B8FF00]/25 text-[#B8FF00]",
+      icon: <CalendarClock className="h-3 w-3" />,
+    },
+    warn: {
+      classes: "bg-[#F59E0B]/12 border-[#F59E0B]/30 text-[#F59E0B]",
+      icon: <CalendarClock className="h-3 w-3" />,
+    },
+    urgent: {
+      classes: "bg-red-500/10 border-red-500/30 text-red-300",
+      icon: <AlertCircle className="h-3 w-3" />,
+    },
+    past: {
+      classes: "bg-red-500/15 border-red-500/40 text-red-200",
+      icon: <AlertCircle className="h-3 w-3" />,
+    },
+  }[tier];
+  const label = isPast
+    ? "Overdue — please upload KYC docs"
+    : `Due by 15 Aug · ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"} to go`;
+  return (
+    <div
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${palette.classes}`}
+      role="status"
+    >
+      {palette.icon}
+      {label}
+    </div>
+  );
 }
 
 const STEPS = [
@@ -39,9 +79,12 @@ export function KycStatusTracker({ status }: KycStatusTrackerProps) {
 
   return (
     <div className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-6 h-full">
-      <h2 className="text-lg font-semibold text-white mb-6">
-        Verify your identity
-      </h2>
+      <div className="flex items-start justify-between gap-3 mb-6 flex-wrap">
+        <h2 className="text-lg font-semibold text-white">
+          Verify your identity
+        </h2>
+        <KycDeadlineChip status={status} />
+      </div>
 
       {/* Progress bar */}
       <div className="flex items-start gap-0">

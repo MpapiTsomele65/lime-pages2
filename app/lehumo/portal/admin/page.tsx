@@ -13,6 +13,7 @@ import { AdminPendingActions } from "@/components/lehumo/admin/AdminPendingActio
 import { AdminCampaignTracker } from "@/components/lehumo/admin/AdminCampaignTracker";
 import { computeAdminStats } from "@/lib/admin-stats";
 import { computeCampaignReports } from "@/lib/campaign-analytics";
+import { getKycDeadlineInfo } from "@/lib/definitions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,11 @@ export default async function AdminDashboardPage() {
   // Cohort email-blast conversion reports. Pure server-side computation
   // against the same members snapshot — no extra Airtable round-trips.
   const campaignReports = computeCampaignReports(members);
+
+  // KYC deadline countdown — computed server-side so the stat tile's
+  // sub-line matches what members see on the portal (no hydration
+  // mismatch). Resolves on every dynamic render of the admin page.
+  const kycDeadline = getKycDeadlineInfo();
 
   // Fetch each pending member's Paystack subscription details in
   // parallel so the AdminPendingActions card can render a countdown
@@ -134,7 +140,11 @@ export default async function AdminDashboardPage() {
           <StatTile
             label="KYC Pending"
             value={stats.kycPending.toString()}
-            sub={`${stats.kycComplete} verified`}
+            sub={
+              kycDeadline.isPast
+                ? `${stats.kycComplete} verified · Overdue!`
+                : `${kycDeadline.daysRemaining} days to 15 Aug deadline`
+            }
           />
           <StatTile
             label="Beneficiary Missing"

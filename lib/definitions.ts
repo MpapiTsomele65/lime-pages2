@@ -147,6 +147,54 @@ export const CONTRIBUTION_MONTH_ORDER: ReadonlyArray<string> = [
 export const LEHUMO_LAUNCH_DATE_ISO = "2026-06-01T00:00:00+02:00";
 
 /**
+ * KYC deadline — members can join, set up payment, and start contributing
+ * without KYC fully complete, but ALL members must have a verified
+ * Complete KYC status by this date to stay Active. After this date,
+ * un-verified members move to On Hold pending document submission.
+ *
+ * 15 August 2026 chosen as ~2.5 months of runway from launch (1 June),
+ * giving members reasonable time to track down ID/proof-of-address
+ * docs without the pre-launch crunch.
+ *
+ * Surfaces as a friendly countdown chip on the portal's KycStatusTracker
+ * (only when status ≠ Complete) and as a sub-line on the admin
+ * "KYC Pending" stat tile.
+ */
+export const LEHUMO_KYC_DEADLINE_ISO = "2026-08-15T23:59:59+02:00";
+
+export interface KycDeadlineInfo {
+  /** Days remaining until the deadline (floored, clamped to 0). */
+  daysRemaining: number;
+  /** True once we're past the deadline — admin needs to action. */
+  isPast: boolean;
+  /** ISO date string for display purposes, e.g. "2026-08-15". */
+  deadlineIso: string;
+  /** Tier for colour-coding: "ok" (>30d), "warn" (8–30d), "urgent" (≤7d), "past". */
+  tier: "ok" | "warn" | "urgent" | "past";
+}
+
+export function getKycDeadlineInfo(now: Date = new Date()): KycDeadlineInfo {
+  const deadline = new Date(LEHUMO_KYC_DEADLINE_ISO);
+  const diffMs = deadline.getTime() - now.getTime();
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const isPast = diffMs < 0;
+  const daysRemaining = Math.max(0, days);
+  const tier: KycDeadlineInfo["tier"] = isPast
+    ? "past"
+    : daysRemaining <= 7
+      ? "urgent"
+      : daysRemaining <= 30
+        ? "warn"
+        : "ok";
+  return {
+    daysRemaining,
+    isPast,
+    deadlineIso: LEHUMO_KYC_DEADLINE_ISO.slice(0, 10),
+    tier,
+  };
+}
+
+/**
  * The first period the trust officially expects a contribution against.
  * Anything before this (e.g. a pre-existing May 2026 row in the schedule,
  * or a smoke-test row from May) is treated as "not yet on the books" by
