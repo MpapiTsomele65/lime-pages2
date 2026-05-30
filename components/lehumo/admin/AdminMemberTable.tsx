@@ -64,6 +64,13 @@ export function AdminMemberTable({
   // emergency-access draw. Admins use this to chase repayments and to
   // sense-check who's borrowing in any given month.
   const [activeLoansOnly, setActiveLoansOnly] = useState(false);
+  // "Password protected only" filter — sister to the two above.
+  // Surfaces the cohort that's opted in to the optional password
+  // layer. Useful for adoption tracking ("who do I still need to
+  // nudge?") and as a sanity check before admin actions (e.g. before
+  // clearing someone's password, see at a glance who else has one
+  // set so you can pattern-spot if multiple clears get requested).
+  const [passwordProtectedOnly, setPasswordProtectedOnly] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,8 +109,17 @@ export function AdminMemberTable({
     if (activeLoansOnly) {
       rows = rows.filter((m) => (m.activeLoanBalance ?? 0) > 0);
     }
+    if (passwordProtectedOnly) {
+      rows = rows.filter((m) => Boolean(m.passwordHash));
+    }
     return rows;
-  }, [members, query, missingBeneficiaryOnly, activeLoansOnly]);
+  }, [
+    members,
+    query,
+    missingBeneficiaryOnly,
+    activeLoansOnly,
+    passwordProtectedOnly,
+  ]);
 
   async function runAction(
     key: string,
@@ -170,6 +186,27 @@ export function AdminMemberTable({
             <HandCoins className="h-3.5 w-3.5" />
             <span>Active loans</span>
             {activeLoansOnly && <X className="h-3 w-3 ml-0.5 opacity-70" />}
+          </button>
+
+          {/* Password-protected filter — same toggle pattern; active
+              state uses the lime accent that matches the per-row
+              "Password set" chip so the cohort, the filter, and the
+              chips all read as one visual system. */}
+          <button
+            type="button"
+            onClick={() => setPasswordProtectedOnly((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              passwordProtectedOnly
+                ? "border-[#0B1933]/30 bg-[#0B1933] text-[#B8FF00] hover:bg-[#0B1933]/90"
+                : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933]"
+            }`}
+            title="Show only members who have opted in to the optional password layer"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            <span>Password protected</span>
+            {passwordProtectedOnly && (
+              <X className="h-3 w-3 ml-0.5 opacity-70" />
+            )}
           </button>
 
           <div className="relative">
