@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, TrendingUp, Landmark, Wallet } from "lucide-react";
+import { CheckCircle2, Landmark, TrendingUp, UserCheck, Users, Wallet } from "lucide-react";
 import type { CommunityPoolStats } from "@/lib/definitions";
 
 interface CommunityPoolCardProps {
@@ -233,6 +233,49 @@ export function CommunityPoolCard({
             </div>
           );
         })}
+      </div>
+
+      {/* ── Cohort progress trackers ──────────────────────────────
+          Sit below the money tiles as a separate row. Different
+          concept ("how far along is the founding circle?" vs "where
+          is the money?") so visually demarcated with a divider +
+          eyebrow label. Two tiles wide on mobile, side by side on
+          desktop. */}
+      <div className="mt-5 pt-5 border-t border-white/[0.06]">
+        <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40 mb-3">
+          Cohort progress
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex flex-col gap-2 rounded-xl border border-[#46CDCF]/20 bg-[#46CDCF]/[0.06] p-3.5">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#46CDCF]" />
+              <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/45">
+                Onboarded
+              </span>
+            </div>
+            <div className="text-xl font-extrabold tabular-nums text-[#46CDCF]">
+              {stats.membersOnboarded} / {stats.totalFoundingSlots}
+            </div>
+            <div className="text-[11px] text-white/40">
+              Completed registration end-to-end
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-xl border border-[#B8FF00]/20 bg-[#B8FF00]/[0.06] p-3.5">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-[#B8FF00]" />
+              <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/45">
+                Profile updated
+              </span>
+            </div>
+            <div className="text-xl font-extrabold tabular-nums text-[#B8FF00]">
+              {stats.membersProfileUpdated} / {stats.totalFoundingSlots}
+            </div>
+            <div className="text-[11px] text-white/40">
+              Address or beneficiary set
+            </div>
+          </div>
+        </div>
       </div>
 
       <p className="mt-4 text-[10px] text-white/30 leading-relaxed">

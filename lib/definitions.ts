@@ -1167,6 +1167,16 @@ export interface CommunityPoolStats {
   totalPool: number; // totalContributed + totalInterest
   currentMonth: string; // e.g. "Apr"
   timeline: PoolMonthPoint[]; // 12-month cumulative series
+  // ── Cohort progress (non-money) ──
+  /** Members who completed the onboarding wizard end-to-end —
+   *  KYC submitted (status ≠ "Not Started") AND a plan picked. The
+   *  community-facing "how full is the founding circle?" metric. */
+  membersOnboarded: number;
+  /** Members who've engaged with their profile post-onboarding —
+   *  beneficiary set OR residential address captured. Picks up
+   *  natural portal activity (next-of-kin updates, KYC address
+   *  submission) without being too narrow. */
+  membersProfileUpdated: number;
 }
 
 export interface SessionPayload {

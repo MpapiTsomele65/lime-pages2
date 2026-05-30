@@ -14,6 +14,7 @@ import {
   extractSteeringFromNotes,
   extractSubscriptionFromNotes,
   formatMemberNumber,
+  hasBeneficiary,
   idTypeToAirtable,
   todayDate,
   type LehumoMember,
@@ -901,6 +902,31 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
   const activeMembers = allRecords.filter((m) => m.status === "Active").length;
   const membersContributingThisMonth = monthlyContributors[currentMonthIndex];
 
+  // ── Cohort progress metrics — community-facing "how far along
+  //    are we?" counters surfaced on the portal CommunityPoolCard.
+  //
+  //    Both are computed against non-Exited members (Exited members
+  //    skew the denominator if we lose anyone).
+  const cohortPool = allRecords.filter((m) => m.status !== "Exited");
+
+  //    Onboarded = wizard end-to-end: KYC submitted (status ≠
+  //    "Not Started") AND a plan picked. The Notes blob holds the
+  //    Plan: <tier> segment; parseRecord already extracts it onto
+  //    `m.plan` (undefined when missing).
+  const membersOnboarded = cohortPool.filter(
+    (m) => m.kycStatus !== "Not Started" && Boolean(m.plan),
+  ).length;
+
+  //    Profile updated = engaged with profile post-Step-1 — either
+  //    beneficiary on file OR residential address captured. Address
+  //    lands during KYC Step 3; beneficiary is portal-only. Together
+  //    they catch any meaningful profile interaction beyond the
+  //    initial Step-1 contact-details capture.
+  const membersProfileUpdated = cohortPool.filter(
+    (m) =>
+      hasBeneficiary(m) || Boolean(m.residentialAddress && m.residentialAddress.trim()),
+  ).length;
+
   return {
     totalFoundingSlots: FOUNDING_SLOTS,
     activeMembers,
@@ -911,5 +937,7 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
     totalPool: totalContributed + totalInterest,
     currentMonth,
     timeline,
+    membersOnboarded,
+    membersProfileUpdated,
   };
 }
