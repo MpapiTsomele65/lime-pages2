@@ -8,11 +8,13 @@ import {
   TrendingUp,
   BookOpen,
   ArrowRight,
+  Calculator,
   GraduationCap,
   BarChart3,
   Lightbulb,
   FileText,
 } from "lucide-react";
+import BondCalculator from "@/components/sections/capital/BondCalculator";
 import FundComparison from "@/components/sections/capital/FundComparison";
 import InvestingGuide from "@/components/sections/capital/InvestingGuide";
 import AngelSyndicate from "@/components/sections/capital/AngelSyndicate";
@@ -203,6 +205,14 @@ export default function CapitalPage() {
 
       <div id="fund-performance" />
       <FundComparison />
+
+      {/* ═══ HOME LOAN PLANNING ═══ */}
+      <SectionDivider
+        label="Plan Your Home Loan"
+        id="bond-calculator-section"
+        icon={Calculator}
+      />
+      <BondCalculator />
 
       {/* ═══ RETAIL INVESTOR BEHAVIOR ═══ */}
       <InvestorsLikeYou />
