@@ -1254,10 +1254,37 @@ export function renderPreLaunchEmailHtml(params: {
         </td></tr>
 
         <tr><td style="padding:32px 32px 0;">
-          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">We launch Monday, 1 June 🎉</h1>
+          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">Lehumo Pre-launch updates &mdash; 1 Day to Go</h1>
           <p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 24px;">
-            Hi ${firstName}, here&rsquo;s where the cohort stands two days out from launch, plus a few things to action before then.
+            Hi ${firstName}, here&rsquo;s where the cohort stands one day out from launch, plus a quick reminder about tonight&rsquo;s info session.
           </p>
+        </td></tr>
+
+        <tr><td style="padding:0 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(70,205,207,0.14) 0%,rgba(184,255,0,0.06) 100%);border:1.5px solid rgba(70,205,207,0.40);border-radius:18px;margin-bottom:24px;">
+            <tr><td style="padding:22px 22px 24px;">
+              <p style="font-size:11px;font-weight:700;color:#46CDCF;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Reminder &middot; Info session tonight</p>
+              <h2 style="font-size:18px;font-weight:700;color:#ffffff;margin:0 0 6px;line-height:1.35;">Lehumo Investor Brief: 1 Day to Launch</h2>
+              <p style="font-size:13.5px;color:rgba(255,255,255,0.7);line-height:1.6;margin:0 0 14px;">
+                <strong style="color:#B8FF00;">Sunday, 31 May 2026 &middot; 18:00&ndash;19:00 SAST</strong><br/>
+                Final cohort Q&amp;A before collections open tomorrow. Bring questions about contributions, KYC, plans, anything you&rsquo;d like clarity on.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;"><tr>
+                <td style="padding-right:8px;">
+                  <a href="https://meet.google.com/pgk-vrpz-jrn" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:13px;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:50px;">Join Google Meet &rarr;</a>
+                </td>
+                <td>
+                  <a href="${siteUrl()}/api/lehumo/info-session.ics" style="display:inline-block;background:transparent;color:#46CDCF;font-size:13px;font-weight:700;text-decoration:none;padding:10px 20px;border:1.5px solid rgba(70,205,207,0.5);border-radius:50px;">Add to calendar &rarr;</a>
+                </td>
+              </tr></table>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.04);border-radius:10px;">
+                <tr><td style="padding:10px 14px;font-size:11.5px;color:rgba(255,255,255,0.55);line-height:1.6;">
+                  Or dial in: <strong style="color:rgba(255,255,255,0.8);">(ZA) +27 10 823 0373</strong> &middot; PIN: <strong style="color:rgba(255,255,255,0.8);">237 950 787#</strong><br/>
+                  More phone numbers: <a href="https://tel.meet/pgk-vrpz-jrn?pin=6975153689050" style="color:#46CDCF;text-decoration:none;">tel.meet/pgk-vrpz-jrn</a>
+                </td></tr>
+              </table>
+            </td></tr>
+          </table>
         </td></tr>
 
         <tr><td style="padding:0 32px;">
@@ -1380,7 +1407,8 @@ export async function sendPreLaunchEmail(params: {
     from: FROM_ADDRESS,
     to,
     bcc: ADMIN_BCC,
-    subject: "Lehumo Founding Cohort — pre-launch update + your dashboard",
+    subject:
+      "Lehumo Pre-launch updates — 1 Day to Go (+ info session tonight 18:00)",
     html: renderPreLaunchEmailHtml({ firstName, stats }),
   });
 }
