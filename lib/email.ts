@@ -1304,6 +1304,19 @@ export function renderPreLaunchEmailHtml(params: {
         </td></tr>
 
         <tr><td style="padding:28px 32px 0;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(184,255,0,0.12) 0%,rgba(70,205,207,0.06) 100%);border:1.5px solid rgba(184,255,0,0.35);border-radius:18px;margin-bottom:28px;">
+            <tr><td style="padding:28px 24px;text-align:center;">
+              <p style="font-size:11px;font-weight:700;color:#B8FF00;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Final push to 30</p>
+              <h2 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 10px;line-height:1.3;">Help us launch with a full house</h2>
+              <p style="font-size:14.5px;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 20px;">
+                We&rsquo;re <strong style="color:#B8FF00;">${stats.onboardedCount} of 30</strong> founders so far. If your registration is still in progress, please complete it before <strong style="color:#ffffff;">30 June</strong> so we lock the founding cohort at full strength.
+              </p>
+              <a href="${siteUrl()}/lehumo/onboard" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:15px;font-weight:700;text-decoration:none;padding:15px 32px;border-radius:50px;box-shadow:0 4px 12px rgba(184,255,0,0.25);">Complete your registration &rarr;</a>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:0 32px;">
           <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">What&rsquo;s new in the portal</p>
           <ul style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;padding-left:20px;margin:0 0 24px;">
             <li><strong style="color:#ffffff;">Optional password layer.</strong> You can now set a password on your portal account from the Security page (top right of your dashboard). Recommended for added protection.</li>
