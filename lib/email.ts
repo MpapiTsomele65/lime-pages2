@@ -1176,6 +1176,189 @@ export async function sendPasswordResetEmail(params: {
   });
 }
 
+/* ─── Pre-launch cohort update broadcast ─── */
+/**
+ * Pre-launch comms email — dashboard tracker + opt-in / opt-out
+ * windows + portal CTAs. Broadcast to the full member + leads list
+ * once, ~24-30 hrs before launch on 1 June 2026.
+ *
+ * Parameterised by the live cohort stats so the admin endpoint can
+ * recompute them at send time. Pre-filled subscribe-out mailto link
+ * so opt-outs are one click → typed reason → send.
+ *
+ * BCC'd to lehumo@limepages.co.za for audit (per-recipient BCC, so
+ * each member who opens the email sees the same "lehumo BCC" trail
+ * any admin investigation would expect).
+ */
+export interface PreLaunchStats {
+  onboardedCount: number;
+  onboardedPct: number;
+  juneReceived: number;
+  juneGoal: number;
+  juneReceivedPct: number;
+  governanceVolunteers: number;
+  governanceTarget: number;
+}
+
+export async function sendPreLaunchEmail(params: {
+  to: string;
+  firstName: string;
+  stats: PreLaunchStats;
+}) {
+  const { to, firstName, stats } = params;
+  const portalUrl = `${siteUrl()}/lehumo/portal`;
+
+  // ZAR formatter — explicit so all three numbers (received, goal,
+  // and the subscribe-out copy) match exactly in shape.
+  const fmtZAR = (n: number) =>
+    n.toLocaleString("en-ZA", { maximumFractionDigits: 0 });
+  const governancePct = Math.round(
+    (stats.governanceVolunteers / stats.governanceTarget) * 100,
+  );
+
+  // Subscribe-out mailto — pre-filled subject + body so opt-outs are
+  // one click → type member number → send. Encoded for safe URL use.
+  const subscribeOutMailto =
+    "mailto:lehumo@limepages.co.za" +
+    "?subject=" +
+    encodeURIComponent("Subscribe out — Lehumo Founding 30") +
+    "&body=" +
+    encodeURIComponent(
+      "Hi Lehumo team,\n\n" +
+        "I'd like to subscribe out of the Lehumo Founding 30 and release my membership slot.\n\n" +
+        "Member number: [your member number]\n" +
+        "Reason (optional): \n\n" +
+        "Thanks.",
+    );
+
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: "Lehumo Founding Cohort — pre-launch update + your dashboard",
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+
+        <tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:28px;font-weight:800;color:#B8FF00;letter-spacing:1px;">LEHUMO</div>
+          <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Collective Investment Trust</div>
+        </td></tr>
+
+        <tr><td style="padding:32px 32px 0;">
+          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">We launch Sunday, 1 June 🎉</h1>
+          <p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 24px;">
+            Hi ${firstName}, here&rsquo;s where the cohort stands two days out from launch, plus a few things to action before then.
+          </p>
+        </td></tr>
+
+        <tr><td style="padding:0 32px;">
+          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Cohort dashboard</p>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(184,255,0,0.06);border:1px solid rgba(184,255,0,0.20);border-radius:14px;margin-bottom:12px;">
+            <tr><td style="padding:16px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td style="font-size:12px;color:rgba(255,255,255,0.55);">Members onboarded</td>
+                <td style="font-size:13px;font-weight:700;color:#B8FF00;text-align:right;">${stats.onboardedCount} / 30</td>
+              </tr></table>
+              <div style="margin-top:10px;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+                <div style="height:6px;width:${stats.onboardedPct}%;background:linear-gradient(90deg,#46CDCF,#B8FF00);border-radius:99px;"></div>
+              </div>
+              <p style="font-size:11.5px;color:rgba(255,255,255,0.45);margin:8px 0 0;">Finalising the founding 30 — see the subscribe-out section below if you&rsquo;re stepping back.</p>
+            </td></tr>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(70,205,207,0.06);border:1px solid rgba(70,205,207,0.20);border-radius:14px;margin-bottom:12px;">
+            <tr><td style="padding:16px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td style="font-size:12px;color:rgba(255,255,255,0.55);">June 2026 contribution goal</td>
+                <td style="font-size:13px;font-weight:700;color:#46CDCF;text-align:right;">R${fmtZAR(stats.juneReceived)} / R${fmtZAR(stats.juneGoal)}</td>
+              </tr></table>
+              <div style="margin-top:10px;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+                <div style="height:6px;width:${stats.juneReceivedPct}%;background:linear-gradient(90deg,#46CDCF,#B8FF00);border-radius:99px;"></div>
+              </div>
+              <p style="font-size:11.5px;color:rgba(255,255,255,0.45);margin:8px 0 0;">${stats.onboardedCount} onboarded &times; R1,000 &mdash; the full cohort target for June.</p>
+            </td></tr>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.20);border-radius:14px;margin-bottom:8px;">
+            <tr><td style="padding:16px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td style="font-size:12px;color:rgba(255,255,255,0.55);">Governance committee volunteers</td>
+                <td style="font-size:13px;font-weight:700;color:#F59E0B;text-align:right;">${stats.governanceVolunteers} / ${stats.governanceTarget}</td>
+              </tr></table>
+              <div style="margin-top:10px;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+                <div style="height:6px;width:${governancePct}%;background:linear-gradient(90deg,#F59E0B,#B8FF00);border-radius:99px;"></div>
+              </div>
+              <p style="font-size:11.5px;color:rgba(255,255,255,0.45);margin:8px 0 0;">${stats.governanceTarget - stats.governanceVolunteers} ${stats.governanceTarget - stats.governanceVolunteers === 1 ? "slot" : "slots"} still open. Reply to this email if you&rsquo;re keen to put your name forward &mdash; we&rsquo;ll add a portal flow for this soon.</p>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:28px 32px 0;">
+          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">What&rsquo;s new in the portal</p>
+          <ul style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;padding-left:20px;margin:0 0 24px;">
+            <li><strong style="color:#ffffff;">Optional password layer.</strong> You can now set a password on your portal account from the Security page (top right of your dashboard). Recommended for added protection.</li>
+            <li><strong style="color:#ffffff;">Standard plan fee is now 3.5%</strong> (R1,035/month total = R1,000 to the pool + R35 to cover the Paystack collection cost &mdash; no markup, no admin charge).</li>
+            <li><strong style="color:#ffffff;">KYC deadline: 15 August 2026.</strong> Plenty of runway, but the earlier the cleaner. The portal shows your deadline countdown.</li>
+            <li><strong style="color:#ffffff;">Live community tracker</strong> on the dashboard &mdash; see the full cohort&rsquo;s progress in real time, same numbers as above.</li>
+          </ul>
+        </td></tr>
+
+        <tr><td style="padding:0 32px;">
+          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Important dates</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:24px;">
+            <tr><td style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.85;">
+              <strong style="color:#B8FF00;">Sunday, 1 June 2026</strong> &mdash; Collections officially open. First contributions become due.<br/>
+              <strong style="color:#B8FF00;">Throughout June</strong> &mdash; Pay any time that works for you (EFT or Paystack auto-debit).<br/>
+              <strong style="color:#B8FF00;">Tuesday, 30 June 2026</strong> &mdash; Final day to land your first contribution.<br/>
+              <strong style="color:#46CDCF;">Saturday, 15 August 2026</strong> &mdash; KYC documentation deadline.
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:0 32px;">
+          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Finalising the founding 30</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:14px;margin-bottom:24px;">
+            <tr><td style="padding:20px;font-size:13.5px;color:rgba(255,255,255,0.75);line-height:1.7;">
+              We&rsquo;re locking the cohort this week. If you&rsquo;ve decided not to proceed, please <strong style="color:#F59E0B;">subscribe out by Friday, 6 June</strong> so we can release your slot to the waiting list &mdash; better than missing the first contribution and ending up in arrears.
+              <br/><br/>
+              <a href="${subscribeOutMailto}" style="display:inline-block;background:#F59E0B;color:#0B1933;font-size:13px;font-weight:700;text-decoration:none;padding:10px 22px;border-radius:50px;margin-top:6px;">Subscribe out &rarr;</a>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:8px 32px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+            <a href="${portalUrl}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:14px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:50px;">Sign in to your portal &rarr;</a>
+          </td></tr></table>
+          <p style="font-size:12px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.6;margin:16px 0 0;">Questions? Reply to this email or message <a href="mailto:lehumo@limepages.co.za" style="color:#46CDCF;text-decoration:none;">lehumo@limepages.co.za</a>.</p>
+        </td></tr>
+
+        <tr><td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+          <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0;line-height:1.6;">
+            <a href="https://www.limepages.co.za" style="color:#46CDCF;text-decoration:none;">limepages.co.za</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  });
+}
+
 /* ─── Password set / changed / removed notification ─── */
 /**
  * Notify the member when their portal password state changes.

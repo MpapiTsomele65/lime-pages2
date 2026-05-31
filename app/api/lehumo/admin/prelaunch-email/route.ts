@@ -1,0 +1,366 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+import { getAdminSession } from "@/lib/admin-auth";
+import {
+  getBaseUrl,
+  getHeaders,
+  parseRecord,
+} from "@/lib/airtable";
+import { sendPreLaunchEmail, type PreLaunchStats } from "@/lib/email";
+import {
+  AIRTABLE_FIELDS,
+  CONTRIBUTIONS_TABLE_ID,
+  CONTRIBUTION_STATUS,
+  type LehumoMember,
+} from "@/lib/definitions";
+
+/**
+ * One-off admin endpoint for the pre-launch broadcast email.
+ *
+ * Three modes:
+ *
+ *   1. `mode: "test"` — send a single test email to the supplied
+ *      address (or default to the admin's own email if `testTo` is
+ *      omitted). Used to review the rendered email in your own inbox
+ *      before broadcasting. Always safe to fire.
+ *
+ *   2. `mode: "preview"` — return the live cohort stats + recipient
+ *      list shape (count + sample) WITHOUT sending. Used as the
+ *      sanity-check step right before broadcast: confirm the numbers
+ *      look right and the recipient count matches your expectation.
+ *
+ *   3. `mode: "broadcast"` — fire the actual broadcast. Requires the
+ *      caller to pass `expectedCount` matching the live recipient
+ *      count exactly. Defends against "I clicked the wrong button"
+ *      mistakes — if the live count drifted (a member opted out,
+ *      a new lead was added) the request is rejected with the
+ *      current count surfaced so the admin can re-confirm.
+ *
+ * Auth: admin session required (matches isAdminEmail allowlist).
+ *
+ * Recipients (broadcast):
+ *   - All Members where Status !== "Exited" AND email is set
+ *   - All Leads where email is set
+ *   - Deduped by lowercased email
+ *
+ * Sender + BCC matches every other transactional send:
+ * `Lehumo <lehumo@limepages.co.za>` from, lehumo@limepages.co.za BCC.
+ */
+
+// Hardcoded leads table ID (matches lib/airtable-leads.ts fallback).
+// Living here lets this route stay leads-table aware without a public
+// helper export.
+const LEADS_TABLE_ID = "tbl4o2jZW5cdc9HOb";
+
+// Governance committee volunteer state — user-supplied (not yet
+// tracked in Airtable). Update here when the count changes; the
+// portal flow we sketched for later will replace this with a live
+// query.
+const GOVERNANCE_VOLUNTEERS = 3;
+const GOVERNANCE_TARGET = 6;
+
+// Cohort target — matches the portal's TotalFoundingSlots.
+const COHORT_TARGET = 30;
+
+const BodySchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("test"),
+    testTo: z.string().email().optional(),
+  }),
+  z.object({ mode: z.literal("preview") }),
+  z.object({
+    mode: z.literal("broadcast"),
+    expectedCount: z
+      .number()
+      .int()
+      .nonnegative("expectedCount must be a non-negative integer"),
+  }),
+]);
+
+interface Recipient {
+  email: string;
+  firstName: string;
+  source: "member" | "lead";
+}
+
+async function listAllMembers(): Promise<LehumoMember[]> {
+  const baseUrl = getBaseUrl();
+  const headers = getHeaders();
+  const all: LehumoMember[] = [];
+  let offset: string | undefined;
+  do {
+    const params = new URLSearchParams({
+      pageSize: "100",
+      returnFieldsByFieldId: "true",
+    });
+    if (offset) params.set("offset", offset);
+    const res = await fetch(`${baseUrl}?${params.toString()}`, {
+      headers,
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`Members list ${res.status}`);
+    const data = await res.json();
+    for (const r of data.records ?? []) all.push(parseRecord(r));
+    offset = data.offset;
+  } while (offset);
+  return all;
+}
+
+async function listAllLeads(): Promise<
+  Array<{ email: string; fullName: string }>
+> {
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const pat = process.env.AIRTABLE_PAT;
+  if (!baseId || !pat) throw new Error("Airtable env missing");
+  const url = `https://api.airtable.com/v0/${baseId}/${LEADS_TABLE_ID}`;
+  const headers = { Authorization: `Bearer ${pat}` };
+  const all: Array<{ email: string; fullName: string }> = [];
+  let offset: string | undefined;
+  do {
+    const params = new URLSearchParams({ pageSize: "100" });
+    if (offset) params.set("offset", offset);
+    const res = await fetch(`${url}?${params.toString()}`, {
+      headers,
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`Leads list ${res.status}`);
+    const data = await res.json();
+    for (const r of data.records ?? []) {
+      const f = r.fields ?? {};
+      const email = String(f["Email"] ?? "").trim();
+      const fullName = String(f["Full Name"] ?? f["Name"] ?? "").trim();
+      if (email) all.push({ email, fullName });
+    }
+    offset = data.offset;
+  } while (offset);
+  return all;
+}
+
+async function buildRecipientList(): Promise<Recipient[]> {
+  const [members, leads] = await Promise.all([
+    listAllMembers(),
+    listAllLeads(),
+  ]);
+
+  const seen = new Set<string>();
+  const recipients: Recipient[] = [];
+
+  // Members first — exclude Exited (they explicitly left).
+  for (const m of members) {
+    if (!m.email) continue;
+    if (m.status === "Exited") continue;
+    const key = m.email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipients.push({
+      email: m.email,
+      firstName: m.fullName.split(" ")[0] || "Founder",
+      source: "member",
+    });
+  }
+
+  // Leads second — anyone in members already wins, so dedupe by
+  // the same lowercased key. Leads who never converted still get
+  // the launch update.
+  for (const l of leads) {
+    const key = l.email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipients.push({
+      email: l.email,
+      firstName: l.fullName.split(" ")[0] || "Founder",
+      source: "lead",
+    });
+  }
+
+  return recipients;
+}
+
+async function computeStats(): Promise<PreLaunchStats> {
+  const members = await listAllMembers();
+
+  let onboardedCount = 0;
+  for (const m of members) {
+    if (m.status === "Active" || m.status === "Onboarding") onboardedCount++;
+  }
+  const juneGoal = onboardedCount * 1000;
+
+  // June received — sum of Paid amounts on the 2026-06 period from
+  // the Contributions table. Direct fetch (rather than going via the
+  // contributions helpers) so this route stays self-contained.
+  let juneReceived = 0;
+  try {
+    const baseId = process.env.AIRTABLE_BASE_ID;
+    const pat = process.env.AIRTABLE_PAT;
+    if (baseId && pat) {
+      const url = `https://api.airtable.com/v0/${baseId}/${CONTRIBUTIONS_TABLE_ID}`;
+      const headers = { Authorization: `Bearer ${pat}` };
+      let offset: string | undefined;
+      do {
+        const params = new URLSearchParams({ pageSize: "100" });
+        if (offset) params.set("offset", offset);
+        const res = await fetch(`${url}?${params.toString()}`, {
+          headers,
+          cache: "no-store",
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        for (const r of data.records ?? []) {
+          const f = r.fields ?? {};
+          const period = String(f["Period"] ?? "").trim();
+          const status = String(f["Status"] ?? "").trim();
+          const amt = Number(f["Amount Received"] ?? 0);
+          if (
+            period === "2026-06" &&
+            status === CONTRIBUTION_STATUS.paid &&
+            amt > 0
+          ) {
+            juneReceived += amt;
+          }
+        }
+        offset = data.offset;
+      } while (offset);
+    }
+  } catch {
+    // Fall through with juneReceived = 0; the email still ships,
+    // and the admin can review the test before broadcasting.
+  }
+
+  return {
+    onboardedCount,
+    onboardedPct: Math.round((onboardedCount / COHORT_TARGET) * 100),
+    juneReceived,
+    juneGoal,
+    juneReceivedPct:
+      juneGoal > 0 ? Math.round((juneReceived / juneGoal) * 100) : 0,
+    governanceVolunteers: GOVERNANCE_VOLUNTEERS,
+    governanceTarget: GOVERNANCE_TARGET,
+  };
+}
+
+export async function POST(request: NextRequest) {
+  // Admin gate. getAdminSession returns null unless the caller's
+  // session belongs to an isAdminEmail allowlist entry — same
+  // pattern as every other admin server action.
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const parsed = BodySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        error: "Invalid input",
+        details: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
+    );
+  }
+  const data = parsed.data;
+
+  try {
+    if (data.mode === "test") {
+      const stats = await computeStats();
+      const to = data.testTo ?? session.email;
+      const firstName = session.fullName.split(" ")[0] || "there";
+      await sendPreLaunchEmail({ to, firstName, stats });
+      return NextResponse.json({
+        success: true,
+        mode: "test",
+        sentTo: to,
+        stats,
+      });
+    }
+
+    if (data.mode === "preview") {
+      const [stats, recipients] = await Promise.all([
+        computeStats(),
+        buildRecipientList(),
+      ]);
+      return NextResponse.json({
+        success: true,
+        mode: "preview",
+        stats,
+        recipientCount: recipients.length,
+        sample: recipients.slice(0, 5).map((r) => ({
+          email: r.email,
+          firstName: r.firstName,
+          source: r.source,
+        })),
+        breakdown: {
+          members: recipients.filter((r) => r.source === "member").length,
+          leads: recipients.filter((r) => r.source === "lead").length,
+        },
+      });
+    }
+
+    // data.mode === "broadcast"
+    const [stats, recipients] = await Promise.all([
+      computeStats(),
+      buildRecipientList(),
+    ]);
+
+    if (recipients.length !== data.expectedCount) {
+      return NextResponse.json(
+        {
+          error:
+            "Recipient count drifted since you last checked. Re-run preview and re-confirm.",
+          code: "COUNT_MISMATCH",
+          expectedCount: data.expectedCount,
+          actualCount: recipients.length,
+        },
+        { status: 409 },
+      );
+    }
+
+    // Sequential sends so we don't slam Resend with 30+ parallel
+    // requests + so a partial failure doesn't leave the admin
+    // wondering which recipients got through. Resend's per-request
+    // latency is ~200ms so 34 recipients = ~7s total.
+    const results: Array<{
+      email: string;
+      ok: boolean;
+      error?: string;
+    }> = [];
+    for (const r of recipients) {
+      try {
+        await sendPreLaunchEmail({
+          to: r.email,
+          firstName: r.firstName,
+          stats,
+        });
+        results.push({ email: r.email, ok: true });
+      } catch (err) {
+        results.push({
+          email: r.email,
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    const sentCount = results.filter((r) => r.ok).length;
+    const failedCount = results.length - sentCount;
+
+    return NextResponse.json({
+      success: true,
+      mode: "broadcast",
+      stats,
+      totalAttempted: results.length,
+      sentCount,
+      failedCount,
+      failures: results.filter((r) => !r.ok),
+    });
+  } catch (err) {
+    console.error("[prelaunch-email]", err);
+    return NextResponse.json(
+      {
+        error: err instanceof Error ? err.message : "Internal server error",
+      },
+      { status: 500 },
+    );
+  }
+}
