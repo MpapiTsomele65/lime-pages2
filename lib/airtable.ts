@@ -976,15 +976,24 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
   // processor cost, not pool capital. Pool growth tracks principal.
   const monthlyGoalAmount = membersOnboarded * MONTHLY_CONTRIBUTION_ZAR;
 
-  // Received = sum of `amountReceived` on Paid rows for the target
-  // period. Re-uses the already-fetched paidContribs (no second
-  // Airtable round trip).
+  // Received = count of Paid rows for the target period × R1,000.
+  //
+  // We deliberately count rows rather than summing `amountReceived`.
+  // For Standard/VIP subscribers, Paystack debits the gross amount
+  // (R1,035 / R1,050) which includes the service fee that covers
+  // the processor's collection cost — that fee is NOT pool capital
+  // (Paystack absorbs it on their side), so summing the gross would
+  // overstate the pool. EFT contributors transfer the net R1,000
+  // directly. By treating every Paid row as a R1,000 pool deposit
+  // we get a consistent, accurate "net to pool" figure regardless
+  // of which rail the contribution came through.
   let monthlyReceivedAmount = 0;
   try {
     const periodPaidRows = await listPaidContributions();
-    monthlyReceivedAmount = periodPaidRows
-      .filter((c) => c.period === monthlyGoalPeriod)
-      .reduce((sum, c) => sum + (c.amountReceived ?? 0), 0);
+    const paidThisPeriod = periodPaidRows.filter(
+      (c) => c.period === monthlyGoalPeriod,
+    );
+    monthlyReceivedAmount = paidThisPeriod.length * MONTHLY_CONTRIBUTION_ZAR;
   } catch {
     // Same fallback as the cohort hydration above — the rest of the
     // dashboard renders fine even if this fetch hiccups.

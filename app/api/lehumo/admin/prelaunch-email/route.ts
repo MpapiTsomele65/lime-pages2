@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getAdminSession } from "@/lib/admin-auth";
 import {
   getBaseUrl,
+  getCommunityPoolStats,
   getHeaders,
   parseRecord,
 } from "@/lib/airtable";
@@ -12,12 +13,7 @@ import {
   sendPreLaunchEmail,
   type PreLaunchStats,
 } from "@/lib/email";
-import {
-  AIRTABLE_FIELDS,
-  CONTRIBUTIONS_TABLE_ID,
-  CONTRIBUTION_STATUS,
-  type LehumoMember,
-} from "@/lib/definitions";
+import { type LehumoMember } from "@/lib/definitions";
 
 /**
  * One-off admin endpoint for the pre-launch broadcast email.
@@ -181,56 +177,19 @@ async function buildRecipientList(): Promise<Recipient[]> {
   return recipients;
 }
 
+/**
+ * Resolve cohort stats from the same source of truth the portal +
+ * admin surfaces use — `getCommunityPoolStats`. Reusing it here means
+ * the email broadcast can never drift from what members see when
+ * they open the portal: same onboarded definition (KYC started + plan
+ * picked + not Exited), same monthly goal math, same net-to-pool
+ * received figure (rows × R1,000, not the gross Paystack debit).
+ */
 async function computeStats(): Promise<PreLaunchStats> {
-  const members = await listAllMembers();
-
-  let onboardedCount = 0;
-  for (const m of members) {
-    if (m.status === "Active" || m.status === "Onboarding") onboardedCount++;
-  }
-  const juneGoal = onboardedCount * 1000;
-
-  // June received — sum of Paid amounts on the 2026-06 period from
-  // the Contributions table. Direct fetch (rather than going via the
-  // contributions helpers) so this route stays self-contained.
-  let juneReceived = 0;
-  try {
-    const baseId = process.env.AIRTABLE_BASE_ID;
-    const pat = process.env.AIRTABLE_PAT;
-    if (baseId && pat) {
-      const url = `https://api.airtable.com/v0/${baseId}/${CONTRIBUTIONS_TABLE_ID}`;
-      const headers = { Authorization: `Bearer ${pat}` };
-      let offset: string | undefined;
-      do {
-        const params = new URLSearchParams({ pageSize: "100" });
-        if (offset) params.set("offset", offset);
-        const res = await fetch(`${url}?${params.toString()}`, {
-          headers,
-          cache: "no-store",
-        });
-        if (!res.ok) break;
-        const data = await res.json();
-        for (const r of data.records ?? []) {
-          const f = r.fields ?? {};
-          const period = String(f["Period"] ?? "").trim();
-          const status = String(f["Status"] ?? "").trim();
-          const amt = Number(f["Amount Received"] ?? 0);
-          if (
-            period === "2026-06" &&
-            status === CONTRIBUTION_STATUS.paid &&
-            amt > 0
-          ) {
-            juneReceived += amt;
-          }
-        }
-        offset = data.offset;
-      } while (offset);
-    }
-  } catch {
-    // Fall through with juneReceived = 0; the email still ships,
-    // and the admin can review the test before broadcasting.
-  }
-
+  const pool = await getCommunityPoolStats();
+  const onboardedCount = pool.membersOnboarded;
+  const juneGoal = pool.monthlyGoalAmount;
+  const juneReceived = pool.monthlyReceivedAmount;
   return {
     onboardedCount,
     onboardedPct: Math.round((onboardedCount / COHORT_TARGET) * 100),
