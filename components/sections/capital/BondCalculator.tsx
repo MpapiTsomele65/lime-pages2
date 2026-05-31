@@ -700,7 +700,7 @@ function Legend({
       <span
         className={`rounded-sm ${
           swatch === "base"
-            ? "w-3.5 h-2 bg-capital/55"
+            ? "w-3.5 h-2 bg-capital"
             : swatch === "with-extra"
               ? "w-3.5 h-2 bg-teal"
               : "w-3.5 h-[2px] bg-navy"
@@ -746,14 +746,12 @@ function Chart({
   const INK = "#0B1933";
   const INK_SOFT = "#6B7280";
   // Baseline ("minimum repayment") bars use the Lime Capital brand
-  // green — softer than the Lehumo bright lime (#B8FF00) so it's
-  // easier on the eye over the long-stack chart, but still gives
-  // clean hue separation from the teal "with extra" bars. Rendered
-  // at ~55% opacity so it reads as a background reference state
-  // rather than a foreground value — the teal "with extra" bars
-  // remain the visual centre of gravity.
+  // green at full saturation — soft enough not to overpower the
+  // teal "with extra" bars, vibrant enough to be tracked across the
+  // long-stack chart without straining. Reduced opacity made the
+  // bars disappear into the white-ish chart background; full
+  // opacity reads cleanly.
   const CAPITAL = "#c1ff72";
-  const CAPITAL_OPACITY = 0.55;
 
   // ── Y-axis grid + labels (5 horizontal lines) ──
   const gridY: React.ReactNode[] = [];
@@ -835,7 +833,6 @@ function Chart({
           width={barW}
           height={Math.max(0, H - PAD_B - yScale(baseB))}
           fill={CAPITAL}
-          opacity={CAPITAL_OPACITY}
           rx={1}
         />
         <rect
