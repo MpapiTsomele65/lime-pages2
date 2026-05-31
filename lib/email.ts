@@ -1200,12 +1200,17 @@ export interface PreLaunchStats {
   governanceTarget: number;
 }
 
-export async function sendPreLaunchEmail(params: {
-  to: string;
+/**
+ * Render the pre-launch email body to HTML. Exported separately so
+ * both the send path and the admin preview endpoint use the exact
+ * same template — no risk of the preview drifting from what actually
+ * lands in members' inboxes.
+ */
+export function renderPreLaunchEmailHtml(params: {
   firstName: string;
   stats: PreLaunchStats;
-}) {
-  const { to, firstName, stats } = params;
+}): string {
+  const { firstName, stats } = params;
   const portalUrl = `${siteUrl()}/lehumo/portal`;
 
   // ZAR formatter — explicit so all three numbers (received, goal,
@@ -1231,14 +1236,7 @@ export async function sendPreLaunchEmail(params: {
         "Thanks.",
     );
 
-  const resend = getResend();
-
-  await resend.emails.send({
-    from: FROM_ADDRESS,
-    to,
-    bcc: ADMIN_BCC,
-    subject: "Lehumo Founding Cohort — pre-launch update + your dashboard",
-    html: `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -1355,7 +1353,22 @@ export async function sendPreLaunchEmail(params: {
     </td></tr>
   </table>
 </body>
-</html>`,
+</html>`;
+}
+
+export async function sendPreLaunchEmail(params: {
+  to: string;
+  firstName: string;
+  stats: PreLaunchStats;
+}) {
+  const { to, firstName, stats } = params;
+  const resend = getResend();
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    bcc: ADMIN_BCC,
+    subject: "Lehumo Founding Cohort — pre-launch update + your dashboard",
+    html: renderPreLaunchEmailHtml({ firstName, stats }),
   });
 }
 

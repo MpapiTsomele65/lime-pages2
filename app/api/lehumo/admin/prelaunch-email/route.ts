@@ -7,7 +7,11 @@ import {
   getHeaders,
   parseRecord,
 } from "@/lib/airtable";
-import { sendPreLaunchEmail, type PreLaunchStats } from "@/lib/email";
+import {
+  renderPreLaunchEmailHtml,
+  sendPreLaunchEmail,
+  type PreLaunchStats,
+} from "@/lib/email";
 import {
   AIRTABLE_FIELDS,
   CONTRIBUTIONS_TABLE_ID,
@@ -237,6 +241,58 @@ async function computeStats(): Promise<PreLaunchStats> {
     governanceVolunteers: GOVERNANCE_VOLUNTEERS,
     governanceTarget: GOVERNANCE_TARGET,
   };
+}
+
+/**
+ * GET — render the email body as HTML directly into the browser so an
+ * admin can preview the live design + numbers without firing a send.
+ *
+ * Admin-gated identical to POST so this URL can't leak the cohort
+ * dashboard to random visitors.
+ *
+ * Query params:
+ *   - `firstName` (optional) — override the recipient name in the
+ *     greeting. Defaults to the admin's first name so the preview
+ *     reads like their own copy will.
+ *
+ * The HTML returned is the exact same body sent to recipients — both
+ * paths call `renderPreLaunchEmailHtml`, so what you see is what
+ * they'll get.
+ */
+export async function GET(request: NextRequest) {
+  const session = await getAdminSession();
+  if (!session) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  try {
+    const url = new URL(request.url);
+    const firstNameOverride = url.searchParams.get("firstName");
+    const stats = await computeStats();
+    const firstName =
+      firstNameOverride?.trim() ||
+      session.fullName.split(" ")[0] ||
+      "there";
+    const html = renderPreLaunchEmailHtml({ firstName, stats });
+    return new Response(html, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        // No cache — live stats should reflect the moment the admin
+        // hits refresh, not whatever was cached at first load.
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err) {
+    console.error("[prelaunch-email][preview]", err);
+    return new Response(
+      `<pre>Preview failed: ${err instanceof Error ? err.message : String(err)}</pre>`,
+      {
+        status: 500,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      },
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
