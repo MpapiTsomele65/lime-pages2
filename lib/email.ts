@@ -1254,7 +1254,7 @@ export function renderPreLaunchEmailHtml(params: {
         </td></tr>
 
         <tr><td style="padding:32px 32px 0;">
-          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">We launch Sunday, 1 June 🎉</h1>
+          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">We launch Monday, 1 June 🎉</h1>
           <p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 24px;">
             Hi ${firstName}, here&rsquo;s where the cohort stands two days out from launch, plus a few things to action before then.
           </p>
@@ -1330,7 +1330,7 @@ export function renderPreLaunchEmailHtml(params: {
           <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Important dates</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:24px;">
             <tr><td style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.85;">
-              <strong style="color:#B8FF00;">Sunday, 1 June 2026</strong> &mdash; Collections officially open. First contributions become due.<br/>
+              <strong style="color:#B8FF00;">Monday, 1 June 2026</strong> &mdash; Collections officially open. First contributions become due.<br/>
               <strong style="color:#B8FF00;">Throughout June</strong> &mdash; Pay any time that works for you (EFT or Paystack auto-debit).<br/>
               <strong style="color:#B8FF00;">Tuesday, 30 June 2026</strong> &mdash; Final day to land your first contribution.<br/>
               <strong style="color:#46CDCF;">Saturday, 15 August 2026</strong> &mdash; KYC documentation deadline.
@@ -1342,7 +1342,7 @@ export function renderPreLaunchEmailHtml(params: {
           <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Finalising the founding 30</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:14px;margin-bottom:24px;">
             <tr><td style="padding:20px;font-size:13.5px;color:rgba(255,255,255,0.75);line-height:1.7;">
-              We&rsquo;re locking the cohort this week. If you&rsquo;ve decided not to proceed, please <strong style="color:#F59E0B;">subscribe out by Friday, 6 June</strong> so we can release your slot to the waiting list &mdash; better than missing the first contribution and ending up in arrears.
+              We&rsquo;re locking the cohort this week. If you&rsquo;ve decided not to proceed, please <strong style="color:#F59E0B;">subscribe out by Friday, 5 June</strong> so we can release your slot to the waiting list &mdash; better than missing the first contribution and ending up in arrears.
               <br/><br/>
               <a href="${subscribeOutMailto}" style="display:inline-block;background:#F59E0B;color:#0B1933;font-size:13px;font-weight:700;text-decoration:none;padding:10px 22px;border-radius:50px;margin-top:6px;">Subscribe out &rarr;</a>
             </td></tr>
