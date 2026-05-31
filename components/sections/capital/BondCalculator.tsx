@@ -700,7 +700,7 @@ function Legend({
       <span
         className={`rounded-sm ${
           swatch === "base"
-            ? "w-3.5 h-2 bg-lime"
+            ? "w-3.5 h-2 bg-capital"
             : swatch === "with-extra"
               ? "w-3.5 h-2 bg-teal"
               : "w-3.5 h-[2px] bg-navy"
@@ -745,11 +745,11 @@ function Chart({
   const RULE = "#E5E7EB";
   const INK = "#0B1933";
   const INK_SOFT = "#6B7280";
-  // Baseline ("minimum repayment") bars use the brand lime so the
-  // contrast against the teal "with extra" bars is unambiguous —
-  // grey-on-teal lost the comparison in the early-years section
-  // where both bars are tallest and visually crowded together.
-  const LIME = "#B8FF00";
+  // Baseline ("minimum repayment") bars use the Lime Capital brand
+  // green — softer than the Lehumo bright lime (#B8FF00) so it's
+  // easier on the eye over the long-stack chart, but still gives
+  // clean hue separation from the teal "with extra" bars.
+  const CAPITAL = "#c1ff72";
 
   // ── Y-axis grid + labels (5 horizontal lines) ──
   const gridY: React.ReactNode[] = [];
@@ -830,7 +830,7 @@ function Chart({
           y={yScale(baseB)}
           width={barW}
           height={Math.max(0, H - PAD_B - yScale(baseB))}
-          fill={LIME}
+          fill={CAPITAL}
           rx={1}
         />
         <rect
