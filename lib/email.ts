@@ -1244,6 +1244,52 @@ export function renderPreLaunchEmailHtml(params: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body style="margin:0;padding:0;background:#0B1933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <!--
+    Gmail Markup (schema.org Event) — surfaces the calendar widget at
+    the top of the inbox view with "Add to calendar" / "Invite others"
+    actions + automatic conflict detection against Google Calendar.
+    Same trick used in the 28-May "5 days to launch" reminder that
+    came through with the calendar card.
+
+    EventReservation gives us the inviter affordances; nested Event
+    carries the actual meeting metadata. VirtualLocation flags it as
+    an online meeting so Gmail shows the meet link as the join
+    target. SAST = UTC+02:00 year-round (no DST), so ISO dates
+    encode the timezone offset directly without a VTIMEZONE.
+  -->
+  <script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "EventReservation",
+    "reservationNumber": "lehumo-investor-brief-2026-05-31",
+    "reservationStatus": "http://schema.org/ReservationConfirmed",
+    "underName": {
+      "@type": "Person",
+      "name": "${firstName.replace(/[\\\\"]/g, " ")}"
+    },
+    "reservationFor": {
+      "@type": "Event",
+      "name": "Lehumo Investor Brief: 1 Day to Launch",
+      "startDate": "2026-05-31T18:00:00+02:00",
+      "endDate": "2026-05-31T19:00:00+02:00",
+      "eventStatus": "http://schema.org/EventScheduled",
+      "eventAttendanceMode": "http://schema.org/OnlineEventAttendanceMode",
+      "location": {
+        "@type": "VirtualLocation",
+        "url": "https://meet.google.com/pgk-vrpz-jrn"
+      },
+      "url": "https://meet.google.com/pgk-vrpz-jrn",
+      "description": "Final cohort Q&A before Lehumo collections open Monday 1 June 2026. Bring questions about contributions, KYC, plans, or anything you'd like clarity on before launch.",
+      "organizer": {
+        "@type": "Organization",
+        "name": "Lehumo Trust",
+        "email": "lehumo@limepages.co.za",
+        "url": "${siteUrl()}"
+      }
+    }
+  }
+  </script>
+
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B1933;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#0F2040;border-radius:20px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
