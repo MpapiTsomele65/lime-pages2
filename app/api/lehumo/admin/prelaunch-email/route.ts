@@ -255,17 +255,36 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Short request id so multiple concurrent calls don't tangle in
+  // function logs. Same shape as the onboard / paystack-init routes.
+  const reqId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().slice(0, 8)
+      : Math.random().toString(36).slice(2, 10);
+
+  console.log(`[prelaunch-email][${reqId}] POST received`);
+
   // Admin gate. getAdminSession returns null unless the caller's
   // session belongs to an isAdminEmail allowlist entry — same
   // pattern as every other admin server action.
   const session = await getAdminSession();
   if (!session) {
+    console.warn(
+      `[prelaunch-email][${reqId}] rejected — no admin session`,
+    );
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  console.log(
+    `[prelaunch-email][${reqId}] admin session ok: ${session.email}`,
+  );
 
   const body = await request.json().catch(() => null);
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
+    console.warn(
+      `[prelaunch-email][${reqId}] invalid body:`,
+      parsed.error.flatten().fieldErrors,
+    );
     return NextResponse.json(
       {
         error: "Invalid input",
@@ -275,17 +294,27 @@ export async function POST(request: NextRequest) {
     );
   }
   const data = parsed.data;
+  console.log(`[prelaunch-email][${reqId}] mode=${data.mode}`);
 
   try {
     if (data.mode === "test") {
       const stats = await computeStats();
       const to = data.testTo ?? session.email;
       const firstName = session.fullName.split(" ")[0] || "there";
+      console.log(
+        `[prelaunch-email][${reqId}] test: calling Resend with to="${to}" firstName="${firstName}"`,
+      );
+      const sendStart = Date.now();
       await sendPreLaunchEmail({ to, firstName, stats });
+      console.log(
+        `[prelaunch-email][${reqId}] test: Resend returned in ${Date.now() - sendStart}ms`,
+      );
       return NextResponse.json({
         success: true,
         mode: "test",
         sentTo: to,
+        firstName,
+        reqId,
         stats,
       });
     }
@@ -370,10 +399,19 @@ export async function POST(request: NextRequest) {
       failures: results.filter((r) => !r.ok),
     });
   } catch (err) {
-    console.error("[prelaunch-email]", err);
+    const message =
+      err instanceof Error ? err.message : String(err);
+    const errorClass =
+      err instanceof Error ? err.constructor.name : "UnknownError";
+    console.error(
+      `[prelaunch-email][${reqId}] FAILED class="${errorClass}": ${message}`,
+      err,
+    );
     return NextResponse.json(
       {
-        error: err instanceof Error ? err.message : "Internal server error",
+        error: message,
+        errorClass,
+        reqId,
       },
       { status: 500 },
     );
