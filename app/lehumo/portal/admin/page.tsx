@@ -6,6 +6,7 @@ import { getSubscriptionDetails } from "@/lib/paystack";
 import { AdminShell } from "@/components/lehumo/admin/AdminShell";
 import { AdminMembersClient } from "@/components/lehumo/admin/AdminMembersClient";
 import { AdminAddMemberCard } from "@/components/lehumo/admin/AdminAddMemberCard";
+import { AdminPrelaunchEmailCard } from "@/components/lehumo/admin/AdminPrelaunchEmailCard";
 import { AdminPoolTracker } from "@/components/lehumo/admin/AdminPoolTracker";
 import { AdminCommunityHealth } from "@/components/lehumo/admin/AdminCommunityHealth";
 import { AdminBehindSnapshot } from "@/components/lehumo/admin/AdminBehindSnapshot";
@@ -180,6 +181,13 @@ export default async function AdminDashboardPage() {
         {/* Falling-behind snapshot — full width. Surfaces the chase-up
             list without admins needing to scan the whole member table. */}
         <AdminBehindSnapshot stats={stats} />
+
+        {/* Pre-launch broadcast control panel — Preview / Test send /
+            Broadcast-with-typed-confirm flow. Sits above the manual
+            add-member card so the launch-day comms tool is easy to
+            find. Auto-hides naturally after launch (the card stays
+            useful for any future broadcast). */}
+        <AdminPrelaunchEmailCard defaultTestEmail={session.email} />
 
         {/* Manual add-member — for prospects who emailed KYC docs without
             going through the public onboarding form. Creating here drops
