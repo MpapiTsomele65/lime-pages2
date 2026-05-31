@@ -206,10 +206,10 @@ export default function CapitalPage() {
       <div id="fund-performance" />
       <FundComparison />
 
-      {/* ═══ HOME LOAN PLANNING ═══ */}
+      {/* ═══ HOME LOAN ACCELERATOR ═══ */}
       <SectionDivider
-        label="Plan Your Home Loan"
-        id="bond-calculator-section"
+        label="Home Loan Accelerator"
+        id="home-loan-accelerator-section"
         icon={Calculator}
       />
       <BondCalculator />

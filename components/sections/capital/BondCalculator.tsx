@@ -198,7 +198,7 @@ export default function BondCalculator() {
   }
 
   return (
-    <section className="bg-snow py-16 sm:py-20 lg:py-24" id="bond-calculator">
+    <section className="bg-snow py-16 sm:py-20 lg:py-24" id="home-loan-accelerator">
       <Container>
         {/* Header */}
         <motion.div
@@ -211,16 +211,16 @@ export default function BondCalculator() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal/10 border border-teal/25 mb-4">
             <Calculator className="w-3.5 h-3.5 text-teal" />
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal">
-              Bond Tool
+              Home Loan Accelerator
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-navy leading-[1.05]">
-            Pay your bond off years earlier.
+            Pay your home loan off years earlier.
           </h2>
           <p className="mt-4 text-base sm:text-lg text-subtle leading-relaxed">
-            Run your home loan through the calculator. Try an extra monthly
-            contribution and watch the payoff term shorten — and how much
-            interest you save by doing it.
+            Run your home loan through the accelerator. Try an extra monthly
+            contribution and watch the payoff term shorten &mdash; and how
+            much interest you save by doing it.
           </p>
         </motion.div>
 
@@ -240,7 +240,7 @@ export default function BondCalculator() {
           <div className="p-6 sm:p-7 flex flex-col gap-5 lg:border-r lg:border-border border-b lg:border-b-0">
             <div>
               <p className="text-[10.5px] font-medium uppercase tracking-[0.16em] text-subtle">
-                Step 01 &mdash; your bond
+                Step 01 &mdash; your home loan
               </p>
               <h3 className="mt-1 text-2xl font-semibold tracking-tight text-navy leading-[1.1]">
                 What does your home loan look like?
@@ -390,13 +390,14 @@ export default function BondCalculator() {
               <p className="text-[11.5px] font-mono text-subtle mt-2 tracking-wide">
                 {extra <= 0 ? (
                   <>
-                    Pays the bond off in the original {derived.term} years.
+                    Pays the home loan off in the original {derived.term}{" "}
+                    years.
                   </>
                 ) : derived.monthsSaved <= 0 ? (
                   <>Extra contribution applied each month.</>
                 ) : (
                   <>
-                    Pays the bond off in{" "}
+                    Pays the home loan off in{" "}
                     <strong className="text-navy">
                       {fmtYears(accel.months)}
                     </strong>{" "}
@@ -531,9 +532,10 @@ export default function BondCalculator() {
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-subtle" />
           <span>
             Estimates only. Rates &amp; taxes assume ~0.7% of property value
-            per year. Your actual bond instalment depends on your bank&rsquo;s
-            offer, life cover, and any structured fees. Use this as a guide
-            for what extra contributions could unlock, not as a binding quote.
+            per year. Your actual home loan instalment depends on your
+            bank&rsquo;s offer, life cover, and any structured fees. Use
+            this as a guide for what extra contributions could unlock, not
+            as a binding quote.
           </span>
         </motion.p>
       </Container>
