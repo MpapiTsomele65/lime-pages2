@@ -1306,7 +1306,7 @@ export function renderPreLaunchEmailHtml(params: {
         <tr><td style="padding:28px 32px 0;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(184,255,0,0.12) 0%,rgba(70,205,207,0.06) 100%);border:1.5px solid rgba(184,255,0,0.35);border-radius:18px;margin-bottom:28px;">
             <tr><td style="padding:28px 24px;text-align:center;">
-              <p style="font-size:11px;font-weight:700;color:#B8FF00;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Final push to 30</p>
+              <p style="font-size:11px;font-weight:700;color:#B8FF00;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Final push to 30 Lehumo members</p>
               <h2 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 10px;line-height:1.3;">Help us launch with a full house</h2>
               <p style="font-size:14.5px;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 20px;">
                 We&rsquo;re <strong style="color:#B8FF00;">${stats.onboardedCount} of 30</strong> founders so far. If your registration is still in progress, please complete it before <strong style="color:#ffffff;">30 June</strong> so we lock the founding cohort at full strength.
