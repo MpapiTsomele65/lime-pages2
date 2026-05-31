@@ -700,7 +700,7 @@ function Legend({
       <span
         className={`rounded-sm ${
           swatch === "base"
-            ? "w-3.5 h-2 bg-capital-light"
+            ? "w-3.5 h-2 bg-capital/55"
             : swatch === "with-extra"
               ? "w-3.5 h-2 bg-teal"
               : "w-3.5 h-[2px] bg-navy"
@@ -745,13 +745,15 @@ function Chart({
   const RULE = "#E5E7EB";
   const INK = "#0B1933";
   const INK_SOFT = "#6B7280";
-  // Baseline ("minimum repayment") bars use --color-capital-light
-  // (#f0ffe0) — the same pale green that backs the "Total interest"
-  // highlighted stat tile, so the chart and the stat grid speak the
-  // same visual language. Pale enough that the teal "with extra"
-  // bars stay the centre of gravity; visible enough against the
-  // chart's snow background to be tracked across the time axis.
-  const CAPITAL_LIGHT = "#f0ffe0";
+  // Baseline ("minimum repayment") bars use the Lime Capital brand
+  // green — softer than the Lehumo bright lime (#B8FF00) so it's
+  // easier on the eye over the long-stack chart, but still gives
+  // clean hue separation from the teal "with extra" bars. Rendered
+  // at ~55% opacity so it reads as a background reference state
+  // rather than a foreground value — the teal "with extra" bars
+  // remain the visual centre of gravity.
+  const CAPITAL = "#c1ff72";
+  const CAPITAL_OPACITY = 0.55;
 
   // ── Y-axis grid + labels (5 horizontal lines) ──
   const gridY: React.ReactNode[] = [];
@@ -832,7 +834,8 @@ function Chart({
           y={yScale(baseB)}
           width={barW}
           height={Math.max(0, H - PAD_B - yScale(baseB))}
-          fill={CAPITAL_LIGHT}
+          fill={CAPITAL}
+          opacity={CAPITAL_OPACITY}
           rx={1}
         />
         <rect
