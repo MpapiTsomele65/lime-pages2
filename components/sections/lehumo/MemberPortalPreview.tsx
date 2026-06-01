@@ -135,10 +135,10 @@ export function MemberPortalPreview() {
           <motion.div
             {...fadeUp}
             transition={{ ...fadeUp.transition, delay: 0.2 }}
-            className="bg-[#0F2040] rounded-[20px] border border-white/[0.08] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.3)]"
+            className="bg-navy-mid rounded-[20px] border border-white/[0.08] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.3)]"
           >
             {/* Mock header bar */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06] bg-[#0F2040]/80">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06] bg-navy-mid/80">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-lime/10 flex items-center justify-center">
                   <span className="text-xs font-bold text-lime">L</span>
@@ -244,14 +244,14 @@ export function MemberPortalPreview() {
             </div>
 
             {/* Blur overlay with CTA */}
-            <div className="relative px-5 py-5 bg-gradient-to-t from-[#0B1933] via-[#0B1933]/95 to-transparent -mt-4 pt-10">
+            <div className="relative px-5 py-5 bg-gradient-to-t from-navy via-navy/95 to-transparent -mt-4 pt-10">
               <div className="text-center">
                 <p className="text-xs text-white/40 mb-3">
                   Sign in to access your personal dashboard
                 </p>
                 <Link
                   href="/lehumo/portal/login"
-                  className="inline-flex items-center gap-2 bg-lime text-navy px-7 py-3 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
+                  className="inline-flex items-center gap-2 bg-lime text-navy px-7 py-3 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-lime-glow transition-all"
                 >
                   Member Sign In <ArrowRight className="w-4 h-4" />
                 </Link>

@@ -11,13 +11,7 @@ import {
   ArrowRight,
   Zap,
 } from "lucide-react";
-
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.2 },
-  transition: { duration: 0.6, ease: "easeOut" as const },
-};
+import { fadeUp } from "@/lib/motion";
 
 const syndicateSteps = [
   {
@@ -247,7 +241,7 @@ export default function AngelSyndicate() {
           <div className="flex flex-wrap justify-center gap-4">
             <Link
               href="mailto:info@limepages.co.za?subject=Angel%20Syndicate%20—%20Expression%20of%20Interest"
-              className="inline-flex items-center gap-2 bg-capital text-navy px-9 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(193,255,114,0.3)] transition-all"
+              className="inline-flex items-center gap-2 bg-capital text-navy px-9 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-capital-glow transition-all"
             >
               Express Interest
               <ArrowRight className="w-4 h-4" />

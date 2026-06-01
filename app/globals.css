@@ -27,6 +27,14 @@
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.09), 0 1px 4px rgba(0, 0, 0, 0.04);
+
+  /* Glow shadows for CTA buttons + interactive cards. Used as
+     shadow-lime-glow / shadow-teal-glow / shadow-capital-glow
+     Tailwind utilities. Replaces inline shadow-[0_8px_28px_rgba(...)]
+     scattered across 25+ components. */
+  --shadow-lime-glow: 0 8px 28px rgba(184, 255, 0, 0.30);
+  --shadow-teal-glow: 0 8px 28px rgba(70, 205, 207, 0.30);
+  --shadow-capital-glow: 0 8px 28px rgba(193, 255, 114, 0.30);
 }
 
 /* ── Scrollbar hide utility ── */

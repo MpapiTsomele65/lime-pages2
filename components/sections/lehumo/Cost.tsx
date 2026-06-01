@@ -14,13 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { PaymentMethods } from "./PaymentMethods";
-
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.2 },
-  transition: { duration: 0.6, ease: "easeOut" as const },
-};
+import { fadeUp } from "@/lib/motion";
 
 const plans = [
   {
@@ -96,7 +90,7 @@ const plans = [
       "Lime Connect service listing",
     ],
     cta: "Join Standard",
-    ctaStyle: "bg-teal text-navy hover:shadow-[0_8px_28px_rgba(70,205,207,0.3)]",
+    ctaStyle: "bg-teal text-navy hover:shadow-teal-glow",
   },
   {
     id: "vip",
@@ -447,7 +441,7 @@ export function Cost() {
         <motion.div {...fadeUp} className="text-center">
           <Link
             href="/lehumo/onboard"
-            className="inline-flex items-center gap-2 bg-lime text-navy px-9 py-[15px] rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
+            className="inline-flex items-center gap-2 bg-lime text-navy px-9 py-[15px] rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-lime-glow transition-all"
           >
             Apply to Join <ArrowRight className="w-4 h-4" />
           </Link>

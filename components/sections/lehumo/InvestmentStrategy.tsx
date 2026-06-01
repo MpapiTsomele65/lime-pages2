@@ -5,13 +5,7 @@ import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { TrendingUp, Shield, Landmark, Sprout, ArrowRight } from "lucide-react";
 import { CollapsibleBlock } from "./CollapsibleBlock";
-
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.2 },
-  transition: { duration: 0.6, ease: "easeOut" as const },
-};
+import { fadeUp } from "@/lib/motion";
 
 /* Pie chart segments — order matters for conic-gradient */
 const segments = [
@@ -35,7 +29,7 @@ const allocations = [
     statBg: "bg-lime/[0.08]",
     statBorder: "border-lime/15",
     cardBorder: "border-lime/20",
-    dotColor: "bg-[#B8FF00]",
+    dotColor: "bg-lime",
     details: ["FSP Licence: 53629", "NCRCP: 21759"],
   },
   {
@@ -142,7 +136,7 @@ export function InvestmentStrategy() {
               whileInView={{ width: "40%" }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="bg-[#B8FF00] flex flex-col items-center justify-center text-navy px-2 overflow-hidden leading-none"
+              className="bg-lime flex flex-col items-center justify-center text-navy px-2 overflow-hidden leading-none"
             >
               <span className="text-sm font-extrabold whitespace-nowrap">R400</span>
               <span className="text-[10px] font-bold uppercase tracking-wide mt-1">Sum1</span>
@@ -182,7 +176,7 @@ export function InvestmentStrategy() {
           {/* Legend — clarifies the two narrow 10% segments */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 text-[11px] text-white/50">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#B8FF00]" /> R400 · Sum1 Investments
+              <span className="w-2 h-2 rounded-full bg-lime" /> R400 · Sum1 Investments
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-teal" /> R400 · Cash Reserves
@@ -307,7 +301,7 @@ export function InvestmentStrategy() {
               <div className="absolute inset-0 bg-gradient-to-t from-navy-mid via-navy-mid/40 to-transparent" />
               <div className="absolute top-4 left-4">
                 <div className="inline-flex items-center gap-1.5 bg-lime/20 backdrop-blur-sm border border-lime/30 rounded-full px-3 py-1">
-                  <div className="w-2 h-2 rounded-full bg-[#B8FF00]" />
+                  <div className="w-2 h-2 rounded-full bg-lime" />
                   <span className="text-[10px] font-bold text-lime tracking-wide uppercase">
                     40% · Sum1 Investments
                   </span>
@@ -479,7 +473,7 @@ export function InvestmentStrategy() {
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#B8FF00] shrink-0" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-lime shrink-0" />
                   <div className="flex-1">
                     <span className="text-sm font-bold text-white">R400</span>
                     <span className="text-xs text-white/40 ml-1.5">Sum1 SMMEs</span>

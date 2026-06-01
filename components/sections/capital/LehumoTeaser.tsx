@@ -4,13 +4,7 @@ import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import Link from "next/link";
 import { Shield, ArrowRight } from "lucide-react";
-
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.2 },
-  transition: { duration: 0.6, ease: "easeOut" as const },
-};
+import { fadeUp } from "@/lib/motion";
 
 export default function LehumoTeaser() {
   return (

@@ -15,13 +15,7 @@ import {
   Check,
   AlertTriangle,
 } from "lucide-react";
-
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.2 },
-  transition: { duration: 0.6, ease: "easeOut" as const },
-};
+import { fadeUp } from "@/lib/motion";
 
 const whyReasons = [
   {
@@ -444,7 +438,7 @@ export default function WillsEstates() {
               <div className="flex flex-col gap-3 shrink-0">
                 <Link
                   href="/advisory"
-                  className="inline-flex items-center justify-center gap-2 bg-teal text-navy px-8 py-3.5 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(70,205,207,0.3)] transition-all whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-2 bg-teal text-navy px-8 py-3.5 rounded-full font-bold text-sm hover:-translate-y-0.5 hover:shadow-teal-glow transition-all whitespace-nowrap"
                 >
                   Get Started <ArrowRight className="w-4 h-4" />
                 </Link>

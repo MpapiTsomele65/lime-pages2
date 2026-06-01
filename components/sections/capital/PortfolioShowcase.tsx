@@ -13,6 +13,7 @@ import {
   Briefcase,
   MapPin,
 } from "lucide-react";
+import { fadeUp } from "@/lib/motion";
 
 /* ─── Types ─── */
 interface PortfolioStartup {
@@ -43,12 +44,7 @@ const startups: PortfolioStartup[] = [
 ];
 
 /* ─── Animations ─── */
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.2 },
-  transition: { duration: 0.6, ease: "easeOut" as const },
-};
+// fadeUp now sourced from @/lib/motion (import below)
 
 /* ─── Pitch Deck Carousel ─── */
 function DeckCarousel({ pages, name }: { pages: string[]; name: string }) {

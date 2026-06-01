@@ -51,7 +51,7 @@ export function JoinCta() {
         {/* Onboard CTA */}
         <Link
           href="/lehumo/onboard"
-          className="inline-flex items-center gap-2.5 bg-lime text-navy px-10 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all mb-12"
+          className="inline-flex items-center gap-2.5 bg-lime text-navy px-10 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-lime-glow transition-all mb-12"
         >
           Become a Founding Member <ArrowRight className="w-4 h-4" />
         </Link>
