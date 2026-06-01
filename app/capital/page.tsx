@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import BondCalculator from "@/components/sections/capital/BondCalculator";
+import { ReadingProgressBar } from "@/components/ui/ReadingProgressBar";
 import FundComparison from "@/components/sections/capital/FundComparison";
 import InvestingGuide from "@/components/sections/capital/InvestingGuide";
 import AngelSyndicate from "@/components/sections/capital/AngelSyndicate";
@@ -95,6 +96,7 @@ function SectionDivider({
 export default function CapitalPage() {
   return (
     <div className="pt-[70px]">
+      <ReadingProgressBar />
       {/* ═══ HERO ═══ */}
       <section className="bg-navy py-20 sm:py-28 relative overflow-hidden">
         <Image

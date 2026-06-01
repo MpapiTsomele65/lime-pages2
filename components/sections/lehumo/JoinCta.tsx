@@ -36,7 +36,7 @@ export function JoinCta() {
         transition={{ duration: 0.6, ease: "easeOut" as const }}
         className="relative z-[1] max-w-[900px] mx-auto text-center px-[clamp(1.25rem,4vw,3rem)]"
       >
-        <h2 className="text-[clamp(2.2rem,5vw,3.8rem)] font-extrabold text-white tracking-tight leading-[1.05] mb-[18px]">
+        <h2 className="text-[clamp(2.2rem,5vw,3.8rem)] font-extrabold text-white tracking-tight leading-[1.05] mb-5">
           Your wealth creation journey
           <br />
           starts <span className="text-lime">today.</span>

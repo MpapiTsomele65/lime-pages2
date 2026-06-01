@@ -89,16 +89,21 @@ html {
   .h-dvh { height: 100dvh; }
 }
 
-/* ── Accessibility: Focus styles ── */
+/* ── Accessibility: Focus styles ──
+   `:focus-visible` only triggers on keyboard navigation (not on
+   mouse click), so the teal ring shows up exactly when it matters
+   without intruding on pointer users. The `*` rule covers any
+   element that takes focus, and the explicit button/a rule is kept
+   for specificity in case a component re-asserts an outline. */
 *:focus-visible {
-  outline: 2px solid #46cdcf;
+  outline: 2px solid var(--color-teal);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #46cdcf;
+  outline: 2px solid var(--color-teal);
   outline-offset: 2px;
 }
 
@@ -109,7 +114,7 @@ a:focus-visible {
   left: 16px;
   z-index: 10000;
   padding: 12px 24px;
-  background: #0B1933;
+  background: var(--color-navy);
   color: white;
   font-weight: 700;
   font-size: 14px;
@@ -119,6 +124,26 @@ a:focus-visible {
 }
 .skip-to-content:focus {
   top: 0;
+}
+
+/* ── Accessibility: Respect reduced-motion preference ──
+   Users with vestibular disorders (or anyone who's just
+   set the OS-level "Reduce motion" toggle) get near-instant
+   transitions instead of the framer-motion fades + scroll-
+   triggered slides. Targets every transition + animation
+   declaratively rather than asking each framer-motion call
+   site to wrap with useReducedMotion(). The .01ms duration
+   keeps state changes triggering hooks/listeners while
+   visually skipping the in-between frames. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── Dark scrollbar for Lehumo ── */

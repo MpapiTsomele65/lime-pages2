@@ -66,7 +66,7 @@ export function Benefits() {
                   <b.icon className="w-6 h-6 text-current" />
                 </div>
                 <h3 className="text-lg font-extrabold text-white mb-2.5 leading-tight">{b.title}</h3>
-                <p className="text-sm text-white/55 leading-[1.7] mb-[18px]">{b.desc}</p>
+                <p className="text-sm text-white/55 leading-[1.7] mb-5">{b.desc}</p>
                 <div className={`border rounded-[10px] px-3.5 py-2.5 text-[13px] font-bold ${b.highlightStyle}`}>
                   {b.highlight}
                 </div>

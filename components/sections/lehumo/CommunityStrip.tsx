@@ -23,7 +23,7 @@ export function CommunityStrip() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.6, ease: "easeOut" as const }}
           >
-            <p className="text-[11px] font-bold text-teal tracking-[1.5px] uppercase mb-[18px]">
+            <p className="text-[11px] font-bold text-teal tracking-[1.5px] uppercase mb-5">
               Community First
             </p>
             <h3 className="text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold text-white leading-[1.2] tracking-tight mb-5">

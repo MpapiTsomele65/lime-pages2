@@ -14,10 +14,12 @@ import { WealthPhotoBlock } from "@/components/sections/lehumo/WealthPhotoBlock"
 import { MemberPortalPreview } from "@/components/sections/lehumo/MemberPortalPreview";
 import { ReferralCta } from "@/components/sections/lehumo/ReferralCta";
 import { LehumoFAQ } from "@/components/sections/lehumo/LehumoFAQ";
+import { ReadingProgressBar } from "@/components/ui/ReadingProgressBar";
 
 export default function LehumoPage() {
   return (
     <div className="bg-navy text-white">
+      <ReadingProgressBar />
       <LehumoHero />
       <LehumoMarquee />
       <WhatIsLehumo />
