@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Loader2, X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { FormInput } from "@/components/ui/FormInput";
+import { CTAButton } from "@/components/ui/CTAButton";
 
 interface ReferralFormModalProps {
   open: boolean;
@@ -111,7 +113,7 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="relative w-full max-w-lg bg-[#0F2040] rounded-[20px] border border-white/[0.08] p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-lg bg-navy-mid rounded-[20px] border border-white/[0.08] p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -125,8 +127,8 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
 
             {success ? (
               <div className="py-6 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-[#B8FF00]/10 flex items-center justify-center mx-auto mb-5">
-                  <CheckCircle2 className="w-7 h-7 text-[#B8FF00]" />
+                <div className="w-14 h-14 rounded-2xl bg-lime/10 flex items-center justify-center mx-auto mb-5">
+                  <CheckCircle2 className="w-7 h-7 text-lime" />
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">
                   Thanks — you&rsquo;re on the list
@@ -135,18 +137,14 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
                   We&rsquo;ll be in touch soon with your next steps. Keep an
                   eye on your inbox.
                 </p>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-full bg-[#B8FF00] px-7 py-3 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors"
-                >
+                <CTAButton variant="primary" size="md" onClick={onClose}>
                   Close
-                </button>
+                </CTAButton>
               </div>
             ) : (
               <>
                 <div className="mb-6">
-                  <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-[#46CDCF] mb-3 block">
+                  <span className="text-[11px] font-bold tracking-[1.4px] uppercase text-teal mb-3 block">
                     Join the movement
                   </span>
                   <h2 className="text-2xl font-bold text-white mb-2">
@@ -169,49 +167,49 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <Field label="Full name" required>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Thabo Mokoena"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/40 transition-colors"
-                    />
-                  </Field>
+                  <FormInput
+                    name="fullName"
+                    label="Full name"
+                    required
+                    value={fullName}
+                    onChange={setFullName}
+                    placeholder="Thabo Mokoena"
+                    autoComplete="name"
+                  />
 
-                  <Field label="Email" required>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/40 transition-colors"
-                    />
-                  </Field>
+                  <FormInput
+                    name="email"
+                    label="Email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={setEmail}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
 
-                  <Field label="Phone (optional)">
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+27 82 000 0000"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/40 transition-colors"
-                    />
-                  </Field>
+                  <FormInput
+                    name="phone"
+                    label="Phone (optional)"
+                    type="tel"
+                    value={phone}
+                    onChange={setPhone}
+                    placeholder="+27 82 000 0000"
+                    autoComplete="tel"
+                  />
 
-                  <Field label="Referred by (optional)">
-                    <input
-                      type="text"
-                      value={referredByName}
-                      onChange={(e) => setReferredByName(e.target.value)}
-                      placeholder="Name & surname of the member who referred you"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/40 transition-colors"
-                    />
-                  </Field>
+                  <FormInput
+                    name="referredByName"
+                    label="Referred by (optional)"
+                    value={referredByName}
+                    onChange={setReferredByName}
+                    placeholder="Name & surname of the member who referred you"
+                  />
 
-                  <Field label="What interests you most?">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-white/55">
+                      What interests you most?
+                    </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {(
                         [
@@ -227,7 +225,7 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
                           onClick={() => setPlanInterest(opt.v)}
                           className={`rounded-xl border px-3 py-2.5 text-xs font-semibold transition-colors ${
                             planInterest === opt.v
-                              ? "bg-[#B8FF00]/15 border-[#B8FF00]/50 text-[#B8FF00]"
+                              ? "bg-lime/15 border-lime/50 text-lime"
                               : "bg-white/[0.03] border-white/[0.1] text-white/60 hover:border-white/25 hover:text-white/80"
                           }`}
                         >
@@ -235,32 +233,28 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
                         </button>
                       ))}
                     </div>
-                  </Field>
+                  </div>
 
-                  <Field label="Anything else? (optional)">
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={3}
-                      placeholder="Questions, goals, or when you'd like to start"
-                      className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/40 transition-colors resize-none"
-                    />
-                  </Field>
+                  <FormInput
+                    as="textarea"
+                    name="notes"
+                    label="Anything else? (optional)"
+                    value={notes}
+                    onChange={setNotes}
+                    rows={3}
+                    placeholder="Questions, goals, or when you'd like to start"
+                  />
 
-                  <button
+                  <CTAButton
+                    variant="primary"
+                    size="lg"
                     type="submit"
-                    disabled={loading}
-                    className="w-full rounded-full bg-[#B8FF00] py-3.5 px-6 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    loading={loading}
+                    loadingText="Submitting…"
+                    className="w-full"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit"
-                    )}
-                  </button>
+                    Submit
+                  </CTAButton>
 
                   <p className="text-[11px] text-white/35 leading-relaxed text-center">
                     By submitting, you consent to Lime Pages processing your
@@ -283,25 +277,5 @@ export function ReferralFormModal({ open, onClose }: ReferralFormModalProps) {
         </motion.div>
       )}
     </AnimatePresence>
-  );
-}
-
-function Field({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider text-white/50 mb-2">
-        {label}
-        {required && <span className="text-[#B8FF00] ml-1">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }
