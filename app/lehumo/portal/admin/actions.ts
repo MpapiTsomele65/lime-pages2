@@ -22,7 +22,11 @@ import {
   setMemberBeneficiary,
   updateMember,
 } from "@/lib/airtable";
-import { sendKycVerifiedEmail, sendWelcomeEmail } from "@/lib/email";
+import {
+  sendContributionReceiptEmail,
+  sendKycVerifiedEmail,
+  sendWelcomeEmail,
+} from "@/lib/email";
 import {
   AIRTABLE_FIELDS,
   MONTH_NAMES,
@@ -128,6 +132,33 @@ export async function logEftPayment(
       paymentDate: parsed.data.paymentDate,
       notes: parsed.data.notes,
     });
+
+    // Fire-and-forget receipt email — same template the Paystack
+    // webhook uses for ongoing contributions. Multi-month EFTs
+    // (e.g. R3,000 covering 3 months) collapse into a single
+    // combined-period label like "Jun + Jul + Aug 2026" so the
+    // member gets one receipt for the whole deposit, not three.
+    //
+    // The mail call doesn't block the response — failure here
+    // (Resend down, transient API hiccup) is logged but doesn't
+    // unwind the contribution write, which is already persisted
+    // by the time we get here. The admin sees success either
+    // way, and we can resend manually from Resend's dashboard if
+    // needed.
+    if (member.email && plan.rows.length > 0 && plan.totalApplied > 0) {
+      const periodLabel = buildMultiPeriodLabel(plan.rows.map((r) => r.period));
+      sendContributionReceiptEmail({
+        to: member.email,
+        fullName: member.fullName,
+        memberNumber: member.memberNumber,
+        amountZar: plan.totalApplied,
+        monthLabel: periodLabel,
+        paymentReference: parsed.data.paymentReference,
+      }).catch((err) => {
+        console.error("sendContributionReceiptEmail (EFT) failed:", err);
+      });
+    }
+
     return { ok: true, member, plan };
   } catch (err) {
     console.error("logEftPayment error:", err);
@@ -725,4 +756,59 @@ export async function adminReconcileContribution(
       error: err instanceof Error ? err.message : "Reconcile failed",
     };
   }
+}
+
+/**
+ * Build a human-friendly label for one or more contribution periods,
+ * collapsing consecutive months in the same year. Used for the EFT
+ * receipt email's `monthLabel` field so a R3,000 deposit spanning
+ * three months reads "Jun + Jul + Aug 2026" instead of three
+ * separate emails.
+ *
+ *   ["2026-06"]                    → "June 2026"
+ *   ["2026-06","2026-07"]          → "Jun + Jul 2026"
+ *   ["2026-06","2026-07","2026-08"] → "Jun + Jul + Aug 2026"
+ *   ["2026-11","2026-12","2027-01"] → "Nov 2026 + Dec 2026 + Jan 2027"
+ */
+function buildMultiPeriodLabel(periods: string[]): string {
+  if (periods.length === 0) return "";
+
+  const sorted = [...periods].sort();
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  const monthsLong = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+
+  // Single-period: use the long month name so the email reads
+  // naturally — "We've received your June 2026 contribution".
+  if (sorted.length === 1) {
+    const [yr, m] = sorted[0].split("-");
+    const idx = Number(m) - 1;
+    return `${monthsLong[idx] ?? m} ${yr}`;
+  }
+
+  // Multi-period: detect whether every period falls in the same
+  // calendar year. If so, render the months short and append a
+  // single year suffix ("Jun + Jul + Aug 2026"). If not, year
+  // each (most common case is a Dec→Jan crossover).
+  const years = new Set(sorted.map((p) => p.split("-")[0]));
+  if (years.size === 1) {
+    const year = [...years][0];
+    const monthLabels = sorted.map((p) => {
+      const m = Number(p.split("-")[1]) - 1;
+      return months[m] ?? p;
+    });
+    return `${monthLabels.join(" + ")} ${year}`;
+  }
+  return sorted
+    .map((p) => {
+      const [yr, m] = p.split("-");
+      const idx = Number(m) - 1;
+      return `${months[idx] ?? m} ${yr}`;
+    })
+    .join(" + ");
 }
