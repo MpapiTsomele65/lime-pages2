@@ -28,15 +28,22 @@ import {
   MONTH_NAMES,
   MEMBER_STATUS,
   KYC_STATUS,
+  CONTRIBUTION_STATUS,
   BeneficiaryFormSchema,
   emailField,
   formatMemberNumber,
   todayDate,
+  type ContributionStatus,
+  type LehumoContribution,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
   type BeneficiaryFormData,
 } from "@/lib/definitions";
+import {
+  reconcileContribution,
+  updateContribution,
+} from "@/lib/contributions";
 
 const StatusValues = Object.values(MEMBER_STATUS) as [string, ...string[]];
 const KycValues = Object.values(KYC_STATUS) as [string, ...string[]];
@@ -638,5 +645,84 @@ export async function adminSetMemberBeneficiary(
   } catch (err) {
     console.error("adminSetMemberBeneficiary error:", err);
     return { ok: false, error: "Could not save beneficiary. Try again." };
+  }
+}
+
+// ── Contributions admin actions ──────────────────────────────────
+//
+// Two thin wrappers around lib/contributions.ts helpers. Used by the
+// AdminContributionsTable on /lehumo/portal/admin/contributions for
+// inline status edits + reconciliation flips. Both gated by
+// requireAdmin and return the freshly-PATCHed contribution row so
+// the client can splice it into local state without a refetch.
+
+const ContributionStatusValues = Object.values(
+  CONTRIBUTION_STATUS,
+) as [string, ...string[]];
+
+export type ContributionActionResult =
+  | { ok: true; contribution: LehumoContribution }
+  | { ok: false; error: string };
+
+/**
+ * Adjust a contribution row's status (Pending / Paid / Failed /
+ * Refunded / Waived). Does NOT touch payment metadata — admins
+ * who need to record a payment use the LogManualDepositCard
+ * (which routes through logEftPayment), not this action.
+ *
+ * The Status select dropdown on the contributions table calls
+ * this on every change.
+ */
+export async function adminUpdateContributionStatus(
+  recordId: string,
+  status: ContributionStatus,
+): Promise<ContributionActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as ContributionActionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  const statusOk = z.enum(ContributionStatusValues).safeParse(status);
+  if (!statusOk.success) return { ok: false, error: "Invalid status" };
+
+  try {
+    const contribution = await updateContribution(recordId, {
+      status: statusOk.data as ContributionStatus,
+    });
+    return { ok: true, contribution };
+  } catch (err) {
+    console.error("adminUpdateContributionStatus error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Status update failed",
+    };
+  }
+}
+
+/**
+ * Mark a Paid contribution row as reconciled. Stamps the current
+ * admin's email + timestamp via the existing reconcileContribution
+ * helper. Convention: reconciliation is a one-way ratchet — the
+ * unreconcile path exists for corrections but isn't exposed here.
+ */
+export async function adminReconcileContribution(
+  recordId: string,
+): Promise<ContributionActionResult> {
+  const session = await getAdminSession();
+  if (!session) return { ok: false, error: "Forbidden" };
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  try {
+    const contribution = await reconcileContribution(recordId, session.email);
+    return { ok: true, contribution };
+  } catch (err) {
+    console.error("adminReconcileContribution error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Reconcile failed",
+    };
   }
 }

@@ -7,23 +7,20 @@ import type { LehumoMember } from "@/lib/definitions";
 
 interface AdminMembersClientProps {
   initialMembers: LehumoMember[];
-  currentMonth: string;
 }
 
 /**
  * Client wrapper for the Members page's full member table.
  *
  * Owns the local `members` array so row-level mutations (status
- * change, KYC quick-toggle, beneficiary add/edit, contribution
- * month toggle, EFT log, password clear) update the table inline
- * without a full page refresh.
+ * change, KYC quick-toggle, beneficiary add/edit, password clear)
+ * update the table inline without a full page refresh.
  *
- * The wrapper used to lift state across both the KYC review queue
- * and this table — both were rendered on a single admin page so
- * they needed to share a single members array for cross-section
- * mutations to propagate. With the split into separate routes
- * (Members vs KYC Review), each page has its own client wrapper
- * managing its own local copy. Same pattern, simpler scope.
+ * Monthly contribution toggles + the per-row "Log EFT" button used
+ * to live on this table — both have moved to the dedicated
+ * /admin/contributions page (cleaner separation of identity vs.
+ * money flow). The `currentMonth` prop chain that fed the now-
+ * removed month columns is gone too.
  *
  * `key={members.length}` in the parent re-mounts this wrapper
  * when a new member is added — re-seeds the useState from the
@@ -33,7 +30,6 @@ interface AdminMembersClientProps {
  */
 export function AdminMembersClient({
   initialMembers,
-  currentMonth,
 }: AdminMembersClientProps) {
   const [members, setMembers] = useState<LehumoMember[]>(initialMembers);
 
@@ -47,7 +43,6 @@ export function AdminMembersClient({
     <AdminMemberTable
       members={members}
       onMemberUpdate={onMemberUpdate}
-      currentMonth={currentMonth}
     />
   );
 }

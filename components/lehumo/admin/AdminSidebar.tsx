@@ -31,6 +31,7 @@ import {
   LayoutDashboard,
   Users,
   ShieldCheck,
+  Banknote,
   Mail,
   Settings,
   X,
@@ -73,6 +74,16 @@ const NAV_GROUPS: NavGroup[] = [
         label: "KYC Review",
         href: "/lehumo/portal/admin/kyc",
         icon: ShieldCheck,
+      },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      {
+        label: "Contributions",
+        href: "/lehumo/portal/admin/contributions",
+        icon: Banknote,
       },
     ],
   },

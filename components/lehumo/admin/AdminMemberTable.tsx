@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Banknote,
   Check,
@@ -14,7 +15,6 @@ import {
 } from "lucide-react";
 
 import {
-  MONTH_NAMES,
   MEMBER_STATUS,
   KYC_STATUS,
   formatMemberNumber,
@@ -27,33 +27,27 @@ import {
 import {
   adminClearMemberPassword,
   adminSetMemberBeneficiary,
-  logEftPayment,
-  toggleMonthPayment,
   updateMemberKyc,
   updateMemberStatus,
   type AdminActionResult,
 } from "@/app/lehumo/portal/admin/actions";
 import { BeneficiaryDialog } from "@/components/lehumo/admin/BeneficiaryDialog";
-import { LogEftDialog } from "@/components/lehumo/admin/LogEftDialog";
 
 interface AdminMemberTableProps {
   /** Live member list, owned by the parent AdminMembersClient
    *  wrapper so row-level actions (status changes, KYC flips,
-   *  contribution toggles, beneficiary edits) propagate to the
-   *  AdminKycReviewSection above (and vice versa) without a page
-   *  reload. */
+   *  beneficiary edits, password clears) update the table inline
+   *  without a refetch. */
   members: LehumoMember[];
-  /** Single setter shared with the sibling KYC section. Call with
-   *  the freshly-PATCHed member returned from any admin server
-   *  action; the wrapper splices it into the shared array by id. */
+  /** Single setter from the wrapper. Call with the freshly-PATCHed
+   *  member returned from any admin server action; the wrapper
+   *  splices it into the shared array by id. */
   onMemberUpdate: (updated: LehumoMember) => void;
-  currentMonth: string;
 }
 
 export function AdminMemberTable({
   members,
   onMemberUpdate,
-  currentMonth,
 }: AdminMemberTableProps) {
   const [query, setQuery] = useState("");
   // "Missing beneficiary only" filter — surfaces members an admin needs to
@@ -76,21 +70,8 @@ export function AdminMemberTable({
 
   // Beneficiary dialog state — null when closed; member object when
   // open (so the dialog can pre-fill from the row's current values).
-  // The shared onMemberUpdate makes any save visible to BOTH this
-  // table and the sibling KYC review section in the same render —
-  // no stale-data overwrites possible.
   const [beneficiaryEditing, setBeneficiaryEditing] =
     useState<LehumoMember | null>(null);
-
-  // EFT logging dialog state. Same modal-open-on-member pattern as the
-  // beneficiary editor — null when closed, member object when open so
-  // the dialog's live preview can run client-side against that member's
-  // contribution rows.
-  const [eftLogging, setEftLogging] = useState<LehumoMember | null>(null);
-  // Banner shown briefly after a successful EFT log so the admin sees
-  // an inline confirmation of what landed where, without losing the
-  // table context. Auto-clears after ~6s.
-  const [eftConfirmation, setEftConfirmation] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -245,16 +226,6 @@ export function AdminMemberTable({
               <th className="px-3 py-3 font-medium min-w-[120px]">
                 Active Loan
               </th>
-              {MONTH_NAMES.map((m) => (
-                <th
-                  key={m}
-                  className={`px-2 py-3 font-medium text-center w-12 ${
-                    m === currentMonth ? "text-[#0B1933] bg-[#B8FF00]/20" : ""
-                  }`}
-                >
-                  {m}
-                </th>
-              ))}
             </tr>
           </thead>
           <tbody>
@@ -263,13 +234,13 @@ export function AdminMemberTable({
                 key={m.id}
                 className="border-t border-[#E5E7EB] hover:bg-[#F8F9FA]/60"
               >
-                {/* Member name + id + Log EFT affordance. The EFT
-                    button sits below the email so it's discoverable
-                    without eating column width — it's a row-scoped
-                    action that fits naturally in the member-identity
-                    column. Disabled for members without any
-                    contribution rows seeded (shouldn't happen post-
-                    onboarding but defensive). */}
+                {/* Member name + id + per-row affordances. The
+                    "Contributions" chip deep-links to the dedicated
+                    Contributions page pre-filtered to this member —
+                    that's where EFT logging + per-period status edits
+                    + reconciliation live now. Drilling into a member's
+                    money flow is one click without making the Members
+                    table 17 columns wide. */}
                 <td className="sticky left-0 z-10 bg-white px-4 py-3">
                   <div className="font-medium text-[#0B0B0B]">
                     {m.fullName || "—"}
@@ -278,19 +249,14 @@ export function AdminMemberTable({
                     {formatMemberNumber(m.memberNumber)} · {m.email || "no email"}
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setEftLogging(m)}
-                      disabled={
-                        !m.contributionRows ||
-                        m.contributionRows.length === 0
-                      }
-                      className="inline-flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10.5px] font-medium text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      title="Log a manual EFT payment against this member"
+                    <Link
+                      href={`/lehumo/portal/admin/contributions?member=${m.id}`}
+                      className="inline-flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10.5px] font-medium text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] transition-colors"
+                      title={`View ${m.fullName || "this member"}'s contributions`}
                     >
                       <Banknote className="h-3 w-3" />
-                      Log EFT
-                    </button>
+                      Contributions
+                    </Link>
                     {/* Password chip — only when the member has opted
                         in to the optional password layer. Click → confirm
                         → server clears the PwHash segment from notes,
@@ -385,46 +351,13 @@ export function AdminMemberTable({
                 <td className="px-3 py-3">
                   <LoanCell member={m} />
                 </td>
-
-                {/* Month toggle cells */}
-                {MONTH_NAMES.map((month) => {
-                  const paid = m.contributions[month];
-                  const key = `${m.id}:${month}`;
-                  const isBusy = busyKey === key;
-                  return (
-                    <td key={month} className="px-2 py-3 text-center">
-                      <button
-                        onClick={() =>
-                          runAction(key, () =>
-                            toggleMonthPayment(m.id, month, !paid),
-                          )
-                        }
-                        disabled={isBusy}
-                        title={`${m.fullName} — ${month}: ${paid ? "paid" : "unpaid"} (click to toggle)`}
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:opacity-50 ${
-                          paid
-                            ? "bg-[#B8FF00] border-[#0B1933]/20 text-[#0B1933] hover:bg-[#a8ef00]"
-                            : "bg-white border-[#E5E7EB] text-[#9CA3AF] hover:border-[#0B1933]/40 hover:text-[#0B1933]"
-                        }`}
-                      >
-                        {isBusy ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : paid ? (
-                          <Check className="h-3.5 w-3.5" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 opacity-50" />
-                        )}
-                      </button>
-                    </td>
-                  );
-                })}
               </tr>
             ))}
 
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={6 + MONTH_NAMES.length}
+                  colSpan={6}
                   className="px-4 py-12 text-center text-sm text-[#9CA3AF]"
                 >
                   {activeLoansOnly && !query.trim() && !missingBeneficiaryOnly
@@ -458,65 +391,6 @@ export function AdminMemberTable({
         onCancel={() => setBeneficiaryEditing(null)}
       />
 
-      {/* Log EFT dialog — collects amount + reference + date, fires
-          the multi-row allocation server action, then merges the
-          freshly-refetched member into shared state so the row's
-          month toggles light up immediately. The confirmation banner
-          (rendered below the toolbar) surfaces what landed where. */}
-      <LogEftDialog
-        member={eftLogging}
-        onSubmit={async (member, fields) => {
-          const res = await logEftPayment(member.id, fields);
-          if (!res.ok) {
-            return res;
-          }
-          onMemberUpdate(res.member);
-          // Build the confirmation banner from the returned plan —
-          // "R2,000 → Jun 2026 R1,000 + Jul 2026 R1,000" style.
-          const rowParts = res.plan.rows
-            .map((r) => {
-              const periodLabel = (() => {
-                const [year, m] = r.period.split("-");
-                const months = [
-                  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-                ];
-                return `${months[Number(m) - 1] ?? m} ${year}`;
-              })();
-              const tag = r.status === "partial" ? " partial" : "";
-              return `${periodLabel} R${r.amountApplied.toLocaleString("en-ZA")}${tag}`;
-            })
-            .join(" + ");
-          const remainder = res.plan.hasOverpayment
-            ? ` · R${res.plan.remainder.toLocaleString("en-ZA")} unallocated`
-            : "";
-          setEftConfirmation(
-            `R${fields.amount.toLocaleString("en-ZA")} applied: ${rowParts || "nothing"}${remainder}`,
-          );
-          setTimeout(() => setEftConfirmation(null), 6000);
-          setEftLogging(null);
-          return res;
-        }}
-        onCancel={() => setEftLogging(null)}
-      />
-
-      {/* Persistent-ish confirmation banner — auto-dismisses after 6s
-          via the timeout in onSubmit above, or admin can dismiss
-          manually. Sits at the bottom of the table section so it
-          doesn't elbow the toolbar around. */}
-      {eftConfirmation && (
-        <div className="border-t border-[#B8FF00]/30 bg-[#B8FF00]/[0.08] px-5 py-3 text-sm text-[#0B1933] flex items-start gap-2">
-          <Check className="h-4 w-4 mt-0.5 text-[#0B1933] shrink-0" />
-          <span className="flex-1">{eftConfirmation}</span>
-          <button
-            onClick={() => setEftConfirmation(null)}
-            className="text-[#0B1933]/60 hover:text-[#0B1933]"
-            aria-label="Dismiss"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
     </section>
   );
 }
