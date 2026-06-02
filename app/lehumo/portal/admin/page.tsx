@@ -1,12 +1,6 @@
-import { redirect } from "next/navigation";
-
 import { getAdminSession } from "@/lib/admin-auth";
 import { listAllMembers } from "@/lib/airtable-admin";
 import { getSubscriptionDetails } from "@/lib/paystack";
-import { AdminShell } from "@/components/lehumo/admin/AdminShell";
-import { AdminMembersClient } from "@/components/lehumo/admin/AdminMembersClient";
-import { AdminAddMemberCard } from "@/components/lehumo/admin/AdminAddMemberCard";
-import { AdminPrelaunchEmailCard } from "@/components/lehumo/admin/AdminPrelaunchEmailCard";
 import { AdminPoolTracker } from "@/components/lehumo/admin/AdminPoolTracker";
 import { AdminCommunityHealth } from "@/components/lehumo/admin/AdminCommunityHealth";
 import { AdminBehindSnapshot } from "@/components/lehumo/admin/AdminBehindSnapshot";
@@ -15,43 +9,45 @@ import { AdminCampaignTracker } from "@/components/lehumo/admin/AdminCampaignTra
 import { computeAdminStats } from "@/lib/admin-stats";
 import { computeCampaignReports } from "@/lib/campaign-analytics";
 import { getKycDeadlineInfo } from "@/lib/definitions";
+import { AdminPageHeader } from "@/components/lehumo/admin/AdminPageHeader";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminDashboardPage() {
+/**
+ * Admin → Overview.
+ *
+ * The lean dashboard you land on when you sign in as an admin.
+ * High-level signal only — KPI tiles, pool / community-health
+ * charts, behind-snapshot, plus any time-sensitive pending actions
+ * (subscription cancellations etc.). Drilling into specific
+ * workflows happens via the sidebar — Members, KYC Review,
+ * Communications, Settings.
+ *
+ * Auth gate now lives in app/lehumo/portal/admin/layout.tsx — no
+ * need to re-check getAdminSession() here. We still pull the
+ * session for the signed-in chip in the header.
+ */
+export default async function AdminOverviewPage() {
+  // Layout already gated on getAdminSession returning a session, so
+  // this call is guaranteed to return one. Used for the "Signed in
+  // as" chip in the page header.
   const session = await getAdminSession();
-
-  if (!session) {
-    redirect("/lehumo/portal/login");
-  }
+  const email = session?.email ?? "Admin";
 
   const members = await listAllMembers().catch((err) => {
-    console.error("Admin: failed to list members", err);
+    console.error("Admin Overview: failed to list members", err);
     return [];
   });
 
   const currentMonthIndex = new Date().getMonth();
-  // All KPI / health-bar / behind-list math is centralised in
-  // computeAdminStats so the page stays focused on layout. See
-  // lib/admin-stats.ts for the full breakdown.
   const stats = computeAdminStats(members, currentMonthIndex);
   const { currentMonth } = stats;
-
-  // Cohort email-blast conversion reports. Pure server-side computation
-  // against the same members snapshot — no extra Airtable round-trips.
   const campaignReports = computeCampaignReports(members);
-
-  // KYC deadline countdown — computed server-side so the stat tile's
-  // sub-line matches what members see on the portal (no hydration
-  // mismatch). Resolves on every dynamic render of the admin page.
   const kycDeadline = getKycDeadlineInfo();
 
-  // Fetch each pending member's Paystack subscription details in
-  // parallel so the AdminPendingActions card can render a countdown
-  // to next billing for each one. Bounded by `pending.length` (usually
-  // 0–5) and runs concurrently, so the perf cost is one slow request
-  // not N sequential ones. Failures fall through to a null entry,
-  // which the card renders as "billing date unknown".
+  // Pending Paystack subscription cancellations — fetched in parallel
+  // so the dashboard isn't blocked on N sequential billing-date
+  // lookups. See AdminPendingActions for how the data is rendered.
   const subscriptionDetails = await Promise.all(
     stats.subscriptionCancelPending.map(async (m) => {
       if (!m.subscriptionCode) return { memberId: m.id, details: null };
@@ -72,180 +68,83 @@ export default async function AdminDashboardPage() {
   );
 
   return (
-    <AdminShell memberName={session.fullName || "Admin"}>
-      <div className="space-y-8">
-        {/* Header — refined typography to match the portal facelift.
-            Eyebrow / headline / sub-line stack with tracking-tight on
-            the headline; signed-in chip moves to the right with a
-            subtle pill background to match the new chrome system. */}
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0B1933] mb-1.5">
-              Admin Panel
-            </p>
-            <h1 className="text-[28px] md:text-[34px] font-semibold tracking-tight text-[#0B0B0B] leading-[1.1]">
-              Lehumo Member Management
-            </h1>
-            <p className="mt-2 text-[14px] text-[#6B7280]">
-              Track contributions, KYC, and status for every member.
-            </p>
-          </div>
-          <div className="inline-flex items-center gap-2 self-start rounded-full border border-[#E5E7EB] bg-white/60 px-3 py-1.5 text-[11px] text-[#6B7280] backdrop-blur-sm">
-            Signed in as{" "}
-            <span className="text-[#0B1933] font-semibold">{session.email}</span>
-          </div>
-        </div>
+    <div className="space-y-8">
+      <AdminPageHeader
+        eyebrow="Admin"
+        title="Overview"
+        subtitle="KPIs, pool tracking, and time-sensitive pending actions."
+        rightChip={email}
+      />
 
-        {/* Pending actions — currently only the subscription-cancel queue.
-            Renders at the top because these are time-sensitive (they bite
-            on the next Paystack billing cycle). Self-hiding when the
-            queue is empty so it doesn't add noise to a clean dashboard.
-            Subscription details fetched server-side above are passed in
-            so each row can show a "X days until next bill" countdown. */}
-        <AdminPendingActions
-          pending={stats.subscriptionCancelPending}
-          subscriptionDetailsByMember={subscriptionDetailsByMember}
+      {/* Pending actions — self-hides when the queue is empty. */}
+      <AdminPendingActions
+        pending={stats.subscriptionCancelPending}
+        subscriptionDetailsByMember={subscriptionDetailsByMember}
+      />
+
+      {/* Cohort email-blast conversion. Self-hides when no campaigns. */}
+      <AdminCampaignTracker reports={campaignReports} />
+
+      {/* Stat tiles — 2/3/6 responsive grid. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        <StatTile
+          label="Total Members"
+          value={stats.totalMembers.toString()}
+          sub={
+            stats.exitedCount > 0
+              ? `${stats.exitedCount} exited`
+              : undefined
+          }
         />
-
-        {/* Cohort email-blast conversion. Computed against the same
-            members snapshot as the stats tiles, so no extra Airtable
-            round-trips. Self-hides when no campaigns are defined. */}
-        <AdminCampaignTracker reports={campaignReports} />
-
-        {/* Stat tiles — quick at-a-glance counts. Richer breakdowns sit
-            in the Pool / Community Health / Behind cards below.
-            lg:grid-cols-6 keeps all six tiles on a single row above the
-            breakpoint; on md it wraps to 3+3, on sm to 2+2+2 — every
-            tile gets the same width regardless of viewport. */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-          <StatTile
-            label="Total Members"
-            value={stats.totalMembers.toString()}
-            sub={
-              stats.exitedCount > 0
-                ? `${stats.exitedCount} exited`
-                : undefined
-            }
-          />
-          <StatTile
-            label="Active"
-            value={stats.activeCount.toString()}
-            sub={
-              stats.onboardingCount > 0
-                ? `+${stats.onboardingCount} onboarding`
-                : undefined
-            }
-          />
-          <StatTile
-            label={`Paid (${currentMonth})`}
-            value={stats.activePaidThisMonth.toString()}
-            sub={`${stats.thisMonthRate}% of active`}
-          />
-          <StatTile
-            label="KYC Pending"
-            value={stats.kycPending.toString()}
-            sub={
-              kycDeadline.isPast
-                ? `${stats.kycComplete} verified · Overdue!`
-                : `${kycDeadline.daysRemaining} days to 15 Aug deadline`
-            }
-          />
-          <StatTile
-            label="Beneficiary Missing"
-            value={stats.beneficiaryMissing.toString()}
-            sub={`${stats.beneficiaryOnFile} on file`}
-          />
-          {/* Password adoption — surfaces uptake of the optional
-              self-service password layer. Sub-line shows raw + % so an
-              admin can read "3 of 27 pipeline = 11%" at a glance and
-              decide whether to nudge the rest via the WhatsApp group. */}
-          <StatTile
-            label="Password Set"
-            value={stats.passwordProtected.toString()}
-            sub={
-              stats.pipelineCount > 0
-                ? `${stats.passwordProtectedPct}% of ${stats.pipelineCount} active`
-                : undefined
-            }
-          />
-        </div>
-
-        {/* Pool tracking + community health — the two flagship monitoring
-            cards. Side-by-side on lg, stacked on smaller so neither gets
-            squashed into unreadable text. */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <AdminPoolTracker stats={stats} />
-          <AdminCommunityHealth stats={stats} />
-        </div>
-
-        {/* Falling-behind snapshot — full width. Surfaces the chase-up
-            list without admins needing to scan the whole member table. */}
-        <AdminBehindSnapshot stats={stats} />
-
-        {/* Pre-launch broadcast control panel — Preview / Test send /
-            Broadcast-with-typed-confirm flow. Sits above the manual
-            add-member card so the launch-day comms tool is easy to
-            find. Auto-hides naturally after launch (the card stays
-            useful for any future broadcast). */}
-        <AdminPrelaunchEmailCard defaultTestEmail={session.email} />
-
-        {/* Manual add-member — for prospects who emailed KYC docs without
-            going through the public onboarding form. Creating here drops
-            them straight into the review queue below. */}
-        <AdminAddMemberCard />
-
-        {/* Single client wrapper that owns `members` state for both the
-            KYC review queue and the full member table. Lifting state
-            up makes row-level actions (KYC approve/reject, beneficiary
-            add/edit, status changes, contribution toggles) propagate
-            between the two sections in the same render — without
-            this, a beneficiary saved from the KYC row's block left
-            the AdminMemberTable's beneficiary cell still showing
-            "+ Add", inviting accidental overwrites.
-
-            `key={members.length}` re-mounts the wrapper whenever a
-            NEW member is added (AdminAddMemberCard → router.refresh
-            → fresh member list), giving the wrapper's useState a
-            chance to re-seed from the new initialMembers prop. */}
-        <AdminMembersClient
-          key={`members-${members.length}`}
-          initialMembers={members}
-          currentMonth={currentMonth}
+        <StatTile
+          label="Active"
+          value={stats.activeCount.toString()}
+          sub={
+            stats.onboardingCount > 0
+              ? `+${stats.onboardingCount} onboarding`
+              : undefined
+          }
         />
-
-        {/* Pool settings placeholder */}
-        <section
-          className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] p-7"
-          style={{
-            boxShadow:
-              "inset 0 1px 0 0 rgba(255, 255, 255, 0.6), " +
-              "0 1px 2px 0 rgba(0, 0, 0, 0.04), " +
-              "0 4px 16px -4px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <h2 className="text-[17px] font-semibold tracking-tight text-[#0B0B0B] mb-1">
-            Pool Interest Earned
-          </h2>
-          <p className="text-sm text-[#6B7280] mb-4">
-            The dashboard&rsquo;s cumulative-interest number is currently driven by
-            the{" "}
-            <code className="rounded bg-[#F8F9FA] border border-[#E5E7EB] px-1.5 py-0.5 text-xs text-[#0B1933]">
-              LEHUMO_INTEREST_EARNED_ZAR
-            </code>{" "}
-            and{" "}
-            <code className="rounded bg-[#F8F9FA] border border-[#E5E7EB] px-1.5 py-0.5 text-xs text-[#0B1933]">
-              LEHUMO_INTEREST_HISTORY_JSON
-            </code>{" "}
-            Vercel env vars. An in-dashboard editor backed by Airtable is on the
-            next milestone.
-          </p>
-          <p className="text-xs text-[#9CA3AF]">
-            To update now: Vercel → Project Settings → Environment Variables →
-            edit the two variables above → redeploy.
-          </p>
-        </section>
+        <StatTile
+          label={`Paid (${currentMonth})`}
+          value={stats.activePaidThisMonth.toString()}
+          sub={`${stats.thisMonthRate}% of active`}
+        />
+        <StatTile
+          label="KYC Pending"
+          value={stats.kycPending.toString()}
+          sub={
+            kycDeadline.isPast
+              ? `${stats.kycComplete} verified · Overdue!`
+              : `${kycDeadline.daysRemaining} days to 15 Aug deadline`
+          }
+        />
+        <StatTile
+          label="Beneficiary Missing"
+          value={stats.beneficiaryMissing.toString()}
+          sub={`${stats.beneficiaryOnFile} on file`}
+        />
+        <StatTile
+          label="Password Set"
+          value={stats.passwordProtected.toString()}
+          sub={
+            stats.pipelineCount > 0
+              ? `${stats.passwordProtectedPct}% of ${stats.pipelineCount} active`
+              : undefined
+          }
+        />
       </div>
-    </AdminShell>
+
+      {/* Pool tracking + community health side-by-side on lg+. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <AdminPoolTracker stats={stats} />
+        <AdminCommunityHealth stats={stats} />
+      </div>
+
+      {/* Falling-behind snapshot — chase-up list without scanning the
+          full member table. */}
+      <AdminBehindSnapshot stats={stats} />
+    </div>
   );
 }
 

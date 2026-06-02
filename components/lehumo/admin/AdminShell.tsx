@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, LogOut, User } from "lucide-react";
+import { ArrowLeft, LogOut, Menu, User } from "lucide-react";
+
+import { AdminSidebar } from "./AdminSidebar";
 
 interface AdminShellProps {
   memberName: string;
@@ -15,10 +17,22 @@ interface AdminShellProps {
  * Light-theme shell used exclusively for the admin panel. Mirrors the
  * dark PortalShell (member dashboard) but on a white/snow background so
  * it matches the main Lime Pages marketing design system.
+ *
+ * Layout:
+ *   - Top header bar (sticky, full-width, hamburger on the left at <lg)
+ *   - Two-column body: persistent sidebar (lg+) | main content
+ *   - Mobile: sidebar collapses to a slide-in drawer behind the
+ *     hamburger button
+ *
+ * AdminSidebar is rendered directly here rather than passed as a
+ * slot — there's only one consumer, and tying the sidebar's open
+ * state to the header's hamburger requires shared state that lives
+ * in this component.
  */
 export function AdminShell({ memberName, children }: AdminShellProps) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -44,9 +58,22 @@ export function AdminShell({ memberName, children }: AdminShellProps) {
         transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
         className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl backdrop-saturate-150"
       >
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-8">
-          {/* Left: Back-to-portal + brand */}
+        <div className="mx-auto flex h-14 items-center justify-between px-4 md:px-8">
+          {/* Left: hamburger (<lg) + back-to-portal + brand */}
           <div className="flex items-center gap-3">
+            {/* Mobile nav toggle — visible below lg only. The lg+ side
+                has the persistent sidebar instead, so the hamburger
+                would be redundant there. */}
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation"
+              aria-expanded={mobileNavOpen}
+              className="lg:hidden -ml-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-[#6B7280] hover:bg-[#0B1933]/[0.04] hover:text-[#0B1933] transition-colors"
+            >
+              <Menu className="h-4.5 w-4.5" />
+            </button>
+
             <Link
               href="/lehumo/portal"
               className="flex items-center gap-1.5 text-[12px] font-medium text-[#6B7280] hover:text-[#0B1933] transition-colors"
@@ -103,11 +130,21 @@ export function AdminShell({ memberName, children }: AdminShellProps) {
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent" />
       </motion.header>
 
-      {/* Main content — slightly more vertical breathing room than the
-          old py-8 to match the portal's py-10 cadence. */}
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 md:px-8 py-10">
-        {children}
-      </main>
+      {/* Body — sidebar + main content. Sidebar is sticky inside its
+          own column so it doesn't scroll-disappear during long page
+          scrolls; main content gets the previous max-w-7xl padding
+          envelope so existing pages aren't squeezed by the column. */}
+      <div className="flex flex-1">
+        <AdminSidebar
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
+        />
+        <main className="flex-1 min-w-0">
+          <div className="mx-auto w-full max-w-7xl px-4 md:px-8 py-10">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

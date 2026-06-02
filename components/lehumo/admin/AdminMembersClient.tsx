@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from "react";
 
-import { AdminKycReviewSection } from "@/components/lehumo/admin/AdminKycReviewSection";
 import { AdminMemberTable } from "@/components/lehumo/admin/AdminMemberTable";
 import type { LehumoMember } from "@/lib/definitions";
 
@@ -12,35 +11,25 @@ interface AdminMembersClientProps {
 }
 
 /**
- * Single-source-of-truth client wrapper for the two member-list
- * sections on the admin dashboard.
+ * Client wrapper for the Members page's full member table.
  *
- * Why this exists:
- *   The KYC Review section and the full Member Table both render rows
- *   for the same underlying members. Each section has interactive
- *   actions (KYC approve/reject, beneficiary add/edit, contribution
- *   month toggles, status changes) that update Airtable AND need to
- *   reflect in the local UI without a full page reload.
+ * Owns the local `members` array so row-level mutations (status
+ * change, KYC quick-toggle, beneficiary add/edit, contribution
+ * month toggle, EFT log, password clear) update the table inline
+ * without a full page refresh.
  *
- *   Previously each section held its own `useState(initialMembers)`,
- *   which meant an action in section A wouldn't propagate to
- *   section B — and `router.refresh()` doesn't help, because
- *   useState ignores prop changes after the initial mount. Concrete
- *   bug it caused: adding a beneficiary from the KYC row's
- *   BeneficiaryBlock left the AdminMemberTable's beneficiary cell
- *   still showing "+ Add", inviting the admin to overwrite the
- *   freshly-saved record.
+ * The wrapper used to lift state across both the KYC review queue
+ * and this table — both were rendered on a single admin page so
+ * they needed to share a single members array for cross-section
+ * mutations to propagate. With the split into separate routes
+ * (Members vs KYC Review), each page has its own client wrapper
+ * managing its own local copy. Same pattern, simpler scope.
  *
- *   Lifting the member list state to this shared parent fixes that —
- *   both children read from the same `members` array and call the
- *   same `onMemberUpdate` callback when they patch a row.
- *
- * For NEW members (AdminAddMemberCard creates a fresh row and calls
- * router.refresh()), the parent page passes new `initialMembers`
- * with one extra entry. The page-level `key={members.length}`
- * remounts this wrapper, which re-seeds useState from the fresh
- * props. So the lifted-state model handles both updates (live, via
- * setMembers) and additions (via key-remount).
+ * `key={members.length}` in the parent re-mounts this wrapper
+ * when a new member is added — re-seeds the useState from the
+ * fresh prop. Without that, the new row wouldn't appear in the
+ * table until a manual refresh because useState ignores prop
+ * changes after the initial mount.
  */
 export function AdminMembersClient({
   initialMembers,
@@ -48,10 +37,6 @@ export function AdminMembersClient({
 }: AdminMembersClientProps) {
   const [members, setMembers] = useState<LehumoMember[]>(initialMembers);
 
-  // Single setter shared by both children. Each row-level action
-  // returns the freshly-PATCHed member from Airtable; we splice it
-  // into the array by id. Same shape as the previous per-section
-  // applyMemberUpdate so the call sites only need a prop rename.
   const onMemberUpdate = useCallback((updated: LehumoMember) => {
     setMembers((prev) =>
       prev.map((m) => (m.id === updated.id ? updated : m)),
@@ -59,22 +44,10 @@ export function AdminMembersClient({
   }, []);
 
   return (
-    <>
-      {/* KYC review queue — surfaces members waiting on document review
-          or chase-up. Sits above the member table so the most actionable
-          work is the first thing an admin sees on load. */}
-      <AdminKycReviewSection
-        members={members}
-        onMemberUpdate={onMemberUpdate}
-      />
-
-      {/* Full member table — every member in one searchable, filterable
-          grid with monthly contribution toggles. */}
-      <AdminMemberTable
-        members={members}
-        onMemberUpdate={onMemberUpdate}
-        currentMonth={currentMonth}
-      />
-    </>
+    <AdminMemberTable
+      members={members}
+      onMemberUpdate={onMemberUpdate}
+      currentMonth={currentMonth}
+    />
   );
 }
