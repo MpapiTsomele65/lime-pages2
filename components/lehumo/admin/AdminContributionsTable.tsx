@@ -52,23 +52,33 @@ export function AdminContributionsTable({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Newest unpaid first by default — the reconciliation workflow
-  // pulls toward Pending/Failed rows. Within same status, ordered
-  // by period descending so this month's work surfaces first.
+  // Paid first by default — the "who's settled this period?" view
+  // is the most common question an admin lands here with. Pending
+  // / Failed sit beneath the Paid block (still visible above the
+  // less-actionable Refunded / Waived). Within each status bucket,
+  // rows order alphabetically by member name so admins can scan
+  // a familiar order regardless of which period filter is on.
   const sorted = useMemo(() => {
+    const STATUS_PRIORITY: Record<string, number> = {
+      [CONTRIBUTION_STATUS.paid]: 0,
+      [CONTRIBUTION_STATUS.pending]: 1,
+      [CONTRIBUTION_STATUS.failed]: 1,
+      [CONTRIBUTION_STATUS.refunded]: 2,
+      [CONTRIBUTION_STATUS.waived]: 3,
+    };
     return [...rows].sort((a, b) => {
-      // Pending / Failed first, then everything else
-      const aUrgent =
-        a.status === CONTRIBUTION_STATUS.pending ||
-        a.status === CONTRIBUTION_STATUS.failed;
-      const bUrgent =
-        b.status === CONTRIBUTION_STATUS.pending ||
-        b.status === CONTRIBUTION_STATUS.failed;
-      if (aUrgent !== bUrgent) return aUrgent ? -1 : 1;
-      // Within same urgency bucket, newest period first
+      const aP = STATUS_PRIORITY[a.status] ?? 99;
+      const bP = STATUS_PRIORITY[b.status] ?? 99;
+      if (aP !== bP) return aP - bP;
+      // Same status bucket — alphabetical by member name.
+      const aName = memberById.get(a.memberId)?.fullName ?? "";
+      const bName = memberById.get(b.memberId)?.fullName ?? "";
+      const cmp = aName.localeCompare(bName);
+      if (cmp !== 0) return cmp;
+      // Same member, same status (rare): newest period first.
       return b.period.localeCompare(a.period);
     });
-  }, [rows]);
+  }, [rows, memberById]);
 
   async function handleStatusChange(
     row: LehumoContribution,

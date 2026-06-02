@@ -6,7 +6,7 @@
  *
  * Hosts:
  *   • The LogManualDepositCard at the top (primary action)
- *   • Filter pills bar (period / status / source / member)
+ *   • Filter pills bar (period range presets / status / source / member)
  *   • The AdminContributionsTable below, fed pre-filtered rows
  *
  * Filter state is URL-driven so the page is bookmarkable + the
@@ -15,13 +15,20 @@
  * Filter changes use `router.replace` (not push) so the back button
  * doesn't accumulate one history entry per keystroke.
  *
+ * Period filtering uses a `periodRange` param that accepts:
+ *   - "this-month" (default) — current SAST period only
+ *   - "past-4"               — current + 3 prior months
+ *   - "next-3"               — current + 2 upcoming months
+ *   - "all"                  — no period filter
+ *   - "YYYY-MM"              — a specific historical/future period
+ *
+ * Default = "this-month" so the page loads with ~30 rows
+ * (one per onboarded member) instead of the full ~1,800-row
+ * 60-month-schedule × cohort grid.
+ *
  * Lifts contribution state via the same pattern as
  * AdminMembersClient — local copy seeded from server, mutated
  * in-place via onContributionUpdate callback after admin actions.
- *
- * `key={contributions.length}` in the parent re-mounts this
- * wrapper when a manual deposit creates a new Paid row, so the
- * useState re-seeds from the fresh server-side snapshot.
  */
 
 import { useCallback, useMemo, useState } from "react";
@@ -31,6 +38,7 @@ import { X } from "lucide-react";
 import {
   CONTRIBUTION_SOURCE,
   CONTRIBUTION_STATUS,
+  LEHUMO_FIRST_DUE_PERIOD,
   formatMemberNumber,
   type LehumoContribution,
   type LehumoMember,
@@ -47,6 +55,89 @@ interface AdminContributionsClientProps {
 const STATUS_VALUES = Object.values(CONTRIBUTION_STATUS);
 const SOURCE_VALUES = Object.values(CONTRIBUTION_SOURCE);
 
+type PeriodPreset = "this-month" | "past-4" | "next-3" | "all";
+
+const PRESET_LABELS: Record<PeriodPreset, string> = {
+  "this-month": "This month",
+  "past-4": "Past 4 months",
+  "next-3": "Next 3 months",
+  all: "All periods",
+};
+
+const PRESET_ORDER: PeriodPreset[] = [
+  "this-month",
+  "past-4",
+  "next-3",
+  "all",
+];
+
+/**
+ * Compute the current SAST period (`YYYY-MM`). Pre-launch the
+ * "current" period anchors to the launch month (June 2026) so the
+ * filter still shows the upcoming schedule instead of empty pre-
+ * launch rows.
+ */
+function currentSastPeriod(): string {
+  const sastNow = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Africa/Johannesburg",
+  });
+  const sastPeriod = sastNow.slice(0, 7);
+  return sastPeriod < LEHUMO_FIRST_DUE_PERIOD
+    ? LEHUMO_FIRST_DUE_PERIOD
+    : sastPeriod;
+}
+
+/**
+ * Build a set of `YYYY-MM` strings spanning `fromOffset` to
+ * `toOffset` months relative to `anchor`. Both endpoints
+ * inclusive. Negative offsets walk backwards from anchor; positive
+ * walk forwards. Defensive against the edge of pre-launch — never
+ * returns periods earlier than LEHUMO_FIRST_DUE_PERIOD.
+ */
+function buildPeriodRange(
+  anchor: string,
+  fromOffset: number,
+  toOffset: number,
+): Set<string> {
+  const [yearStr, monthStr] = anchor.split("-");
+  const anchorYear = Number(yearStr);
+  const anchorMonth = Number(monthStr) - 1; // 0-indexed JS month
+  const out = new Set<string>();
+  for (let off = fromOffset; off <= toOffset; off++) {
+    const d = new Date(anchorYear, anchorMonth + off, 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const periodKey = `${year}-${month}`;
+    if (periodKey >= LEHUMO_FIRST_DUE_PERIOD) {
+      out.add(periodKey);
+    }
+  }
+  return out;
+}
+
+/**
+ * Resolve a `periodRange` URL value to the set of `YYYY-MM`
+ * periods it represents, or `null` if the filter is "no period
+ * constraint" (the "all" preset).
+ */
+function resolvePeriodSet(periodRange: string): Set<string> | null {
+  const current = currentSastPeriod();
+  switch (periodRange) {
+    case "all":
+      return null;
+    case "past-4":
+      // Current + 3 prior = 4 periods
+      return buildPeriodRange(current, -3, 0);
+    case "next-3":
+      // Current + 2 upcoming = 3 periods
+      return buildPeriodRange(current, 0, 2);
+    default:
+      if (/^\d{4}-\d{2}$/.test(periodRange)) return new Set([periodRange]);
+      // "this-month" + any unrecognised default → current only
+      return new Set([current]);
+  }
+}
+
 export function AdminContributionsClient({
   initialContributions,
   members,
@@ -54,11 +145,10 @@ export function AdminContributionsClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Filter state seeded from URL on every render. URL is the
-  // source of truth so navigating to a deep-link applies filters
-  // on first paint; setters call router.replace which re-renders
-  // this component with the new search params.
-  const filterPeriod = searchParams.get("period") ?? "";
+  // Period range — defaults to "this-month" when the URL is empty.
+  // Anything else falls through to resolvePeriodSet which handles
+  // both preset names and literal YYYY-MM strings.
+  const periodRange = searchParams.get("periodRange") ?? "this-month";
   const filterStatus = searchParams.get("status") ?? "";
   const filterSource = searchParams.get("source") ?? "";
   const filterMember = searchParams.get("member") ?? "";
@@ -75,6 +165,8 @@ export function AdminContributionsClient({
   }
 
   function clearAllFilters() {
+    // Reset takes us back to the default "this-month" view, not a
+    // truly empty URL — that's the most useful resting state.
     router.replace("?", { scroll: false });
   }
 
@@ -99,33 +191,36 @@ export function AdminContributionsClient({
     return map;
   }, [members]);
 
-  // ── Distinct periods that actually appear in the data, used to
-  //    populate the Period filter dropdown. Sorted desc so the most
-  //    recent period is at the top. ──
+  // Distinct periods that actually appear in the data, used to
+  // populate the "Specific month" dropdown.
   const periodOptions = useMemo(() => {
     const set = new Set<string>();
     for (const c of contributions) set.add(c.period);
     return [...set].sort((a, b) => b.localeCompare(a));
   }, [contributions]);
 
-  // ── Pre-filtered rows for the table ──
+  // Resolve the active period-range to a set of periods (or null
+  // for "no constraint"). Memoised against the URL value.
+  const activePeriodSet = useMemo(
+    () => resolvePeriodSet(periodRange),
+    [periodRange],
+  );
+
+  // Pre-filtered rows for the table.
   const filteredRows = useMemo(() => {
     return contributions.filter((c) => {
-      if (filterPeriod && c.period !== filterPeriod) return false;
+      if (activePeriodSet && !activePeriodSet.has(c.period)) return false;
       if (filterStatus && c.status !== filterStatus) return false;
       if (filterSource && c.source !== filterSource) return false;
       if (filterMember && c.memberId !== filterMember) return false;
       return true;
     });
-  }, [contributions, filterPeriod, filterStatus, filterSource, filterMember]);
+  }, [contributions, activePeriodSet, filterStatus, filterSource, filterMember]);
 
-  // ── When the LogManualDepositCard commits, we know the plan
-  //    touched specific contribution rows. The plan rows tell us
-  //    which contribution ids became Paid; the response shape from
-  //    logEftPayment doesn't actually give us the full updated
-  //    LehumoContribution objects (only the member + plan), so for
-  //    the moment we trigger a router.refresh() to repull the
-  //    server-side contributions snapshot. ──
+  // When the LogManualDepositCard commits, the plan touched
+  // specific contribution rows. Trigger a router.refresh() to
+  // repull the server-side snapshot so the table shows the new
+  // Paid rows.
   const onLogged = useCallback(
     (_member: LehumoMember, _plan: EftAllocationPlan) => {
       router.refresh();
@@ -134,10 +229,24 @@ export function AdminContributionsClient({
   );
 
   const selectedMember = filterMember ? memberById.get(filterMember) : null;
+  const isPresetSelected = (PRESET_ORDER as string[]).includes(periodRange);
+  const specificMonthValue = isPresetSelected ? "" : periodRange;
 
-  const hasActiveFilters = Boolean(
-    filterPeriod || filterStatus || filterSource || filterMember,
-  );
+  // Active-filter count (for the "Clear all" affordance + status text).
+  const activeFilterCount =
+    (periodRange !== "this-month" ? 1 : 0) +
+    (filterStatus ? 1 : 0) +
+    (filterSource ? 1 : 0) +
+    (filterMember ? 1 : 0);
+
+  // Human-readable label for the active period range — used in the
+  // "showing X of Y" status line so admins can sanity-check the
+  // filter without hunting through the chips.
+  const periodRangeLabel = useMemo(() => {
+    if (isPresetSelected) return PRESET_LABELS[periodRange as PeriodPreset];
+    if (/^\d{4}-\d{2}$/.test(periodRange)) return formatPeriodLong(periodRange);
+    return PRESET_LABELS["this-month"];
+  }, [periodRange, isPresetSelected]);
 
   return (
     <div className="space-y-8">
@@ -149,19 +258,52 @@ export function AdminContributionsClient({
 
       {/* Filter bar */}
       <section className="rounded-[20px] border border-[#EDEDED] bg-white p-4 md:p-5">
+        {/* Period preset chips — primary period switcher */}
+        <div className="flex flex-col gap-1.5 mb-4">
+          <span className="text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">
+            Period
+          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {PRESET_ORDER.map((preset) => {
+              const active =
+                preset === "this-month"
+                  ? !searchParams.get("periodRange") ||
+                    periodRange === "this-month"
+                  : periodRange === preset;
+              return (
+                <PresetChip
+                  key={preset}
+                  active={active}
+                  onClick={() =>
+                    setFilter(
+                      "periodRange",
+                      preset === "this-month" ? "" : preset,
+                    )
+                  }
+                >
+                  {PRESET_LABELS[preset]}
+                </PresetChip>
+              );
+            })}
+            <select
+              value={specificMonthValue}
+              onChange={(e) =>
+                setFilter("periodRange", e.target.value || "")
+              }
+              className="rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5 text-[12px] font-medium text-[#0B1933] outline-none focus:border-[#0B1933]/30 focus:ring-1 focus:ring-[#0B1933]/15 transition-colors cursor-pointer"
+            >
+              <option value="">Specific month…</option>
+              {periodOptions.map((p) => (
+                <option key={p} value={p}>
+                  {formatPeriodLong(p)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Secondary filters row */}
         <div className="flex flex-wrap items-end gap-3">
-          <FilterSelect
-            label="Period"
-            value={filterPeriod}
-            onChange={(v) => setFilter("period", v)}
-            options={[
-              { value: "", label: "All periods" },
-              ...periodOptions.map((p) => ({
-                value: p,
-                label: formatPeriodLong(p),
-              })),
-            ]}
-          />
           <FilterSelect
             label="Status"
             value={filterStatus}
@@ -197,18 +339,19 @@ export function AdminContributionsClient({
               </button>
             </div>
           )}
-          {hasActiveFilters && (
+          {activeFilterCount > 0 && (
             <button
               type="button"
               onClick={clearAllFilters}
               className="ml-auto text-[12.5px] text-[#6B7280] hover:text-[#0B1933] font-medium underline-offset-2 hover:underline transition-colors"
             >
-              Clear all filters
+              Reset to default
             </button>
           )}
         </div>
         <p className="mt-3 text-[11px] text-[#9CA3AF]">
           Showing {filteredRows.length} of {contributions.length} contributions
+          · {periodRangeLabel}
         </p>
       </section>
 
@@ -218,6 +361,30 @@ export function AdminContributionsClient({
         onContributionUpdate={onContributionUpdate}
       />
     </div>
+  );
+}
+
+function PresetChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+        active
+          ? "border-[#0B1933]/30 bg-[#0B1933] text-[#B8FF00] hover:bg-[#0B1933]/90"
+          : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933]"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
