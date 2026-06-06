@@ -127,11 +127,12 @@ export function OrphanContributionsBanner({
           <AlertTriangle className="h-4 w-4 text-[#92400E] mt-0.5 shrink-0" />
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-[#92400E]">
-              Unallocated payments ({orphans.length})
+              Unallocated payments — {orphans.length} of {orphans.length}
             </h3>
             <p className="text-xs text-[#92400E]/80 mt-0.5">
-              These payments don&apos;t match any active member. Click the
-              pencil to reassign each to the correct member &amp; period.
+              Paid contributions whose linked member record is missing or
+              deleted. Click the pencil to reassign each to the correct
+              member &amp; period.
             </p>
           </div>
         </div>

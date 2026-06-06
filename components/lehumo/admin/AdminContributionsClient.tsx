@@ -159,12 +159,22 @@ export function AdminContributionsClient({
     [members],
   );
 
-  // Orphans = rows whose memberId points at no live member. Computed
-  // from `contributions` (not `filteredRows`) so an orphan stays
-  // visible even when the admin filters by status / source / member.
-  // The whole point of the banner is to be impossible to miss.
+  // Orphans = Paid rows whose memberId points at no live member.
+  //
+  // We only surface PAID orphans because that's the actual problem
+  // worth admin attention — actual cash sitting in the trust account
+  // that hasn't been credited to anyone. A Pending or Failed row on
+  // a deleted member is just a stale schedule slot, not an
+  // unallocated payment — surfacing those was creating ~60 rows of
+  // noise that buried the one real issue.
+  //
+  // Computed from `contributions` (not `filteredRows`) so the banner
+  // stays visible regardless of the active period / status filter.
   const orphans = useMemo(
-    () => findOrphanContributions(contributions, liveMemberIds),
+    () =>
+      findOrphanContributions(contributions, liveMemberIds).filter(
+        (r) => r.status === CONTRIBUTION_STATUS.paid,
+      ),
     [contributions, liveMemberIds],
   );
 
@@ -332,17 +342,20 @@ export function AdminContributionsClient({
         </p>
       </section>
 
-      <OrphanContributionsBanner
-        orphans={orphans}
-        members={members}
-        onContributionUpdate={onContributionUpdate}
-      />
-
       <AdminContributionsRollupTable
         rows={filteredRows}
         members={members}
         memberById={memberById}
         activePeriodSet={activePeriodSet}
+        onContributionUpdate={onContributionUpdate}
+      />
+
+      {/* Orphan banner pinned to the bottom — the rollup view is the
+          primary daily surface, and orphans are the exceptional
+          "needs reassignment" cleanup that lives below it. */}
+      <OrphanContributionsBanner
+        orphans={orphans}
+        members={members}
         onContributionUpdate={onContributionUpdate}
       />
     </div>
