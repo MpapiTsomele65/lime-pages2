@@ -38,13 +38,18 @@ import { X } from "lucide-react";
 import {
   CONTRIBUTION_SOURCE,
   CONTRIBUTION_STATUS,
-  LEHUMO_FIRST_DUE_PERIOD,
   formatMemberNumber,
   type LehumoContribution,
   type LehumoMember,
 } from "@/lib/definitions";
 import type { EftAllocationPlan } from "@/lib/eft-allocation";
-import { AdminContributionsTable } from "./AdminContributionsTable";
+import {
+  buildPeriodRange,
+  currentSastPeriod,
+} from "@/lib/contribution-periods";
+import { findOrphanContributions } from "@/lib/contributions-aggregate";
+import { AdminContributionsRollupTable } from "./AdminContributionsRollupTable";
+import { OrphanContributionsBanner } from "./OrphanContributionsBanner";
 import { LogManualDepositCard } from "./LogManualDepositCard";
 
 interface AdminContributionsClientProps {
@@ -70,50 +75,6 @@ const PRESET_ORDER: PeriodPreset[] = [
   "next-3",
   "all",
 ];
-
-/**
- * Compute the current SAST period (`YYYY-MM`). Pre-launch the
- * "current" period anchors to the launch month (June 2026) so the
- * filter still shows the upcoming schedule instead of empty pre-
- * launch rows.
- */
-function currentSastPeriod(): string {
-  const sastNow = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Africa/Johannesburg",
-  });
-  const sastPeriod = sastNow.slice(0, 7);
-  return sastPeriod < LEHUMO_FIRST_DUE_PERIOD
-    ? LEHUMO_FIRST_DUE_PERIOD
-    : sastPeriod;
-}
-
-/**
- * Build a set of `YYYY-MM` strings spanning `fromOffset` to
- * `toOffset` months relative to `anchor`. Both endpoints
- * inclusive. Negative offsets walk backwards from anchor; positive
- * walk forwards. Defensive against the edge of pre-launch — never
- * returns periods earlier than LEHUMO_FIRST_DUE_PERIOD.
- */
-function buildPeriodRange(
-  anchor: string,
-  fromOffset: number,
-  toOffset: number,
-): Set<string> {
-  const [yearStr, monthStr] = anchor.split("-");
-  const anchorYear = Number(yearStr);
-  const anchorMonth = Number(monthStr) - 1; // 0-indexed JS month
-  const out = new Set<string>();
-  for (let off = fromOffset; off <= toOffset; off++) {
-    const d = new Date(anchorYear, anchorMonth + off, 1);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const periodKey = `${year}-${month}`;
-    if (periodKey >= LEHUMO_FIRST_DUE_PERIOD) {
-      out.add(periodKey);
-    }
-  }
-  return out;
-}
 
 /**
  * Resolve a `periodRange` URL value to the set of `YYYY-MM`
@@ -190,6 +151,22 @@ export function AdminContributionsClient({
     for (const m of members) map.set(m.id, m);
     return map;
   }, [members]);
+
+  // Set form of the live cohort's member IDs — used to detect orphan
+  // rows (rows whose memberId no longer matches any live member).
+  const liveMemberIds = useMemo(
+    () => new Set(members.map((m) => m.id)),
+    [members],
+  );
+
+  // Orphans = rows whose memberId points at no live member. Computed
+  // from `contributions` (not `filteredRows`) so an orphan stays
+  // visible even when the admin filters by status / source / member.
+  // The whole point of the banner is to be impossible to miss.
+  const orphans = useMemo(
+    () => findOrphanContributions(contributions, liveMemberIds),
+    [contributions, liveMemberIds],
+  );
 
   // Distinct periods that actually appear in the data, used to
   // populate the "Specific month" dropdown.
@@ -355,10 +332,17 @@ export function AdminContributionsClient({
         </p>
       </section>
 
-      <AdminContributionsTable
-        rows={filteredRows}
-        memberById={memberById}
+      <OrphanContributionsBanner
+        orphans={orphans}
         members={members}
+        onContributionUpdate={onContributionUpdate}
+      />
+
+      <AdminContributionsRollupTable
+        rows={filteredRows}
+        members={members}
+        memberById={memberById}
+        activePeriodSet={activePeriodSet}
         onContributionUpdate={onContributionUpdate}
       />
     </div>
