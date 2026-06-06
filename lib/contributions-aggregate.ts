@@ -24,18 +24,36 @@ import {
  */
 export interface MemberContributionRollup {
   memberId: string;
-  /** Sum of amountExpected on every in-scope row. */
+  /** Sum of amountExpected on every in-scope row. NOTE: when the
+   *  schedule is incomplete for this member (missingRowCount > 0)
+   *  this is undercounted — we can't synthesise the expected amount
+   *  for a row that doesn't exist yet. */
   expectedTotal: number;
   /** Sum of amountReceived on every in-scope row whose status is settled. */
   receivedTotal: number;
   /** max(0, expectedTotal - receivedTotal). Never negative — prepayments
    *  don't render as "owed -R1000". */
   balance: number;
-  /** How many rows fall in the scope at all. */
-  periodCount: number;
-  /** How many of those rows are "settled" — Paid, Refunded, or Waived.
-   *  Drives the rollup status pill + the "X / N paid" column. */
+  /** How many periods the active filter selected. Drives the
+   *  denominator in the "X / N paid" column.
+   *
+   *  When the filter is "All periods" (periodSet=null), we can't
+   *  know the universe size, so this falls back to the count of
+   *  rows that actually exist for the member. In every other case
+   *  this is the size of the filter's period set — e.g. "Next 3
+   *  months" gives expectedPeriodCount=3 for every member, even
+   *  if a particular member only has 2 of those 3 rows generated
+   *  in Airtable yet. */
+  expectedPeriodCount: number;
+  /** How many of the expected periods have settled rows — Paid,
+   *  Refunded, or Waived. Drives the numerator in the "X / N paid"
+   *  column + the rollup status pill. */
   paidCount: number;
+  /** How many periods the filter expected that have no row in
+   *  Airtable at all for this member. >0 means the schedule is
+   *  incomplete — admin should regenerate missing schedule rows.
+   *  Zero when filter is "All periods" (no expected universe). */
+  missingRowCount: number;
   /** Most recent paymentDate (YYYY-MM-DD) on a Paid row, or null. */
   lastPaymentDate: string | null;
   /** Amount on the most recent Paid row, or null. */
@@ -131,13 +149,37 @@ export function aggregateMemberContributions(
     }
   }
 
-  const periodCount = inScope.length;
+  // The "expected" denominator. When the filter selects a specific
+  // period set (e.g. "Next 3 months" → 3 periods), every member's
+  // denominator is the SIZE of that set — not the count of rows
+  // they happen to have in Airtable. This is what makes the X/N
+  // display consistent across the cohort regardless of schedule
+  // generation gaps.
+  //
+  // For "All periods" (periodSet=null) there's no universe to
+  // measure against, so we fall back to existing-row count.
+  const expectedPeriodCount = periodSet?.size ?? inScope.length;
+  const existingRowCount = inScope.length;
+  const missingRowCount = Math.max(
+    0,
+    expectedPeriodCount - existingRowCount,
+  );
   const balance = Math.max(0, expectedTotal - receivedTotal);
 
+  // Status bucket priority:
+  //   - No expected periods at all → no-data.
+  //   - All expected periods settled (even if some rows are missing
+  //     they'd still be unpaid by definition) → paid only when
+  //     paidCount === expectedPeriodCount AND no rows are missing.
+  //   - Any paid → partial.
+  //   - None paid → pending.
   let rollupStatus: RollupStatus;
-  if (periodCount === 0) {
+  if (expectedPeriodCount === 0) {
     rollupStatus = "no-data";
-  } else if (paidCount === periodCount) {
+  } else if (
+    paidCount === expectedPeriodCount &&
+    missingRowCount === 0
+  ) {
     rollupStatus = "paid";
   } else if (paidCount > 0) {
     rollupStatus = "partial";
@@ -150,7 +192,8 @@ export function aggregateMemberContributions(
     expectedTotal,
     receivedTotal,
     balance,
-    periodCount,
+    expectedPeriodCount,
+    missingRowCount,
     paidCount,
     lastPaymentDate,
     lastPaymentAmount,

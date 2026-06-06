@@ -22,7 +22,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 
 import {
   formatMemberNumber,
@@ -256,15 +256,30 @@ export function AdminContributionsRollupTable({
                   </div>
                 </div>
 
-                {/* Status rollup pill */}
-                <div>
+                {/* Status rollup pill + missing-schedule warning */}
+                <div className="flex items-center gap-1.5">
                   <RollupStatusPill status={rollup.rollupStatus} />
+                  {rollup.missingRowCount > 0 && (
+                    <span
+                      className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-[#F59E0B]/15 text-[#92400E]"
+                      title={`Schedule incomplete — ${rollup.missingRowCount} ${
+                        rollup.missingRowCount === 1 ? "month" : "months"
+                      } missing for this member. Regenerate the schedule to fix.`}
+                      aria-label={`Schedule incomplete — ${rollup.missingRowCount} months missing`}
+                    >
+                      <AlertTriangle className="h-2.5 w-2.5" />
+                    </span>
+                  )}
                 </div>
 
-                {/* Paid count — "2/4" so admin sees exactly how
-                    many periods in the active filter have settled */}
+                {/* Paid count — "2/4" against the filter's period
+                    count, not the count of rows that happen to exist
+                    in Airtable. Keeps the denominator consistent
+                    across the cohort even when some members'
+                    schedule rows are missing — those gaps are
+                    surfaced via the warning chip on the status pill. */}
                 <div className="text-right tabular-nums text-xs text-[#6B7280]">
-                  {rollup.periodCount === 0 ? (
+                  {rollup.expectedPeriodCount === 0 ? (
                     "—"
                   ) : (
                     <span>
@@ -272,7 +287,7 @@ export function AdminContributionsRollupTable({
                         {rollup.paidCount}
                       </span>
                       <span className="text-[#9CA3AF]">
-                        /{rollup.periodCount}
+                        /{rollup.expectedPeriodCount}
                       </span>
                     </span>
                   )}
