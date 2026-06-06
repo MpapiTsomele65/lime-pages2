@@ -93,6 +93,33 @@ export function AdminMemberTable({
     if (passwordProtectedOnly) {
       rows = rows.filter((m) => Boolean(m.passwordHash));
     }
+
+    // Sort by member completeness so the most active + fully set-up
+    // members float to the top and non-active members sink to the
+    // bottom. Three-level comparison:
+    //   1. Status tier — Active first, Exited last.
+    //   2. Completeness score — KYC Complete (+2) + Beneficiary (+1).
+    //      Higher score = higher in the list within the same tier.
+    //   3. Alphabetical name — stable tiebreaker.
+    const STATUS_TIER: Record<string, number> = {
+      [MEMBER_STATUS.active]:     0,
+      [MEMBER_STATUS.onHold]:     1,
+      [MEMBER_STATUS.onboarding]: 2,
+      [MEMBER_STATUS.prospect]:   3,
+      [MEMBER_STATUS.exited]:     4,
+    };
+    const completenessScore = (m: (typeof rows)[number]) =>
+      (m.kycStatus === KYC_STATUS.complete ? 2 : 0) +
+      (hasBeneficiary(m) ? 1 : 0);
+
+    rows = [...rows].sort((a, b) => {
+      const tierDiff = (STATUS_TIER[a.status] ?? 99) - (STATUS_TIER[b.status] ?? 99);
+      if (tierDiff !== 0) return tierDiff;
+      const scoreDiff = completenessScore(b) - completenessScore(a); // higher score first
+      if (scoreDiff !== 0) return scoreDiff;
+      return a.fullName.localeCompare(b.fullName);
+    });
+
     return rows;
   }, [
     members,
