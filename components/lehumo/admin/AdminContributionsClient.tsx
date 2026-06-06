@@ -358,6 +358,7 @@ export function AdminContributionsClient({
       <AdminContributionsTable
         rows={filteredRows}
         memberById={memberById}
+        members={members}
         onContributionUpdate={onContributionUpdate}
       />
     </div>

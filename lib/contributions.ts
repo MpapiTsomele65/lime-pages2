@@ -536,6 +536,83 @@ export async function updateContribution(
 }
 
 /**
+ * Reassign a contribution row to a different (member, period) slot.
+ *
+ * The contribution table's primary field is a composite key:
+ *   `{MemberNumber}-{Period}` — e.g. `Leh22-2026-06`
+ *
+ * When an admin moves a payment to a different member or month (e.g.
+ * fixing an orphan Paystack contribution whose original linked member
+ * was deleted), the key has to be recomputed atomically with the
+ * member link + period write. This helper does that in one PATCH
+ * and rejects up-front if the destination slot is already occupied
+ * by a different row — no silent data overwrites.
+ *
+ * Caller provides:
+ *   - `newMemberId`     — Airtable record ID of the destination member
+ *   - `newMemberNumber` — that member's Leh-number (for key recomputation)
+ *   - `newPeriod`       — destination period (`YYYY-MM`)
+ *
+ * For period-only changes, pass the current `memberId` and
+ * `memberNumber` unchanged. For member-only changes, pass the
+ * current `period`. The helper PATCHes all three fields plus
+ * `updatedAt` regardless — keeping every reassignment a single
+ * round trip.
+ *
+ * Throws on:
+ *   - Destination key already in use by a DIFFERENT row
+ *   - Airtable HTTP errors
+ */
+export async function reassignContribution(
+  recordId: string,
+  newMemberId: string,
+  newMemberNumber: number,
+  newPeriod: string,
+): Promise<LehumoContribution> {
+  // Validate the period shape up front so we don't write garbage
+  // into the primary field.
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(newPeriod)) {
+    throw new Error(
+      `Invalid period "${newPeriod}" — expected YYYY-MM (e.g. 2026-06)`,
+    );
+  }
+
+  const newKey = buildContributionKey(newMemberNumber, newPeriod);
+
+  // Collision check — fetch by key, reject if another row already
+  // owns that slot. Idempotent if the row already has the same key
+  // (no-op reassignment is fine).
+  const existing = await getContributionByKey(newKey);
+  if (existing && existing.id !== recordId) {
+    throw new Error(
+      `${newKey} already has a row — reset that row first or pick a different period.`,
+    );
+  }
+
+  const fields: Record<string, unknown> = {
+    [CONTRIBUTION_FIELDS.contributionKey]: newKey,
+    [CONTRIBUTION_FIELDS.member]: [newMemberId],
+    [CONTRIBUTION_FIELDS.period]: newPeriod,
+    [CONTRIBUTION_FIELDS.updatedAt]: nowSastIso(),
+  };
+
+  const res = await fetch(getContribUrl(recordId), {
+    method: "PATCH",
+    headers: getHeaders(),
+    body: JSON.stringify({ fields, returnFieldsByFieldId: true }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `Airtable reassignContribution error: ${res.status} — ${body}`,
+    );
+  }
+
+  return parseContribution(await res.json());
+}
+
+/**
  * Mark a contribution paid and record the payment metadata in one PATCH.
  *
  * Sets Status=Paid, fills in amountReceived / source / reference /

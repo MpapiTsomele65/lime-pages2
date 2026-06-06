@@ -34,9 +34,11 @@ import {
   KYC_STATUS,
   CONTRIBUTION_STATUS,
   BeneficiaryFormSchema,
+  CONTRIBUTION_SOURCE,
   emailField,
   formatMemberNumber,
   todayDate,
+  type ContributionSource,
   type ContributionStatus,
   type LehumoContribution,
   type LehumoMember,
@@ -45,6 +47,8 @@ import {
   type BeneficiaryFormData,
 } from "@/lib/definitions";
 import {
+  getContributionById,
+  reassignContribution,
   reconcileContribution,
   updateContribution,
 } from "@/lib/contributions";
@@ -754,6 +758,156 @@ export async function adminReconcileContribution(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Reconcile failed",
+    };
+  }
+}
+
+// ── Edit / reassign a contribution row ────────────────────────────
+//
+// Routes through one of two underlying helpers based on what the
+// admin changed:
+//
+//   1. Member or Period changed (the composite-key flow) →
+//      reassignContribution(). Handles uniqueness check + key
+//      recomputation in one PATCH.
+//   2. Anything else (status, source, amounts, reference, date,
+//      notes) → updateContribution(). Plain field PATCH.
+//
+// If BOTH a reassignment AND field updates are in the same patch,
+// reassignment runs first (so the row is in the right slot before
+// the metadata write lands). The metadata PATCH is a separate
+// follow-up call — same record id, just the non-reassignment
+// fields.
+
+const ContributionSourceValues = Object.values(
+  CONTRIBUTION_SOURCE,
+) as [string, ...string[]];
+
+const AdminUpdateContributionSchema = z
+  .object({
+    status: z.enum(ContributionStatusValues).optional(),
+    amountExpected: z.number().min(0).optional(),
+    // null clears the field; number sets it. Empty string from the
+    // form gets converted to null upstream by the caller before this
+    // schema runs.
+    amountReceived: z.number().min(0).nullable().optional(),
+    source: z.enum(ContributionSourceValues).nullable().optional(),
+    paymentReference: z.string().max(200).optional(),
+    paymentDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+      .optional(),
+    notes: z.string().max(500).optional(),
+    // Reassignment block — if either of these differs from the
+    // current row, the server routes through reassignContribution.
+    memberId: z.string().startsWith("rec").optional(),
+    period: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Period must be YYYY-MM")
+      .optional(),
+  })
+  .strict();
+
+export type AdminUpdateContributionInput = z.input<
+  typeof AdminUpdateContributionSchema
+>;
+
+export async function adminUpdateContribution(
+  recordId: string,
+  patch: AdminUpdateContributionInput,
+): Promise<ContributionActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as ContributionActionResult;
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  const parsed = AdminUpdateContributionSchema.safeParse(patch);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+  const input = parsed.data;
+
+  try {
+    // Read the current row so we can detect "did member or period
+    // actually change?" — only the diff routes through the
+    // reassignment path.
+    const current = await getContributionById(recordId);
+    if (!current) return { ok: false, error: "Contribution not found" };
+
+    const memberChanged =
+      input.memberId !== undefined && input.memberId !== current.memberId;
+    const periodChanged =
+      input.period !== undefined && input.period !== current.period;
+    const needsReassign = memberChanged || periodChanged;
+
+    let row: LehumoContribution = current;
+
+    if (needsReassign) {
+      // Resolve the target memberId — current row's if unchanged,
+      // otherwise from the patch.
+      const targetMemberId = memberChanged
+        ? (input.memberId as string)
+        : current.memberId;
+      // Resolve the canonical memberNumber server-side (don't trust
+      // the client's view of the cohort).
+      const targetMember = await getMemberById(targetMemberId);
+      if (!targetMember) {
+        return {
+          ok: false,
+          error:
+            "Target member not found — they may have been deleted. Pick another member.",
+        };
+      }
+      const targetPeriod = periodChanged
+        ? (input.period as string)
+        : current.period;
+
+      row = await reassignContribution(
+        recordId,
+        targetMemberId,
+        targetMember.memberNumber,
+        targetPeriod,
+      );
+    }
+
+    // Apply the non-reassignment fields (if any) as a separate PATCH.
+    // `updateContribution`'s patch type doesn't include memberId /
+    // period / contributionKey, so the destructured shape below is
+    // safe to forward.
+    const fieldPatch: Parameters<typeof updateContribution>[1] = {};
+    // Cast — the Zod enum is built from `Object.values(CONTRIBUTION_STATUS)`
+    // which TypeScript widens to `string`, but the runtime values are
+    // guaranteed to be valid ContributionStatus members by the enum check.
+    if (input.status !== undefined)
+      fieldPatch.status = input.status as ContributionStatus;
+    if (input.amountExpected !== undefined)
+      fieldPatch.amountExpected = input.amountExpected;
+    if (input.amountReceived !== undefined)
+      // Pass null through as 0 — Airtable's number field doesn't
+      // store null, but 0 reads as "unset" everywhere in the UI.
+      fieldPatch.amountReceived = input.amountReceived ?? 0;
+    if (input.source !== undefined && input.source !== null)
+      fieldPatch.source = input.source as ContributionSource;
+    if (input.paymentReference !== undefined)
+      fieldPatch.paymentReference = input.paymentReference;
+    if (input.paymentDate !== undefined)
+      fieldPatch.paymentDate = input.paymentDate;
+    if (input.notes !== undefined) fieldPatch.notes = input.notes;
+
+    if (Object.keys(fieldPatch).length > 0) {
+      row = await updateContribution(recordId, fieldPatch);
+    }
+
+    return { ok: true, contribution: row };
+  } catch (err) {
+    console.error("adminUpdateContribution error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Update failed",
     };
   }
 }

@@ -15,12 +15,10 @@
  */
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Check, ExternalLink, Loader2, ShieldCheck } from "lucide-react";
+import { Check, Loader2, Pencil, ShieldCheck } from "lucide-react";
 
 import {
   CONTRIBUTION_STATUS,
-  CONTRIBUTION_SOURCE,
   formatMemberNumber,
   type ContributionStatus,
   type LehumoContribution,
@@ -28,14 +26,21 @@ import {
 } from "@/lib/definitions";
 import {
   adminReconcileContribution,
+  adminUpdateContribution,
   adminUpdateContributionStatus,
+  type AdminUpdateContributionInput,
 } from "@/app/lehumo/portal/admin/actions";
+import { EditContributionDialog } from "./EditContributionDialog";
 
 interface AdminContributionsTableProps {
   rows: LehumoContribution[];
   /** Members keyed by Airtable record ID so each row can resolve
    *  its member's display name + number without a per-row lookup. */
   memberById: Map<string, LehumoMember>;
+  /** Full member list — needed by the edit dialog's MemberCombobox
+   *  to support reassignment. memberById is fine for label lookup
+   *  but the combobox needs the array form for typeahead. */
+  members: LehumoMember[];
   onContributionUpdate: (updated: LehumoContribution) => void;
 }
 
@@ -44,6 +49,7 @@ const STATUS_VALUES = Object.values(CONTRIBUTION_STATUS) as ContributionStatus[]
 export function AdminContributionsTable({
   rows,
   memberById,
+  members,
   onContributionUpdate,
 }: AdminContributionsTableProps) {
   // Per-row in-flight tracker so the inline select + button can
@@ -51,6 +57,11 @@ export function AdminContributionsTable({
   // global "busy" state that would freeze every other row too.
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit dialog state — null = closed. We keep the row on local
+  // state so the dialog has stable data while the parent's `rows`
+  // prop reshuffles (e.g. a status change resorting the table).
+  const [editingRow, setEditingRow] = useState<LehumoContribution | null>(null);
 
   // Paid first by default — the "who's settled this period?" view
   // is the most common question an admin lands here with. Pending
@@ -101,6 +112,25 @@ export function AdminContributionsTable({
     }
   }
 
+  /**
+   * Edit dialog submit handler. Calls the admin server action with
+   * the diffed patch, then either splices the updated row into
+   * parent state + closes the dialog, or surfaces the server error
+   * back into the dialog so the admin can fix + retry.
+   */
+  async function handleEditSubmit(
+    row: LehumoContribution,
+    patch: AdminUpdateContributionInput,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    const res = await adminUpdateContribution(row.id, patch);
+    if (!res.ok) {
+      return { ok: false, error: res.error };
+    }
+    onContributionUpdate(res.contribution);
+    setEditingRow(null);
+    return { ok: true };
+  }
+
   async function handleReconcile(row: LehumoContribution) {
     setBusyId(row.id);
     setError(null);
@@ -145,13 +175,16 @@ export function AdminContributionsTable({
               <th className="px-3 py-3 font-medium min-w-[180px]">Reference</th>
               <th className="px-3 py-3 font-medium min-w-[120px]">Date</th>
               <th className="px-3 py-3 font-medium min-w-[140px]">Reconciled</th>
+              <th className="px-3 py-3 font-medium min-w-[60px] text-center">
+                Edit
+              </th>
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   className="px-4 py-12 text-center text-sm text-[#6B7280]"
                 >
                   No contributions match the active filters.
@@ -272,6 +305,23 @@ export function AdminContributionsTable({
                         <span className="text-xs text-[#9CA3AF]">—</span>
                       )}
                     </td>
+
+                    {/* Edit — opens the full-row editor dialog.
+                        Available on every row so admins can backfill
+                        references on Adjustment rows, fix amounts,
+                        or reassign orphan rows to the right member. */}
+                    <td className="px-3 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setEditingRow(row)}
+                        disabled={isBusy}
+                        className="inline-flex items-center justify-center rounded-md border border-[#E5E7EB] bg-white h-7 w-7 text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] hover:bg-[#F8F9FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Edit contribution"
+                        aria-label="Edit contribution"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
                   </tr>
                 );
               })
@@ -279,6 +329,13 @@ export function AdminContributionsTable({
           </tbody>
         </table>
       </div>
+
+      <EditContributionDialog
+        contribution={editingRow}
+        members={members}
+        onSubmit={handleEditSubmit}
+        onCancel={() => setEditingRow(null)}
+      />
     </section>
   );
 }
