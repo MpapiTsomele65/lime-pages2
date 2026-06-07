@@ -479,14 +479,21 @@ export function ContributionReminderCard({
   let nextDueLabel: string | null;
 
   if (richShape && contributionRows && currentPeriod) {
-    const sorted = [...contributionRows].sort((a, b) =>
-      a.period.localeCompare(b.period),
-    );
-    const currentRow = sorted.find((r) => r.period === currentPeriod);
+    // Only the canonical schedule counts. Pre-launch rows (period <
+    // LEHUMO_FIRST_DUE_PERIOD — e.g. a stray 2026-05) must never drive
+    // "next due" or "all paid", otherwise a member who's paid June
+    // sees an incoherent "Next due: May 2026". Mirrors the same guard
+    // in computeContributionLedger (lib/contribution-ledger.ts).
+    const scheduled = [...contributionRows]
+      .filter((r) => r.period >= LEHUMO_FIRST_DUE_PERIOD)
+      .sort((a, b) => a.period.localeCompare(b.period));
+    const currentRow = scheduled.find((r) => r.period === currentPeriod);
     currentMonthPaid = currentRow?.status === CONTRIBUTION_STATUS.paid;
-    allPaid = sorted.every((r) => r.status === CONTRIBUTION_STATUS.paid);
+    allPaid =
+      scheduled.length > 0 &&
+      scheduled.every((r) => r.status === CONTRIBUTION_STATUS.paid);
     monthFull = periodToLong(currentPeriod);
-    const nextUnpaid = sorted.find(
+    const nextUnpaid = scheduled.find(
       (r) => r.status !== CONTRIBUTION_STATUS.paid,
     );
     nextDueLabel = nextUnpaid ? periodToShort(nextUnpaid.period) : null;
