@@ -125,13 +125,22 @@ export function computeAdminStats(
   //    sorted by how many months they're behind (most behind first) so the
   //    chase-up list surfaces the worst offenders at the top. Pre-launch
   //    this list is empty by definition — no month is overdue yet. ──
+  // Months DUE so far are counted from the fund's first collection
+  // month (June 2026, index 5) — NOT from January. Counting from Jan
+  // made a member who'd missed only June read as "6 months behind" in
+  // the very first month. Same 2026-launch assumption as the
+  // preLaunchMode gate above (the only year this matters). Clamp at 0
+  // so the figure can never go negative.
+  const LAUNCH_MONTH_INDEX = 5; // June (0-indexed)
+  const monthsDueSoFar = Math.max(0, currentMonthIndex - LAUNCH_MONTH_INDEX + 1);
+
   const behindNow = preLaunchMode
     ? []
     : activeMembers
         .filter((m) => !m.contributions[currentMonth])
         .map((m) => {
           const paidYTD = monthsPaidYearToDate(m, currentMonthIndex);
-          const monthsBehindYTD = currentMonthIndex + 1 - paidYTD;
+          const monthsBehindYTD = Math.max(0, monthsDueSoFar - paidYTD);
           return { member: m, paidYTD, monthsBehindYTD };
         })
         .sort((a, b) => b.monthsBehindYTD - a.monthsBehindYTD);
