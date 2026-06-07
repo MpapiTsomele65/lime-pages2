@@ -160,6 +160,11 @@ export function PaymentMethodDialog({
                       Instant via Paystack. R1,000 contribution + R35 (3.5%)
                       collection fee, so your full R1,000 reaches the trust.
                     </p>
+                    <p className="mt-1.5 text-[11.5px] text-[#46CDCF]/90 leading-relaxed">
+                      Rather not pay the fee? Use{" "}
+                      <span className="font-semibold">Manual EFT</span> below —
+                      R1,000 flat, no charge.
+                    </p>
                   </div>
                 </div>
 
