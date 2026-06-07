@@ -193,16 +193,34 @@ export function AdminContributionsClient({
     [periodRange],
   );
 
-  // Pre-filtered rows for the table.
-  const filteredRows = useMemo(() => {
-    return contributions.filter((c) => {
-      if (activePeriodSet && !activePeriodSet.has(c.period)) return false;
-      if (filterStatus && c.status !== filterStatus) return false;
-      if (filterSource && c.source !== filterSource) return false;
-      if (filterMember && c.memberId !== filterMember) return false;
-      return true;
-    });
+  // Which members the rollup should display.
+  //
+  // The rollup table receives the FULL contribution set + the active
+  // period set, and computes each member's totals internally. The
+  // status / source / member filters narrow WHICH members appear
+  // (a member shows if they have ≥1 row matching the filter inside
+  // the active period) — they do NOT strip the rows fed to the
+  // aggregation, so a shown member's totals stay honest (filtering
+  // by "Pending" no longer makes a paid member read as R0 received).
+  //
+  // null = no row-level filter active → show the whole cohort.
+  const visibleMemberIds = useMemo(() => {
+    const hasRowFilter = Boolean(filterStatus || filterSource || filterMember);
+    if (!hasRowFilter) return null;
+    const set = new Set<string>();
+    for (const c of contributions) {
+      if (activePeriodSet && !activePeriodSet.has(c.period)) continue;
+      if (filterStatus && c.status !== filterStatus) continue;
+      if (filterSource && c.source !== filterSource) continue;
+      if (filterMember && c.memberId !== filterMember) continue;
+      set.add(c.memberId);
+    }
+    return set;
   }, [contributions, activePeriodSet, filterStatus, filterSource, filterMember]);
+
+  // Total cohort size vs. shown count for the status line.
+  const shownMemberCount =
+    visibleMemberIds === null ? members.length : visibleMemberIds.size;
 
   // When the LogManualDepositCard commits, the plan touched
   // specific contribution rows. Trigger a router.refresh() to
@@ -337,16 +355,16 @@ export function AdminContributionsClient({
           )}
         </div>
         <p className="mt-3 text-[11px] text-[#9CA3AF]">
-          Showing {filteredRows.length} of {contributions.length} contributions
-          · {periodRangeLabel}
+          Showing {shownMemberCount} of {members.length} members ·{" "}
+          {periodRangeLabel}
         </p>
       </section>
 
       <AdminContributionsRollupTable
-        rows={filteredRows}
+        allRows={contributions}
         members={members}
-        memberById={memberById}
         activePeriodSet={activePeriodSet}
+        visibleMemberIds={visibleMemberIds}
         onContributionUpdate={onContributionUpdate}
       />
 

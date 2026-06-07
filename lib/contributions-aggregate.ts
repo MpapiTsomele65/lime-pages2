@@ -34,26 +34,29 @@ export interface MemberContributionRollup {
   /** max(0, expectedTotal - receivedTotal). Never negative — prepayments
    *  don't render as "owed -R1000". */
   balance: number;
-  /** How many periods the active filter selected. Drives the
-   *  denominator in the "X / N paid" column.
+  /** How many periods drive the "X / N paid" denominator.
    *
-   *  When the filter is "All periods" (periodSet=null), we can't
-   *  know the universe size, so this falls back to the count of
-   *  rows that actually exist for the member. In every other case
-   *  this is the size of the filter's period set — e.g. "Next 3
-   *  months" gives expectedPeriodCount=3 for every member, even
-   *  if a particular member only has 2 of those 3 rows generated
-   *  in Airtable yet. */
+   *  For a bounded filter ("Next 3 months" → 3) this is the size of
+   *  the filter's period set — consistent across the cohort even if
+   *  a member's rows for some of those periods aren't generated yet.
+   *
+   *  For "All periods" (periodSet=null) this falls back to the
+   *  canonical 60-month schedule size, so a member with only 1 row
+   *  reads "1 / 60" (truthful) rather than "1 / 1" (misleading). */
   expectedPeriodCount: number;
   /** How many of the expected periods have settled rows — Paid,
    *  Refunded, or Waived. Drives the numerator in the "X / N paid"
    *  column + the rollup status pill. */
   paidCount: number;
-  /** How many periods the filter expected that have no row in
-   *  Airtable at all for this member. >0 means the schedule is
-   *  incomplete — admin should regenerate missing schedule rows.
-   *  Zero when filter is "All periods" (no expected universe). */
-  missingRowCount: number;
+  /** How many of the canonical 60-month schedule periods this member
+   *  has NO row for in Airtable. This is ABSOLUTE — measured against
+   *  the full Jun 2026 → May 2031 universe, independent of the active
+   *  filter — so the "Fix N" repair chip shows on every filter
+   *  (including "All periods"). >0 means the schedule is incomplete
+   *  and admin should regenerate the missing rows. Zero when the
+   *  caller doesn't pass a canonicalSet (e.g. the expand-strip
+   *  aggregation, which doesn't need it). */
+  canonicalMissingCount: number;
   /** Most recent paymentDate (YYYY-MM-DD) on a Paid row, or null. */
   lastPaymentDate: string | null;
   /** Amount on the most recent Paid row, or null. */
@@ -110,14 +113,18 @@ export function aggregateMemberContributions(
   rows: LehumoContribution[],
   memberId: string,
   periodSet: Set<string> | null,
+  canonicalSet?: Set<string>,
 ): MemberContributionRollup {
-  // Pull just this member's rows, then filter to the active period
-  // set (if any). Two passes is fine here — the typical cohort is
-  // ~30 members × ≤60 periods, well under any perf concern.
-  const inScope = rows.filter(
-    (r) =>
-      r.memberId === memberId &&
-      (periodSet === null || periodSet.has(r.period)),
+  // IMPORTANT: `rows` must be the member's FULL row set (i.e. pass
+  // ALL contributions, not a pre-period-filtered slice). The period
+  // window is applied here, internally — passing pre-filtered rows
+  // would corrupt both the canonical-completeness check and the
+  // expand strip.
+  const memberRows = rows.filter((r) => r.memberId === memberId);
+
+  // In-scope = this member's rows within the active period filter.
+  const inScope = memberRows.filter(
+    (r) => periodSet === null || periodSet.has(r.period),
   );
 
   let expectedTotal = 0;
@@ -149,36 +156,41 @@ export function aggregateMemberContributions(
     }
   }
 
-  // The "expected" denominator. When the filter selects a specific
-  // period set (e.g. "Next 3 months" → 3 periods), every member's
-  // denominator is the SIZE of that set — not the count of rows
-  // they happen to have in Airtable. This is what makes the X/N
-  // display consistent across the cohort regardless of schedule
-  // generation gaps.
-  //
-  // For "All periods" (periodSet=null) there's no universe to
-  // measure against, so we fall back to existing-row count.
-  const expectedPeriodCount = periodSet?.size ?? inScope.length;
-  const existingRowCount = inScope.length;
-  const missingRowCount = Math.max(
-    0,
-    expectedPeriodCount - existingRowCount,
-  );
+  // The "X / N paid" denominator. Bounded filter → its period count.
+  // "All periods" → the canonical 60-month size (truthful universe),
+  // falling back to existing-row count only if no canonicalSet was
+  // passed (e.g. the expand-strip call).
+  const expectedPeriodCount =
+    periodSet?.size ?? canonicalSet?.size ?? inScope.length;
   const balance = Math.max(0, expectedTotal - receivedTotal);
 
+  // Canonical schedule-completeness — ABSOLUTE, measured against the
+  // full Jun 2026 → May 2031 universe using ALL the member's rows
+  // (not just the in-scope slice). Drives the "Fix N" repair chip,
+  // visible on every filter. Zero when no canonicalSet is supplied.
+  let canonicalMissingCount = 0;
+  if (canonicalSet) {
+    const memberPeriods = new Set(memberRows.map((r) => r.period));
+    let covered = 0;
+    for (const p of canonicalSet) {
+      if (memberPeriods.has(p)) covered += 1;
+    }
+    canonicalMissingCount = canonicalSet.size - covered;
+  }
+
   // Status bucket priority:
-  //   - No expected periods at all → no-data.
-  //   - All expected periods settled (even if some rows are missing
-  //     they'd still be unpaid by definition) → paid only when
-  //     paidCount === expectedPeriodCount AND no rows are missing.
-  //   - Any paid → partial.
-  //   - None paid → pending.
+  //   - Member has zero rows at all → no-data.
+  //   - Fully paid AND schedule complete → paid. The canonical guard
+  //     stops a member with one paid row (and 59 missing) from
+  //     reading green "Paid" on the "All periods" view.
+  //   - Any settled row → partial.
+  //   - None settled → pending.
   let rollupStatus: RollupStatus;
-  if (expectedPeriodCount === 0) {
+  if (memberRows.length === 0) {
     rollupStatus = "no-data";
   } else if (
     paidCount === expectedPeriodCount &&
-    missingRowCount === 0
+    canonicalMissingCount === 0
   ) {
     rollupStatus = "paid";
   } else if (paidCount > 0) {
@@ -193,7 +205,7 @@ export function aggregateMemberContributions(
     receivedTotal,
     balance,
     expectedPeriodCount,
-    missingRowCount,
+    canonicalMissingCount,
     paidCount,
     lastPaymentDate,
     lastPaymentAmount,

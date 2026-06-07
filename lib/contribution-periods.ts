@@ -92,3 +92,26 @@ export function buildExpandWindow(): Set<string> {
   // To:   +6 → six months forward from current.
   return buildPeriodRange(current, -monthsSinceLaunch, 6);
 }
+
+/** The fund's full contribution lifecycle: 60 months (5 years). */
+export const LEHUMO_SCHEDULE_MONTHS = 60;
+
+/**
+ * The canonical schedule set — every period from launch
+ * (LEHUMO_FIRST_DUE_PERIOD) through month 60 (May 2031). This is the
+ * absolute universe every member's schedule must cover, regardless
+ * of join date or the admin's active period filter.
+ *
+ * Used by the rollup to detect schedule-completeness gaps
+ * (canonicalMissingCount) independent of whatever filter is applied —
+ * so the "Fix N" repair chip is visible on every filter, including
+ * "All periods".
+ */
+export function buildCanonicalScheduleSet(): Set<string> {
+  // offset 0..59 inclusive → 60 periods starting at launch.
+  return buildPeriodRange(
+    LEHUMO_FIRST_DUE_PERIOD,
+    0,
+    LEHUMO_SCHEDULE_MONTHS - 1,
+  );
+}

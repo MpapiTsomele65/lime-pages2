@@ -44,29 +44,40 @@ import {
   type MemberContributionRollup,
   type RollupStatus,
 } from "@/lib/contributions-aggregate";
-import { buildExpandWindow } from "@/lib/contribution-periods";
+import {
+  buildCanonicalScheduleSet,
+  buildExpandWindow,
+} from "@/lib/contribution-periods";
 
 import { EditContributionDialog } from "./EditContributionDialog";
 import { MemberContributionDetailStrip } from "./MemberContributionDetailStrip";
 
 interface AdminContributionsRollupTableProps {
-  /** All contribution rows in scope, already filtered by the parent
-   *  filter bar (period / status / source / member). */
-  rows: LehumoContribution[];
-  /** Full cohort for the EditContributionDialog combobox. */
+  /** ALL contribution rows — NOT pre-filtered by period/status/source.
+   *  Each member's rollup applies the period window internally, and
+   *  the expand strip + canonical-completeness check both need the
+   *  member's full row set to be correct. */
+  allRows: LehumoContribution[];
+  /** Full cohort for the EditContributionDialog combobox + the
+   *  per-member rollup iteration. */
   members: LehumoMember[];
-  memberById: Map<string, LehumoMember>;
   /** Active period filter as a Set. `null` = "All periods" / no
-   *  period constraint. Drives the aggregated totals. */
+   *  period constraint. Drives the aggregated totals + X/N denom. */
   activePeriodSet: Set<string> | null;
+  /** Which members to display. `null` = show the whole cohort (no
+   *  status/source/member filter active). When a row-level filter is
+   *  on, this is the set of member IDs that have ≥1 matching row in
+   *  the active period — so the filter narrows which MEMBERS appear
+   *  without gutting each shown member's totals. */
+  visibleMemberIds: Set<string> | null;
   onContributionUpdate: (updated: LehumoContribution) => void;
 }
 
 export function AdminContributionsRollupTable({
-  rows,
+  allRows,
   members,
-  memberById,
   activePeriodSet,
+  visibleMemberIds,
   onContributionUpdate,
 }: AdminContributionsRollupTableProps) {
   // Single-open accordion. Clicking the open row's chevron closes it;
@@ -97,28 +108,39 @@ export function AdminContributionsRollupTable({
   >(null);
   const router = useRouter();
 
-  // Compute the expand-window period set once — it's the same for
-  // every row and doesn't depend on the active filter. We pre-resolve
-  // it so each opened strip doesn't re-walk the period math.
+  // Pre-resolve the two period universes once. Both are filter-
+  // independent so they're computed without deps.
   const expandWindow = useMemo(() => buildExpandWindow(), []);
+  const canonicalSet = useMemo(() => buildCanonicalScheduleSet(), []);
 
-  // Compute one rollup per member, applying the active period filter.
-  // We iterate `members` (not `rows`) so members with zero rows still
-  // show up as a "no-data" row — the full cohort stays visible no
-  // matter the filter shape.
+  // Compute one rollup per member, applying the active period filter
+  // for totals + the canonical set for the completeness chip. We
+  // iterate `members` (not rows) so members with zero rows still show
+  // up — the full cohort stays visible no matter the filter shape.
+  //
+  // When a status/source/member filter is active, `visibleMemberIds`
+  // narrows WHICH members render (below), but every shown member's
+  // rollup is still computed over their full row set so the totals
+  // reflect the real picture, not just the matching rows.
   const rollups = useMemo(() => {
     const out: Array<{
       member: LehumoMember;
       rollup: MemberContributionRollup;
     }> = [];
     for (const m of members) {
+      if (visibleMemberIds !== null && !visibleMemberIds.has(m.id)) continue;
       out.push({
         member: m,
-        rollup: aggregateMemberContributions(rows, m.id, activePeriodSet),
+        rollup: aggregateMemberContributions(
+          allRows,
+          m.id,
+          activePeriodSet,
+          canonicalSet,
+        ),
       });
     }
     return out;
-  }, [members, rows, activePeriodSet]);
+  }, [members, allRows, activePeriodSet, canonicalSet, visibleMemberIds]);
 
   // Sort by rollup status (paid first, then partial, then pending,
   // then no-data) and within each bucket alphabetical by name —
@@ -249,18 +271,20 @@ export function AdminContributionsRollupTable({
       {/* Body */}
       {sorted.length === 0 ? (
         <div className="px-5 py-12 text-center text-sm text-[#6B7280]">
-          No members in the cohort yet.
+          {visibleMemberIds !== null
+            ? "No members match the active filters."
+            : "No members in the cohort yet."}
         </div>
       ) : (
         sorted.map(({ member, rollup }) => {
           const isExpanded = expandedMemberId === member.id;
           // Rows to feed the expanded strip — re-aggregate per member
           // against the broader expand window (launch → current+6mo)
-          // rather than the active filter so the strip surfaces
-          // context the filter might be hiding (e.g. admin filtered
-          // to "Pending" but wants to see what's already Paid too).
+          // from the FULL row set, so the strip surfaces the whole
+          // window regardless of the active filter (e.g. admin on
+          // "Next 3 months" still sees prior paid months on expand).
           const stripRollup = isExpanded
-            ? aggregateMemberContributions(rows, member.id, expandWindow)
+            ? aggregateMemberContributions(allRows, member.id, expandWindow)
             : null;
           return (
             <div
@@ -300,7 +324,7 @@ export function AdminContributionsRollupTable({
                     also toggle the row's expand state. */}
                 <div className="flex items-center gap-1.5">
                   <RollupStatusPill status={rollup.rollupStatus} />
-                  {rollup.missingRowCount > 0 && (
+                  {rollup.canonicalMissingCount > 0 && (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -309,8 +333,8 @@ export function AdminContributionsRollupTable({
                       }}
                       disabled={backfillingMemberId === member.id}
                       className="inline-flex items-center gap-1 rounded-full border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#92400E] hover:bg-[#F59E0B]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      title={`Schedule incomplete — ${rollup.missingRowCount} ${
-                        rollup.missingRowCount === 1 ? "month" : "months"
+                      title={`Schedule incomplete — ${rollup.canonicalMissingCount} of 60 ${
+                        rollup.canonicalMissingCount === 1 ? "month" : "months"
                       } missing. Click to backfill from Jun 2026.`}
                       aria-label={`Regenerate missing schedule rows for ${member.fullName}`}
                     >
@@ -319,7 +343,7 @@ export function AdminContributionsRollupTable({
                       ) : (
                         <AlertTriangle className="h-2.5 w-2.5" />
                       )}
-                      <span>Fix {rollup.missingRowCount}</span>
+                      <span>Fix {rollup.canonicalMissingCount}</span>
                     </button>
                   )}
                 </div>
