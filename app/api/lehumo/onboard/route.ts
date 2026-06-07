@@ -12,6 +12,7 @@ import {
   idTypeToAirtable,
 } from "@/lib/definitions";
 import { sendWelcomeEmail } from "@/lib/email";
+import { ensureCanonicalMemberSchedule } from "@/lib/contributions";
 
 /**
  * Stages of the onboard flow. We update `stage` before each `await` so
@@ -165,6 +166,32 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Canonical schedule invariant: every member must have all 60
+      // contribution rows (Jun 2026 → May 2031). Idempotent — backfills
+      // only the missing periods, never touches existing rows.
+      //
+      // Detached on purpose: if Airtable hiccups during schedule
+      // generation we don't want to roll back a successful member
+      // update. The admin Contributions rollup will surface the gap
+      // via the warning chip + Regenerate button if this slipped.
+      ensureCanonicalMemberSchedule({
+        memberId: updated.id,
+        memberNumber: updated.memberNumber,
+      })
+        .then((r) => {
+          if (r.ok && r.generated > 0) {
+            console.log(
+              `[onboard][${requestId}] schedule backfilled — generated ${r.generated} rows for member ${updated.memberNumber}`,
+            );
+          }
+        })
+        .catch((err) =>
+          console.error(
+            `[onboard][${requestId}] schedule backfill threw:`,
+            err,
+          ),
+        );
+
       return NextResponse.json({
         memberId: updated.id,
         memberNumber: updated.memberNumber,
@@ -202,6 +229,29 @@ export async function POST(request: NextRequest) {
     }).catch((err) =>
       console.error(`[onboard][${requestId}] welcome email failed:`, err),
     );
+
+    // Generate the full Jun 2026 → May 2031 contribution schedule.
+    // Same detached-on-purpose pattern as the resume branch (see
+    // the longer comment up there). Without this, a brand-new
+    // member ends up with zero contribution rows, which throws off
+    // the admin rollup totals + paid/expected denominator.
+    ensureCanonicalMemberSchedule({
+      memberId: record.id,
+      memberNumber: record.memberNumber,
+    })
+      .then((r) => {
+        if (r.ok && r.generated > 0) {
+          console.log(
+            `[onboard][${requestId}] schedule seeded — generated ${r.generated} rows for new member ${record.memberNumber}`,
+          );
+        }
+      })
+      .catch((err) =>
+        console.error(
+          `[onboard][${requestId}] schedule seed threw:`,
+          err,
+        ),
+      );
 
     return NextResponse.json({
       memberId: record.id,

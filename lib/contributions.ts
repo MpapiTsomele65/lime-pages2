@@ -810,3 +810,60 @@ export async function backfillMissingPeriods(params: {
 
   return createContributionsBatch(inputs);
 }
+
+/**
+ * Canonical schedule invariant for the Lehumo cohort: every member,
+ * regardless of join date, must have a contribution row for every
+ * month from June 2026 (LEHUMO_FIRST_DUE_PERIOD) through May 2031
+ * — the full 60-month fund lifecycle.
+ *
+ * This is the safe wrapper around `backfillMissingPeriods` that
+ * gets called from the onboarding API + the admin "Regenerate"
+ * button. It is:
+ *   - Idempotent — only inserts missing rows; existing ones stay
+ *     untouched (so reconciled / paid rows are never disturbed).
+ *   - Defensive — catches and logs errors rather than crashing the
+ *     calling context. Returns a structured result the caller can
+ *     surface in the UI or log line.
+ *   - Anchored — always starts at Jun 2026 / 60 months, no caller
+ *     override allowed. The whole point of this helper is to
+ *     enforce the fund-wide invariant.
+ *
+ * If a member joined in September 2026, this still backfills June
+ * + July + August as Pending rows so admin can mark them paid
+ * retroactively, or so the rollup table correctly shows them as
+ * in arrears for the catch-up months.
+ */
+export async function ensureCanonicalMemberSchedule(params: {
+  memberId: string;
+  memberNumber: number;
+  /** Tag the generated rows with this plan. Optional — when omitted
+   *  the rows are created without a plan link and admin can adjust
+   *  per row via the Edit dialog. */
+  plan?: ContributionPlan;
+}): Promise<
+  | { ok: true; generated: number }
+  | { ok: false; error: string; generated: number }
+> {
+  try {
+    // The fixed start + count are the whole point — no caller override.
+    const inserted = await backfillMissingPeriods({
+      memberId: params.memberId,
+      memberNumber: params.memberNumber,
+      plan: params.plan,
+      start: { year: 2026, month: 6 },
+      count: 60,
+    });
+    return { ok: true, generated: inserted.length };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Unknown schedule generation error";
+    console.error(
+      `[ensureCanonicalMemberSchedule] Failed for member ${formatMemberNumber(
+        params.memberNumber,
+      )} (${params.memberId}):`,
+      message,
+    );
+    return { ok: false, error: message, generated: 0 };
+  }
+}

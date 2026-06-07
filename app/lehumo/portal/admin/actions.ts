@@ -47,6 +47,7 @@ import {
   type BeneficiaryFormData,
 } from "@/lib/definitions";
 import {
+  ensureCanonicalMemberSchedule,
   getContributionById,
   reassignContribution,
   reconcileContribution,
@@ -965,4 +966,50 @@ function buildMultiPeriodLabel(periods: string[]): string {
       return `${months[idx] ?? m} ${yr}`;
     })
     .join(" + ");
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// adminBackfillMemberSchedule — regenerate any missing schedule rows
+// ──────────────────────────────────────────────────────────────────────
+//
+// Surfaced via the "Regenerate" button next to the warning chip on
+// the Contributions rollup table. Used to repair members whose
+// schedule was generated incompletely (Ramudzuli: only 1 row,
+// Tshwaro: only 2 rows, Londani: missing July 2026).
+//
+// Idempotent — calls `ensureCanonicalMemberSchedule` which only
+// inserts missing rows in the Jun 2026 → May 2031 window. Existing
+// rows (paid, reconciled, whatever) are never touched. Safe to
+// click the Regenerate button twice in a row.
+
+export type AdminBackfillScheduleResult =
+  | { ok: true; generated: number }
+  | { ok: false; error: string };
+
+export async function adminBackfillMemberSchedule(
+  memberId: string,
+): Promise<AdminBackfillScheduleResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate as AdminBackfillScheduleResult;
+
+  const idOk = IdSchema.safeParse(memberId);
+  if (!idOk.success) return { ok: false, error: "Invalid member id" };
+
+  try {
+    const member = await getMemberById(memberId);
+    if (!member) return { ok: false, error: "Member not found" };
+
+    const res = await ensureCanonicalMemberSchedule({
+      memberId: member.id,
+      memberNumber: member.memberNumber,
+    });
+    if (!res.ok) return { ok: false, error: res.error };
+    return { ok: true, generated: res.generated };
+  } catch (err) {
+    console.error("adminBackfillMemberSchedule error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Schedule backfill failed",
+    };
+  }
 }

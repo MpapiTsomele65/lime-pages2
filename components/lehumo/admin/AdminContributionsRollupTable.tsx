@@ -22,7 +22,8 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 
 import {
   formatMemberNumber,
@@ -31,6 +32,7 @@ import {
   type LehumoMember,
 } from "@/lib/definitions";
 import {
+  adminBackfillMemberSchedule,
   adminReconcileContribution,
   adminUpdateContribution,
   adminUpdateContributionStatus,
@@ -87,6 +89,13 @@ export function AdminContributionsRollupTable({
   const [editingRow, setEditingRow] = useState<LehumoContribution | null>(
     null,
   );
+
+  // Schedule backfill in-flight tracker — keyed by memberId so the
+  // spinner shows on the right row while other rows stay clickable.
+  const [backfillingMemberId, setBackfillingMemberId] = useState<
+    string | null
+  >(null);
+  const router = useRouter();
 
   // Compute the expand-window period set once — it's the same for
   // every row and doesn't depend on the active filter. We pre-resolve
@@ -187,6 +196,36 @@ export function AdminContributionsRollupTable({
     setEditingRow(row);
   }, []);
 
+  // Regenerate the missing schedule rows for a member. Idempotent on
+  // the server (only inserts gaps, never overwrites existing rows),
+  // so a stray double-click is safe. On success we router.refresh()
+  // to repull the server-side snapshot — the new rows surface in
+  // the rollup denominators + the expanded strip without a manual
+  // reload.
+  const handleBackfillSchedule = useCallback(
+    async (memberId: string) => {
+      setBackfillingMemberId(memberId);
+      setError(null);
+      try {
+        const res = await adminBackfillMemberSchedule(memberId);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        // Even when generated=0 (no gaps), refresh so the warning
+        // chip clears in case the gap was repaired out-of-band.
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Schedule backfill failed",
+        );
+      } finally {
+        setBackfillingMemberId(null);
+      }
+    },
+    [router],
+  );
+
   return (
     <section className="rounded-[24px] border border-[#EDEDED] bg-white overflow-hidden">
       {error && (
@@ -256,19 +295,32 @@ export function AdminContributionsRollupTable({
                   </div>
                 </div>
 
-                {/* Status rollup pill + missing-schedule warning */}
+                {/* Status rollup pill + missing-schedule fix button.
+                    The button stops propagation so clicking it doesn't
+                    also toggle the row's expand state. */}
                 <div className="flex items-center gap-1.5">
                   <RollupStatusPill status={rollup.rollupStatus} />
                   {rollup.missingRowCount > 0 && (
-                    <span
-                      className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-[#F59E0B]/15 text-[#92400E]"
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBackfillSchedule(member.id);
+                      }}
+                      disabled={backfillingMemberId === member.id}
+                      className="inline-flex items-center gap-1 rounded-full border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#92400E] hover:bg-[#F59E0B]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       title={`Schedule incomplete — ${rollup.missingRowCount} ${
                         rollup.missingRowCount === 1 ? "month" : "months"
-                      } missing for this member. Regenerate the schedule to fix.`}
-                      aria-label={`Schedule incomplete — ${rollup.missingRowCount} months missing`}
+                      } missing. Click to backfill from Jun 2026.`}
+                      aria-label={`Regenerate missing schedule rows for ${member.fullName}`}
                     >
-                      <AlertTriangle className="h-2.5 w-2.5" />
-                    </span>
+                      {backfillingMemberId === member.id ? (
+                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                      ) : (
+                        <AlertTriangle className="h-2.5 w-2.5" />
+                      )}
+                      <span>Fix {rollup.missingRowCount}</span>
+                    </button>
                   )}
                 </div>
 
