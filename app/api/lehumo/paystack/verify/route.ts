@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { verifyTransaction } from "@/lib/paystack";
+import { splitContribution, verifyTransaction } from "@/lib/paystack";
 import {
   checkMonthPayment,
   setMemberActive,
@@ -121,11 +121,16 @@ export async function GET(request: NextRequest) {
     // (2026-06) makes it through to the Contribution Key — without it,
     // `checkMonthPayment` would re-derive the period from the SAST year
     // and the May/Jun ambiguity would resurface.
+    // Credit only the R1,000 contribution — the service fee built into
+    // the gross (R1,035 / R1,050) covers Paystack, it isn't part of the
+    // member's stake. Mirrors the webhook so both convergent paths
+    // record the same net amount.
+    const { contributionKobo } = splitContribution(result.amount);
     await checkMonthPayment(memberRecordId, month, {
       period,
       // Paystack amount returns in kobo (cents); convert to ZAR for
       // the Contributions table's Amount Received column.
-      amountReceived: result.amount / 100,
+      amountReceived: contributionKobo / 100,
       source: "Paystack",
       paymentReference: reference,
       memberId: memberBefore?.id,
@@ -134,7 +139,7 @@ export async function GET(request: NextRequest) {
     await setMemberActive(memberRecordId);
 
     if (memberBefore) {
-      const amountZar = result.amount / 100;
+      const amountZar = contributionKobo / 100;
       // First-time activation email vs recurring receipt — picked by
       // the pre-write member status. !wasAlreadyActive means this is
       // the very first contribution that's flipping them Active, so

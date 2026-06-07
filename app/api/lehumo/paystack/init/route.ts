@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, memberRecordId, plan, returnTo, oneOff } = parsed.data;
+    const { email, memberRecordId, plan, returnTo, oneOff, coverFee } =
+      parsed.data;
 
     // Resolve the plan code (only Standard uses subscriptions for now).
     // Basic = manual EFT (never hits this endpoint); VIP = coming soon.
@@ -84,9 +85,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Paystack requires `amount` on every initialize call, even when a plan
-    // code is supplied (the plan still drives recurring billing). Use the
-    // plan's known kobo amount; fall back to R1,000 for legacy one-time use.
-    const amount = (plan && getAmountForPlan(plan)) || 100000;
+    // code is supplied (the plan still drives recurring billing).
+    //   - Plan-driven (subscription): use the plan's known kobo amount,
+    //     which already bakes in the service fee (Standard 103500).
+    //   - One-time top-up: R1,000 base, plus the R35 (3.5%) collection
+    //     fee when the member chose the card route + opted to cover it,
+    //     so the trust still nets R1,000.
+    const amount =
+      (plan && getAmountForPlan(plan)) || (coverFee ? 103500 : 100000);
 
     // Callback URL depends on where the payment was started. Portal
     // members (existing, already inside the dashboard) bounce back to

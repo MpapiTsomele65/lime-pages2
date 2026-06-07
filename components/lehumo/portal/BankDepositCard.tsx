@@ -4,7 +4,11 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Building2, Check, Copy, Landmark, ShieldCheck } from "lucide-react";
 
-import { formatEftReference, type LehumoMember } from "@/lib/definitions";
+import {
+  formatEftReference,
+  LEHUMO_BANK_DETAILS,
+  type LehumoMember,
+} from "@/lib/definitions";
 import { PortalCard } from "./PortalCard";
 
 /**
@@ -23,18 +27,9 @@ import { PortalCard } from "./PortalCard";
  * one constant block change carries the whole portal.
  */
 
-// ── Bank details — Lehumo trust collection account ──────────────────
-const BANK_DETAILS = {
-  accountHolder: "Lime Pages Pty Ltd",
-  bankName: "Capitec Business Account",
-  accountNumber: "1054 7373 47",
-  // Capitec's universal branch code — works for EFTs from every other
-  // South African bank (FNB / Standard / Absa / Nedbank etc.). Same
-  // account-holder side uses 470010 too.
-  branchCode: "470010",
-  accountType: "Transact (Business)",
-  swift: "CABLZAJJ",
-} as const;
+// Bank details now live in lib/definitions as LEHUMO_BANK_DETAILS so the
+// Make-Payment method chooser shares one source of truth.
+const BANK_DETAILS = LEHUMO_BANK_DETAILS;
 
 interface BankDepositCardProps {
   member: LehumoMember;

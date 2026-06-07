@@ -602,6 +602,24 @@ export function formatMemberNumber(n: number | string): string {
  * survives most banks' character filters — the alternatives (`M_Tsomele`,
  * `MTsomele`, `Leh01-M-Tsomele`) either look odd or risk being mangled.
  */
+/**
+ * Lehumo trust collection account — single source of truth for the
+ * Capitec bank details shown on the member portal (BankDepositCard +
+ * the Make-Payment method chooser). One account for the whole trust,
+ * not member-specific. If the trust ever changes bank, this one block
+ * carries every surface.
+ */
+export const LEHUMO_BANK_DETAILS = {
+  accountHolder: "Lime Pages Pty Ltd",
+  bankName: "Capitec Business Account",
+  accountNumber: "1054 7373 47",
+  // Capitec's universal branch code — works for EFTs from every other
+  // South African bank (FNB / Standard / Absa / Nedbank etc.).
+  branchCode: "470010",
+  accountType: "Transact (Business)",
+  swift: "CABLZAJJ",
+} as const;
+
 export function formatEftReference(
   memberNumber: number | string,
   fullName: string,
@@ -1378,6 +1396,14 @@ export const PaystackInitSchema = z.object({
    * subscription, so we don't want to spawn a duplicate. Defaults
    * to false (backwards-compatible subscription behaviour). */
   oneOff: z.boolean().optional(),
+  /**
+   * Cover the Paystack collection fee. When true, a one-time portal
+   * charge bills R1,035 (R1,000 contribution + R35 service fee) so the
+   * trust nets the full R1,000 after Paystack's 3.5% cut. The webhook /
+   * verify route then records only the R1,000 contribution. Ignored
+   * when a `plan` code drives the amount (subscriptions already encode
+   * the fee). Defaults to false. */
+  coverFee: z.boolean().optional(),
 });
 
 /**

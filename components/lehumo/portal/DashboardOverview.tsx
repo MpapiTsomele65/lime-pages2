@@ -359,6 +359,8 @@ export function DashboardOverview({
               currentPeriod={currentPeriod}
               email={member.email}
               memberId={member.id}
+              memberNumber={member.memberNumber}
+              fullName={member.fullName}
               beforeLaunch={beforeLaunch}
             />
           </motion.div>

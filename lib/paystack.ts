@@ -90,6 +90,33 @@ export function getAmountForPlan(plan: string): number | null {
   }
 }
 
+// ─── Contribution / Fee Split ───────────────────────────────────────
+// Paystack charges include a service-fee component on top of the
+// R1,000 monthly contribution (Standard R1,035 = R1,000 + 3.5%;
+// VIP R1,050 = R1,000 + 5%). When we record a payment we must credit
+// only the R1,000 CONTRIBUTION toward the member's R60,000 goal — the
+// fee just covers Paystack's collection cost so the trust nets R1,000.
+//
+// Keyed on the gross kobo amount (not transaction metadata) so it
+// works for recurring subscription charges too — those fire
+// charge.success without carrying the original init metadata, so a
+// metadata-based split would silently miss every month after the
+// first. Any gross that isn't a known plan amount (EFT, manual,
+// legacy, or a future price) passes through unchanged.
+export function splitContribution(grossKobo: number): {
+  contributionKobo: number;
+  feeKobo: number;
+} {
+  switch (grossKobo) {
+    case 103500: // Standard R1,035
+      return { contributionKobo: 100000, feeKobo: 3500 };
+    case 105000: // VIP R1,050
+      return { contributionKobo: 100000, feeKobo: 5000 };
+    default:
+      return { contributionKobo: grossKobo, feeKobo: 0 };
+  }
+}
+
 // ─── Plan Code Resolution ───────────────────────────────────────────
 // Maps a Lehumo plan key to the matching Paystack Plan code from env vars.
 // Returns null for plans that don't use Paystack subscriptions (basic = EFT,

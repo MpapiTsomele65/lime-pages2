@@ -13,11 +13,16 @@ import {
   type LehumoContribution,
 } from "@/lib/definitions";
 import { computeContributionLedger } from "@/lib/contribution-ledger";
+import { PaymentMethodDialog } from "./PaymentMethodDialog";
 
 interface PaymentCardProps {
   contributions: Record<string, boolean>;
   email: string;
   memberId: string;
+  /** Member identity — used to render the personalised EFT reference
+   *  inside the payment-method chooser. */
+  memberNumber: number;
+  fullName: string;
   /** Pre-launch flag — when true, the card shows a "Contributions begin
    *  1 June 2026" placeholder instead of a payment CTA. Lehumo collections
    *  start 1 Jun 2026; before then there's no real "next due" to surface. */
@@ -55,12 +60,17 @@ export function PaymentCard({
   contributions,
   email,
   memberId,
+  memberNumber,
+  fullName,
   beforeLaunch = false,
   contributionRows,
   currentPeriod,
 }: PaymentCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Payment-method chooser (Pay by card vs Manual EFT). The Make
+  // Payment button opens this instead of jumping straight to Paystack.
+  const [showMethodModal, setShowMethodModal] = useState(false);
 
   // Rich-shape branch is gated on having BOTH the rows and a currentPeriod
   // — the ledger needs the period to draw the "due so far" line. Without
@@ -85,7 +95,7 @@ export function PaymentCard({
       ledger.lifetimeReceived >= ledger.lifetimeGoal
     : legacyAllPaid;
 
-  async function handlePayment() {
+  async function handlePayment(coverFee: boolean) {
     setError("");
     setLoading(true);
 
@@ -99,6 +109,10 @@ export function PaymentCard({
           // Stay inside the portal on bounce-back — this card is for
           // existing members topping up, not the onboarding wizard.
           returnTo: "portal",
+          // Card route covers the 3.5% Paystack fee → bill R1,035 so
+          // the trust nets R1,000. The webhook/verify split it back
+          // out so only R1,000 is recorded as the contribution.
+          coverFee,
         }),
       });
 
@@ -343,7 +357,7 @@ export function PaymentCard({
               </div>
             ) : (
               <button
-                onClick={handlePayment}
+                onClick={() => setShowMethodModal(true)}
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 rounded-full bg-[#B8FF00] py-3 px-6 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -421,7 +435,7 @@ export function PaymentCard({
           )}
           <div className="mt-auto">
             <button
-              onClick={handlePayment}
+              onClick={() => setShowMethodModal(true)}
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 rounded-full bg-[#B8FF00] py-3 px-6 text-sm font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -458,6 +472,16 @@ export function PaymentCard({
           </div>
         </div>
       )}
+
+      <PaymentMethodDialog
+        open={showMethodModal}
+        onClose={() => setShowMethodModal(false)}
+        memberNumber={memberNumber}
+        fullName={fullName}
+        loading={loading}
+        error={error}
+        onPayByCard={() => handlePayment(true)}
+      />
     </div>
   );
 }

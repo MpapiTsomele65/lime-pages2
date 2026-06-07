@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { validateWebhookSignature } from "@/lib/paystack";
+import { splitContribution, validateWebhookSignature } from "@/lib/paystack";
 import {
   checkMonthPayment,
   setMemberActive,
@@ -95,11 +95,17 @@ export async function POST(request: NextRequest) {
         // it through to the Contribution Key — without it,
         // `checkMonthPayment` would re-derive the period from the SAST
         // year and the May/Jun ambiguity would resurface.
+        // Credit only the R1,000 contribution toward the goal — the
+        // R35/R50 service fee built into the gross charge (R1,035 /
+        // R1,050) covers Paystack's collection cost, it isn't part of
+        // the member's stake. splitContribution keys off the gross so
+        // recurring charges (no metadata) split correctly too.
+        const { contributionKobo } = splitContribution(amount);
         await checkMonthPayment(memberRecordId, month, {
           period,
           // Paystack amount comes back in kobo; convert to ZAR for the
           // Contributions table's Amount Received column.
-          amountReceived: amount / 100,
+          amountReceived: contributionKobo / 100,
           source: "Paystack",
           paymentReference: paystackRef,
           paymentDate: paidAtIso ? paidAtIso.slice(0, 10) : undefined,
@@ -109,7 +115,9 @@ export async function POST(request: NextRequest) {
         await setMemberActive(memberRecordId);
 
         if (memberBefore) {
-          const amountZar = amount / 100;
+          // Receipt shows the contribution credited (R1,000), matching
+          // what's recorded on the row — not the gross incl. fee.
+          const amountZar = contributionKobo / 100;
           const emailFn = !wasAlreadyActive
             ? () =>
                 sendPaymentSuccessEmail({
