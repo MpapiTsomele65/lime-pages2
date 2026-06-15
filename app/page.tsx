@@ -21,16 +21,18 @@ export default async function HomePage() {
 
   return (
     <>
-      <HomeHero
+      <HomeHero />
+      <Marquee />
+      {/* Core objectives lead the page: Lehumo (collective investment +
+          community) then Lime Capital (alternative investment solutions).
+          The founding-member conversion block lives in the Lehumo section
+          so the hero stays simple. */}
+      <LehumoTeaser
         spotsLeft={spotsLeft}
         totalFoundingSlots={stats?.totalFoundingSlots ?? 30}
         membersContributed={stats?.membersContributedEver ?? null}
         totalContributed={stats?.totalContributed ?? null}
       />
-      <Marquee />
-      {/* Core objectives lead the page: Lehumo (collective investment +
-          community) then Lime Capital (alternative investment solutions). */}
-      <LehumoTeaser />
       <LimeCapitalTeaser />
       <WhatWeDo />
       <AdvisoryPreview />

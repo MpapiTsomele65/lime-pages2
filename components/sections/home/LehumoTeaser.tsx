@@ -4,7 +4,21 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { Star } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
+import { LaunchCountdown } from "@/components/sections/lehumo/LaunchCountdown";
+
+function formatZAR(n: number): string {
+  return `R${Math.round(n).toLocaleString("en-ZA")}`;
+}
+
+interface LehumoTeaserProps {
+  /** Founding spots still open. null = stats unavailable (scarcity +
+   *  social-proof hidden; CTAs + deadline message still show). */
+  spotsLeft?: number | null;
+  totalFoundingSlots?: number;
+  membersContributed?: number | null;
+  totalContributed?: number | null;
+}
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 } as const,
@@ -27,7 +41,12 @@ const stats = [
   { value: "R1K", color: "text-lime", label: "Monthly Contribution", sub: "Per member, pooled collectively", borderColor: "border-lime/15" },
 ];
 
-export function LehumoTeaser() {
+export function LehumoTeaser({
+  spotsLeft = null,
+  totalFoundingSlots = 30,
+  membersContributed = null,
+  totalContributed = null,
+}: LehumoTeaserProps = {}) {
   return (
     <section className="bg-navy py-16 sm:py-[90px] relative overflow-hidden">
       <div className="absolute -top-[20%] -left-[10%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(184,255,0,0.07),transparent_70%)] blur-[60px] pointer-events-none" />
@@ -122,18 +141,65 @@ export function LehumoTeaser() {
               </p>
             </motion.div>
 
+            {/* Founding-member conversion block (moved here from the home
+                hero to keep the hero simple). Deadline message → spot
+                scarcity → primary action → social proof → member sign-in. */}
+            <LaunchCountdown showClock={false} align="left" className="mb-5" />
+
+            {spotsLeft !== null && (
+              <div className="mb-6">
+                <span className="inline-flex items-center gap-2 rounded-full border border-lime/30 bg-lime/[0.07] px-4 py-1.5 text-[13px] font-semibold text-lime">
+                  <span className="relative flex w-1.5 h-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime opacity-70" />
+                    <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-lime" />
+                  </span>
+                  {spotsLeft > 0
+                    ? `Only ${spotsLeft} of ${totalFoundingSlots} founding spots left`
+                    : "All founding spots claimed — join the waitlist"}
+                </span>
+              </div>
+            )}
+
             <div className="flex gap-3.5 flex-wrap">
               <Link
-                href="/lehumo#join"
+                href="/lehumo/onboard"
                 className="bg-lime text-navy px-7 py-[13px] rounded-full font-bold text-sm inline-flex items-center gap-2 hover:shadow-[0_8px_28px_rgba(184,255,0,0.35)] hover:-translate-y-0.5 transition-all"
               >
-                Sign Up →
+                {spotsLeft === 0 ? "Join the waitlist" : "Claim your founding spot"}
+                <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/lehumo"
                 className="text-teal px-5 py-[13px] rounded-full font-semibold text-sm border border-teal/30 inline-flex items-center gap-2 hover:bg-teal/10 transition-colors"
               >
-                Learn More
+                Learn How It Works
+              </Link>
+            </div>
+
+            {membersContributed !== null &&
+              membersContributed > 0 &&
+              totalContributed !== null &&
+              totalContributed > 0 && (
+                <p className="text-[13px] text-white/55 mt-5">
+                  Join{" "}
+                  <span className="text-white font-semibold">
+                    {membersContributed}
+                  </span>{" "}
+                  founding member{membersContributed === 1 ? "" : "s"} who&rsquo;ve
+                  already contributed{" "}
+                  <span className="text-lime font-semibold">
+                    {formatZAR(totalContributed)}
+                  </span>{" "}
+                  toward the R2M goal.
+                </p>
+              )}
+
+            <div className="mt-4">
+              <Link
+                href="/lehumo/portal/login"
+                className="text-teal/80 hover:text-teal text-sm font-semibold transition-colors inline-flex items-center gap-1.5"
+              >
+                Already a member? Sign in to your portal →
               </Link>
             </div>
           </motion.div>
