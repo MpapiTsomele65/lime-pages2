@@ -18,7 +18,28 @@ const heroStats = [
   { value: "R1k", color: "text-teal", label: "Per Month" },
 ];
 
-export function LehumoHero() {
+function formatZAR(n: number): string {
+  return `R${Math.round(n).toLocaleString("en-ZA")}`;
+}
+
+interface LehumoHeroProps {
+  /** Founding spots still open (totalFoundingSlots − membersOnboarded).
+   *  null when the live stats couldn't be loaded — the scarcity chip is
+   *  hidden in that case so the hero degrades gracefully. */
+  spotsLeft?: number | null;
+  totalFoundingSlots?: number;
+  /** Distinct members who've made ≥1 contribution — social proof. */
+  membersContributed?: number | null;
+  /** Total ZAR contributed across the cohort — social proof. */
+  totalContributed?: number | null;
+}
+
+export function LehumoHero({
+  spotsLeft = null,
+  totalFoundingSlots = 30,
+  membersContributed = null,
+  totalContributed = null,
+}: LehumoHeroProps = {}) {
   return (
     <section className="min-h-[85vh] bg-navy flex flex-col items-center justify-center text-center px-[clamp(1.5rem,5vw,5rem)] py-[100px] relative overflow-hidden">
       {/* Grid */}
@@ -60,15 +81,61 @@ export function LehumoHero() {
           30 Founding Members. 5 Years. R2 Million. One shared mission — Save, Buy, and Protect assets for the next generation.
         </p>
 
-        {/* Countdown to launch */}
-        <LaunchCountdown className="mb-10" />
+        {/* Countdown — urgency (first-contribution deadline) */}
+        <LaunchCountdown className="mb-6" />
 
-        {/* CTAs */}
-        <div className="flex justify-center mb-5">
+        {/* Scarcity — founding spots remaining. Stacks real scarcity on
+            top of the deadline urgency. Hidden if stats didn't load. */}
+        {spotsLeft !== null && (
+          <div className="flex justify-center mb-7">
+            <span className="inline-flex items-center gap-2 rounded-full border border-lime/30 bg-lime/[0.07] px-4 py-1.5 text-[13px] font-semibold text-lime">
+              <span className="relative flex w-1.5 h-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime opacity-70" />
+                <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-lime" />
+              </span>
+              {spotsLeft > 0
+                ? `Only ${spotsLeft} of ${totalFoundingSlots} founding spots left`
+                : "All founding spots claimed — join the waitlist"}
+            </span>
+          </div>
+        )}
+
+        {/* CTAs — primary "claim spot" (the conversion action) +
+            secondary "learn more". */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-4">
+          <Link
+            href="/lehumo/onboard"
+            className="bg-lime text-navy px-9 py-[15px] rounded-full font-bold text-sm hover:shadow-[0_8px_28px_-6px_rgba(184,255,0,0.45)] transition-all inline-flex items-center gap-1.5"
+          >
+            {spotsLeft === 0 ? "Join the waitlist" : "Claim your founding spot"}
+            <span aria-hidden="true">→</span>
+          </Link>
           <Link href="#what" className="text-white px-9 py-[15px] rounded-full font-semibold text-sm border border-white/20 hover:border-lime/25 hover:bg-lime-dim transition-all">
             Learn How It Works
           </Link>
         </div>
+
+        {/* Social proof — real members + Rand contributed. Hidden until
+            there's something meaningful to show (avoids "0 members"). */}
+        {membersContributed !== null &&
+          membersContributed > 0 &&
+          totalContributed !== null &&
+          totalContributed > 0 && (
+            <p className="text-[13px] text-white/55 mb-4 max-w-[520px] mx-auto">
+              Join{" "}
+              <span className="text-white font-semibold">
+                {membersContributed}
+              </span>{" "}
+              founding member{membersContributed === 1 ? "" : "s"} who&rsquo;ve
+              already contributed{" "}
+              <span className="text-lime font-semibold">
+                {formatZAR(totalContributed)}
+              </span>{" "}
+              toward the R2M goal.
+            </p>
+          )}
+
+        {/* Member sign-in */}
         <div className="flex justify-center mb-14">
           <Link
             href="/lehumo/portal/login"

@@ -1,3 +1,4 @@
+import { getCommunityPoolStats } from "@/lib/airtable";
 import { LehumoHero } from "@/components/sections/lehumo/LehumoHero";
 import { LehumoMarquee } from "@/components/sections/lehumo/LehumoMarquee";
 import { WhatIsLehumo } from "@/components/sections/lehumo/WhatIsLehumo";
@@ -16,11 +17,29 @@ import { ReferralCta } from "@/components/sections/lehumo/ReferralCta";
 import { LehumoFAQ } from "@/components/sections/lehumo/LehumoFAQ";
 import { ReadingProgressBar } from "@/components/ui/ReadingProgressBar";
 
-export default function LehumoPage() {
+// ISR — the hero's live conversion stats (founding spots left, members
+// contributed, total contributed) refresh every 5 minutes. Keeps the
+// marketing page fast + cached rather than hitting Airtable per visit.
+export const revalidate = 300;
+
+export default async function LehumoPage() {
+  // Non-critical: if the stats read fails (or Airtable is unreachable at
+  // build), the hero falls back to its static form (scarcity + social
+  // proof lines hidden) rather than breaking the page.
+  const stats = await getCommunityPoolStats().catch(() => null);
+  const spotsLeft = stats
+    ? Math.max(0, stats.totalFoundingSlots - stats.membersOnboarded)
+    : null;
+
   return (
     <div className="bg-navy text-white">
       <ReadingProgressBar />
-      <LehumoHero />
+      <LehumoHero
+        spotsLeft={spotsLeft}
+        totalFoundingSlots={stats?.totalFoundingSlots ?? 30}
+        membersContributed={stats?.membersContributedEver ?? null}
+        totalContributed={stats?.totalContributed ?? null}
+      />
       <LehumoMarquee />
       <WhatIsLehumo />
       <CommunityGrowth />
