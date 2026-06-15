@@ -116,7 +116,9 @@ export default function HomeHero({
           transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.3 }}
           className="mt-12"
         >
-          <LaunchCountdown />
+          {/* Clock hidden — LehumoTeaser below carries the one ticking
+              countdown; here we keep just the deadline message. */}
+          <LaunchCountdown showClock={false} />
 
           {spotsLeft !== null && (
             <div className="flex justify-center mt-7">

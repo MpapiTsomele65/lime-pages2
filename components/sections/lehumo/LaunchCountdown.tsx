@@ -95,12 +95,18 @@ type LaunchCountdownProps = {
   eyebrow?: string;
   /** Controls horizontal alignment of the eyebrow + clock wrapper. */
   align?: "left" | "center";
+  /** Hide the ticking Days/Hours/Mins/Secs clock, keeping just the
+   *  eyebrow + deadline line. Used where a full second countdown would
+   *  be redundant (e.g. the home hero, which sits above LehumoTeaser's
+   *  own live clock). Defaults to true. */
+  showClock?: boolean;
   className?: string;
 };
 
 export function LaunchCountdown({
   eyebrow,
   align = "center",
+  showClock = true,
   className = "",
 }: LaunchCountdownProps = {}) {
   // null on first render (server + pre-hydration) to avoid hydration
@@ -164,8 +170,9 @@ export function LaunchCountdown({
         {eyebrowText}
       </div>
 
-      {/* Digital clock */}
-      <div
+      {/* Digital clock — omitted when showClock=false (e.g. home hero) */}
+      {showClock && (
+        <div
         role="timer"
         aria-live="polite"
         aria-atomic="true"
@@ -202,7 +209,8 @@ export function LaunchCountdown({
             )}
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Supporting deadline line — drives the post-launch action. */}
       {showDeadline && (
