@@ -3,8 +3,10 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
+import { LaunchCountdown } from "@/components/sections/lehumo/LaunchCountdown";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -13,7 +15,25 @@ const fadeUp = {
   transition: { duration: 0.6, ease: "easeOut" as const },
 };
 
-export default function HomeHero() {
+function formatZAR(n: number): string {
+  return `R${Math.round(n).toLocaleString("en-ZA")}`;
+}
+
+interface HomeHeroProps {
+  /** Founding spots still open. null = stats unavailable (block hides
+   *  scarcity/social-proof but keeps the countdown + CTAs). */
+  spotsLeft?: number | null;
+  totalFoundingSlots?: number;
+  membersContributed?: number | null;
+  totalContributed?: number | null;
+}
+
+export default function HomeHero({
+  spotsLeft = null,
+  totalFoundingSlots = 30,
+  membersContributed = null,
+  totalContributed = null,
+}: HomeHeroProps = {}) {
   return (
     <section className="bg-navy relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background image */}
@@ -59,7 +79,7 @@ export default function HomeHero() {
       />
 
       {/* Content */}
-      <Container className="relative z-[3] text-center py-32">
+      <Container className="relative z-[3] text-center py-20 sm:py-24">
         <motion.div {...fadeUp}>
           <Badge variant="teal" pulse className="mb-8">
             Wealth &amp; Business Growth Solutions for Africa
@@ -86,36 +106,74 @@ export default function HomeHero() {
           and solutions to build thriving businesses and generational wealth.
         </motion.p>
 
-        {/* Scroll hint */}
+        {/* ── Founding-member conversion block ─────────────────────────
+            Leads the home page with the Lehumo founding push: deadline
+            urgency (countdown) → spot scarcity → primary action →
+            social proof → member sign-in. Live numbers from the cohort
+            stats; degrades gracefully when stats are unavailable. */}
         <motion.div
           {...fadeUp}
-          transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.5 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+          transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.3 }}
+          className="mt-12"
         >
-          <svg
-            width="24"
-            height="38"
-            viewBox="0 0 24 38"
-            fill="none"
-            className="opacity-50"
-          >
-            <rect
-              x="1"
-              y="1"
-              width="22"
-              height="36"
-              rx="11"
-              stroke="white"
-              strokeWidth="2"
-            />
-            <circle
-              cx="12"
-              cy="10"
-              r="3"
-              fill="white"
-              style={{ animation: "scrollDot 2s ease infinite" }}
-            />
-          </svg>
+          <LaunchCountdown />
+
+          {spotsLeft !== null && (
+            <div className="flex justify-center mt-7">
+              <span className="inline-flex items-center gap-2 rounded-full border border-lime/30 bg-lime/[0.07] px-4 py-1.5 text-[13px] font-semibold text-lime backdrop-blur-sm">
+                <span className="relative flex w-1.5 h-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime opacity-70" />
+                  <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-lime" />
+                </span>
+                {spotsLeft > 0
+                  ? `Only ${spotsLeft} of ${totalFoundingSlots} founding spots left`
+                  : "All founding spots claimed — join the waitlist"}
+              </span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-7">
+            <Link
+              href="/lehumo/onboard"
+              className="bg-lime text-navy px-9 py-[15px] rounded-full font-bold text-sm hover:shadow-[0_8px_28px_-6px_rgba(184,255,0,0.45)] hover:-translate-y-0.5 transition-all inline-flex items-center gap-1.5"
+            >
+              {spotsLeft === 0 ? "Join the waitlist" : "Claim your founding spot"}
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/lehumo"
+              className="text-white px-9 py-[15px] rounded-full font-semibold text-sm border border-white/20 hover:border-lime/25 hover:bg-lime-dim transition-all"
+            >
+              Learn How It Works
+            </Link>
+          </div>
+
+          {membersContributed !== null &&
+            membersContributed > 0 &&
+            totalContributed !== null &&
+            totalContributed > 0 && (
+              <p className="text-[13px] text-white/60 mt-5 max-w-[520px] mx-auto">
+                Join{" "}
+                <span className="text-white font-semibold">
+                  {membersContributed}
+                </span>{" "}
+                founding member{membersContributed === 1 ? "" : "s"} who&rsquo;ve
+                already contributed{" "}
+                <span className="text-lime font-semibold">
+                  {formatZAR(totalContributed)}
+                </span>{" "}
+                toward the R2M goal.
+              </p>
+            )}
+
+          <div className="flex justify-center mt-5">
+            <Link
+              href="/lehumo/portal/login"
+              className="text-teal/80 hover:text-teal text-sm font-semibold transition-colors inline-flex items-center gap-1.5"
+            >
+              Already a member? Sign in to your portal →
+            </Link>
+          </div>
         </motion.div>
       </Container>
     </section>
