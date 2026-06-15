@@ -116,11 +116,12 @@ export function Directory() {
             return (
               <motion.div
                 key={profile.id}
+                id={profile.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.55, delay: 0.1 * i, ease: "easeOut" }}
-                className={`rounded-[22px] border overflow-hidden bg-white shadow-[0_2px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] transition-shadow ${
+                className={`scroll-mt-28 rounded-[22px] border overflow-hidden bg-white shadow-[0_2px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] transition-shadow ${
                   profile.featured ? "border-teal/30" : "border-border"
                 }`}
               >

@@ -10,7 +10,16 @@ import {
   Rocket,
   ScrollText,
   TrendingUp,
+  type LucideIcon,
 } from "lucide-react";
+
+interface Pillar {
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  /** When set, the card is a link (e.g. to a Lime Connect profile). */
+  href?: string;
+}
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 } as const,
@@ -26,7 +35,7 @@ const fadeUp = {
  * early-stage co-investment, and estate planning. Mirrors LehumoTeaser's
  * navy two-column layout for a matched pair, in the capital brand colour.
  */
-const pillars = [
+const pillars: Pillar[] = [
   {
     icon: GraduationCap,
     title: "Capital markets, decoded",
@@ -46,6 +55,7 @@ const pillars = [
     icon: ScrollText,
     title: "Protect your legacy",
     desc: "Wills and estate planning so the wealth you build actually transfers.",
+    href: "/connect#simelane-attorneys",
   },
 ];
 
@@ -110,26 +120,49 @@ export function LimeCapitalTeaser() {
           >
             {pillars.map((p, i) => {
               const Icon = p.icon;
-              return (
-                <motion.div
-                  key={p.title}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.08 * i }}
-                  className="bg-white/[0.04] border border-white/[0.08] rounded-[20px] p-5 sm:p-6 flex flex-col gap-3 hover:border-capital/25 transition-colors"
-                >
+              const motionProps = {
+                initial: { opacity: 0, y: 16 },
+                whileInView: { opacity: 1, y: 0 },
+                viewport: { once: true },
+                transition: { duration: 0.5, delay: 0.08 * i },
+              } as const;
+              const inner = (
+                <>
                   <div className="w-10 h-10 rounded-xl bg-capital/15 flex items-center justify-center">
                     <Icon className="w-5 h-5 text-capital" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-white leading-tight mb-1.5">
+                    <h3 className="text-[15px] font-bold text-white leading-tight mb-1.5 flex items-center gap-1.5">
                       {p.title}
+                      {p.href && (
+                        <ArrowRight className="w-3.5 h-3.5 text-capital opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      )}
                     </h3>
                     <p className="text-[13px] text-white/45 leading-relaxed">
                       {p.desc}
                     </p>
                   </div>
+                </>
+              );
+              const baseClass =
+                "bg-white/[0.04] border border-white/[0.08] rounded-[20px] p-5 sm:p-6 flex flex-col gap-3 transition-colors h-full";
+
+              return p.href ? (
+                <Link key={p.title} href={p.href} className="group block">
+                  <motion.div
+                    {...motionProps}
+                    className={`${baseClass} cursor-pointer group-hover:border-capital/40`}
+                  >
+                    {inner}
+                  </motion.div>
+                </Link>
+              ) : (
+                <motion.div
+                  key={p.title}
+                  {...motionProps}
+                  className={`${baseClass} hover:border-capital/25`}
+                >
+                  {inner}
                 </motion.div>
               );
             })}
