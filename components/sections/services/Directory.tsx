@@ -38,25 +38,25 @@ interface DirectoryProfile {
   featured?: boolean;
 }
 
-/* ─── Seed: First community profile ─── */
+/* ─── Active Lime Services ─── */
 const profiles: DirectoryProfile[] = [
   {
     id: "simelane-attorneys",
     name: "Simelane Attorneys Inc",
     initials: "PSA",
-    tagline: "Cost-effective and tailored legal solutions",
+    tagline: "Wills, estates & tailored legal solutions",
     description:
-      "A 100% Black-owned boutique law firm based in Bryanston, Sandton. The team provides wide-ranging legal services with the experience and expertise to handle complex matters across multiple disciplines.",
-    category: "Legal Services",
+      "A 100% Black-owned boutique law firm based in Bryanston, Sandton. Our go-to partner for wills & estate planning — plus wide-ranging legal services with the experience to handle complex matters across multiple disciplines.",
+    category: "Wills & Estate Services",
     location: "Bryanston, Sandton",
     badges: ["100% Black-Owned", "BBBEE Certified", "Boutique Firm"],
     services: [
+      "Trusts, Wills & Estates",
+      "Conveyancing & Property Law",
       "Commercial & Corporate Law",
       "Dispute Resolution & Litigation",
-      "Conveyancing & Property Law",
       "Employment & Labour Law",
       "Family Law",
-      "Trusts, Wills & Estates",
       "Administrative & Public Law",
       "Notarial Services",
     ],
@@ -71,11 +71,42 @@ const profiles: DirectoryProfile[] = [
     accentBorder: "border-teal/25",
     featured: true,
   },
+  {
+    // Active service — placeholder copy. TODO: replace with the
+    // advisory provider's final name, description, and dedicated
+    // contact details once confirmed.
+    id: "alternative-investment-advisory",
+    name: "Alternative Investment Advisory",
+    initials: "AI",
+    tagline: "Make your money work beyond the basics",
+    description:
+      "Guidance on alternative investments — angel-syndicate access, private deals, and portfolio diversification into assets normally reserved for institutions. Built for members allocating deliberately beyond cash and listed funds. Full service details coming soon.",
+    category: "Investment Advisory",
+    location: "South Africa",
+    badges: ["Angel Syndicate", "Alternative Assets", "Advisory"],
+    services: [
+      "Angel-syndicate access",
+      "Alternative asset allocation",
+      "Portfolio diversification",
+      "Private deal flow",
+      "Investment readiness",
+    ],
+    contact: {
+      // Placeholder inbox until the advisory service has its own.
+      email: "lehumo@limepages.co.za",
+    },
+    accentColor: "text-capital",
+    accentBg: "bg-capital/10",
+    accentBorder: "border-capital/25",
+    featured: true,
+  },
 ];
 
 /* ─── Category icons ─── */
 const categoryIcon: Record<string, React.ElementType> = {
   "Legal Services": Scale,
+  "Wills & Estate Services": Scale,
+  "Investment Advisory": Building2,
   Business: Briefcase,
   Finance: Building2,
 };
@@ -100,11 +131,11 @@ export function Directory() {
             </span>
           </div>
           <h2 className="text-[clamp(1.8rem,4vw,2.8rem)] font-extrabold text-ink leading-[1.1] tracking-tight mb-3">
-            Community Directory
+            Vetted services for the community
           </h2>
           <p className="text-base text-muted leading-[1.8] max-w-[540px] mx-auto">
-            Find and connect with entrepreneurs, investors, and professionals
-            in the Lime Pages ecosystem.
+            Trusted partners offering services to Lime Pages members — from
+            wills &amp; estate planning to alternative-investment advisory.
           </p>
         </motion.div>
 
@@ -277,7 +308,7 @@ export function Directory() {
             </p>
             <p className="text-xs text-muted max-w-[320px] leading-relaxed">
               VIP members can list their businesses and services here.
-              Join Lehumo to get your profile on Lime Connect.
+              Join Lehumo to get your profile on Lime Services.
             </p>
           </div>
         </motion.div>

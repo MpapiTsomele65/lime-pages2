@@ -369,7 +369,7 @@ export function StepPayment({
           <div className="px-6 py-5 space-y-3">
             <p className="text-sm text-white/70 leading-relaxed">
               Your VIP spot is reserved. We&apos;re finalising the inner-circle
-              benefits (private WhatsApp group, Lime Connect listing, leadership
+              benefits (private WhatsApp group, Lime Services listing, leadership
               access) and will email you the moment VIP enrolment is live —
               usually within 2&ndash;3 weeks.
             </p>

@@ -94,7 +94,7 @@ export default function TermsOfServicePage() {
                     content covering public and private capital markets.
                   </li>
                   <li>
-                    <strong>Lime Connect:</strong> A professional networking
+                    <strong>Lime Services:</strong> A professional networking
                     and business directory platform.
                   </li>
                   <li>

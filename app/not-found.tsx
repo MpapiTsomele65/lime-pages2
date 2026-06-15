@@ -66,7 +66,7 @@ export default function NotFound() {
               {[
                 { label: "Lehumo", href: "/lehumo" },
                 { label: "Lime Capital", href: "/capital" },
-                { label: "Lime Connect", href: "/connect" },
+                { label: "Lime Services", href: "/services" },
                 { label: "Behind the Pages", href: "/about" },
               ].map((link) => (
                 <Link

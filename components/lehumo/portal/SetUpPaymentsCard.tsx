@@ -452,7 +452,7 @@ export function SetUpPaymentsCard({
             </div>
             <div className="px-5 py-4 text-sm text-white/65 leading-relaxed">
               Your VIP spot is reserved. We&apos;re finalising the inner-circle
-              benefits (private WhatsApp group, Lime Connect listing,
+              benefits (private WhatsApp group, Lime Services listing,
               leadership access) and we&apos;ll email you the moment VIP
               enrolment is live — typically within 2–3 weeks. Want to
               start contributing now? Use the &ldquo;Switch plan&rdquo;

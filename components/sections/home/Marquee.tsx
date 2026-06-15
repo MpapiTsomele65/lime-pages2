@@ -3,7 +3,7 @@
 const ITEMS = [
   "Lehumo Investment Trust",
   "AI-Powered Advisory",
-  "Lime Connect Directory",
+  "Lime Services Directory",
   "Financial Rights Guidance",
   "Member Portal Access",
   "SMME Advisory",

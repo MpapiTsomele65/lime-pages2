@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Users, Globe, Briefcase, Rocket, Calendar, ArrowRight, Check } from "lucide-react";
-import { Directory } from "@/components/sections/connect/Directory";
+import { Directory } from "@/components/sections/services/Directory";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -66,7 +66,7 @@ const roadmap: {
   },
 ];
 
-export default function ConnectPage() {
+export default function ServicesPage() {
   return (
     <div className="pt-[70px]">
       {/* ═══ HERO ═══ */}
@@ -83,27 +83,27 @@ export default function ConnectPage() {
         <Container className="relative z-[3] text-center">
           <motion.div {...fadeUp}>
             <div className="inline-flex items-center gap-2 bg-teal/12 border border-teal/35 rounded-full px-[18px] py-[7px] mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal" />
+              <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse" />
               <span className="text-[11px] font-semibold text-teal tracking-[1.2px] uppercase">
-                Coming Soon
+                Now Live
               </span>
             </div>
             <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-extrabold text-white leading-[1.07] tracking-tight mb-6">
               Lime{" "}
               <span className="bg-gradient-to-br from-teal to-lime bg-clip-text text-transparent">
-                Connect
+                Services
               </span>
             </h1>
             <p className="text-lg text-white/55 leading-[1.8] max-w-[600px] mx-auto mb-10">
-              A professional network where Africa&apos;s builders find each
-              other. Entrepreneurs, investors, creators, and professionals
-              &mdash; connected by a shared mission to build real wealth.
+              Vetted services for the Lime Pages community &mdash; from wills
+              &amp; estate planning to alternative-investment advisory, with
+              more trusted partners joining soon.
             </p>
             <Link
               href="/lehumo#join"
               className="inline-flex items-center gap-2 bg-lime text-navy px-9 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
             >
-              Join Lehumo for Early Access <ArrowRight className="w-4 h-4" />
+              Join the Lime community <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
         </Container>
@@ -214,16 +214,17 @@ export default function ConnectPage() {
         <Container className="relative z-[1] text-center">
           <motion.div {...fadeUp}>
             <h2 className="text-[clamp(1.8rem,4vw,3rem)] font-extrabold text-white leading-[1.1] tracking-tight mb-5">
-              Be the first to know.
+              Grow with Lime Services.
             </h2>
             <p className="text-base text-white/55 leading-[1.8] max-w-[480px] mx-auto mb-10">
-              Join Lehumo to get early access when Lime Connect launches.
+              More vetted services are joining the platform. Join the Lime
+              community to access them as they launch.
             </p>
             <Link
               href="/lehumo#join"
               className="inline-flex items-center gap-2 bg-lime text-navy px-9 py-4 rounded-full font-extrabold text-sm hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(184,255,0,0.3)] transition-all"
             >
-              Join Lehumo for Early Access <ArrowRight className="w-4 h-4" />
+              Join the Lime community <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
         </Container>

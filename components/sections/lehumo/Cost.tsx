@@ -50,7 +50,7 @@ const plans = [
       "Automated debit order",
       "Early loan access (6 months)",
       "WhatsApp VIP group",
-      "Lime Connect service listing",
+      "Lime Services service listing",
     ],
     cta: "Join Basic",
     ctaStyle:
@@ -87,7 +87,7 @@ const plans = [
     ],
     notIncluded: [
       "WhatsApp VIP group",
-      "Lime Connect service listing",
+      "Lime Services service listing",
     ],
     cta: "Join Standard",
     ctaStyle: "bg-teal text-navy hover:shadow-teal-glow",
@@ -120,7 +120,7 @@ const plans = [
       "Everything in Standard, plus:",
       "Private WhatsApp group for VIP members",
       "Direct engagement with Lehumo leadership",
-      "List your services on Lime Connect",
+      "List your services on Lime Services",
       "Priority support & exclusive updates",
     ],
     notIncluded: [],

@@ -125,7 +125,7 @@ export default function PrivacyPolicyPage() {
                   <li>
                     To provide and manage our advisory services, Lehumo
                     Collective Investment Trust, Lime Capital, and Lime
-                    Connect offerings.
+                    Services offerings.
                   </li>
                   <li>
                     To process payments through our payment partner, Paystack.

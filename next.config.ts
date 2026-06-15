@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
   env: {
     VERCEL_BLOB_RETRIES: "2",
   },
+  // Lime Connect was rebranded to Lime Services; the page moved from
+  // /connect to /services. Permanent redirect so old links, bookmarks,
+  // and the OG image route keep resolving.
+  async redirects() {
+    return [
+      { source: "/connect", destination: "/services", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

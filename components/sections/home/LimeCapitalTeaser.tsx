@@ -17,7 +17,7 @@ interface Pillar {
   icon: LucideIcon;
   title: string;
   desc: string;
-  /** When set, the card is a link (e.g. to a Lime Connect profile). */
+  /** When set, the card is a link (e.g. to a Lime Services profile). */
   href?: string;
 }
 
@@ -58,7 +58,7 @@ const pillars: Pillar[] = [
     icon: ScrollText,
     title: "Protect your legacy",
     desc: "Wills and estate planning so the wealth you build actually transfers.",
-    href: "/connect#simelane-attorneys",
+    href: "/services#simelane-attorneys",
   },
 ];
 

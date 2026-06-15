@@ -74,7 +74,7 @@ const plans = [
       "Everything in Standard, plus:",
       "Private WhatsApp group for VIP members",
       "Direct engagement with Lehumo leadership",
-      "List your services on Lime Connect",
+      "List your services on Lime Services",
       "Priority support & exclusive updates",
     ],
   },

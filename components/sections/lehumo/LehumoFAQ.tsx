@@ -167,7 +167,7 @@ const FAQ: FaqItem[] = [
           The <span className="text-white font-semibold">VIP tier (5% service fee, ~R50/month)</span>{" "}
           is still in refinement — value proposition isn&rsquo;t finalised
           yet, so it&rsquo;s flagged as <em>coming soon</em> on the plans
-          page. The current thinking is private WhatsApp, Lime Connect
+          page. The current thinking is private WhatsApp, Lime Services
           listing, priority support, and earlier visibility on sandbox ideas.
           We&rsquo;ll only roll it out if there&rsquo;s genuine demand from
           the founding 30 — and it would be additive, never a paywall on

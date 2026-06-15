@@ -86,12 +86,12 @@ const offerings: Offering[] = [
     iconColor: "text-teal",
     accentBar: "bg-teal",
     accentGlow: "group-hover:shadow-[0_0_0_6px_rgba(70,205,207,0.12)]",
-    tag: "Lime Connect",
+    tag: "Lime Services",
     title: "Find your network.",
     description:
       "A community directory of Black-owned businesses, legal services, and professionals. The network you always deserved.",
     highlight: "Coming soon",
-    href: "/connect",
+    href: "/services",
     ctaLabel: "Browse Directory",
   },
   {

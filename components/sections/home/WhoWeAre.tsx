@@ -99,7 +99,7 @@ export function WhoWeAre() {
                 Get Started &rarr;
               </Link>
               <Link
-                href="/connect"
+                href="/services"
                 className="text-navy px-8 py-3.5 rounded-full font-semibold text-sm border-2 border-navy/15 hover:bg-navy/[0.04] hover:border-navy/30 transition-all"
               >
                 Let&apos;s Connect

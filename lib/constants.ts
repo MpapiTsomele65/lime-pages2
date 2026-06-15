@@ -2,7 +2,7 @@ export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Lehumo", href: "/lehumo" },
   { label: "Lime Capital", href: "/capital" },
-  { label: "Lime Connect", href: "/connect" },
+  { label: "Lime Services", href: "/services" },
   { label: "Lime Advisory", href: "/advisory" },
 ] as const;
 
@@ -17,7 +17,7 @@ export const FOOTER_NAV = {
     { label: "Lehumo", href: "/lehumo" },
     { label: "Lime Capital", href: "/capital" },
     { label: "Lemonade Station", href: "/lemonade-station" },
-    { label: "Lime Connect", href: "/connect" },
+    { label: "Lime Services", href: "/services" },
     { label: "Lime Advisory", href: "/advisory" },
     { label: "Behind the Pages", href: "/about" },
   ],

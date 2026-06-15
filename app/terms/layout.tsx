@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service | Lime Pages",
   description:
-    "Terms and conditions governing your use of Lime Pages services, including Lime Advisory, Lehumo Collective Investment Trust, Lime Capital, and Lime Connect.",
+    "Terms and conditions governing your use of Lime Pages services, including Lime Advisory, Lehumo Collective Investment Trust, Lime Capital, and Lime Services.",
 };
 
 export default function TermsLayout({

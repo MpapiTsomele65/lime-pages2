@@ -322,7 +322,7 @@ export function AboutStory() {
                 Get Started &rarr;
               </Link>
               <Link
-                href="/connect"
+                href="/services"
                 className="text-white px-8 py-3.5 rounded-full font-semibold text-sm border-2 border-white/20 hover:bg-white/[0.07] hover:border-teal/40 transition-all"
               >
                 Let&apos;s Connect
