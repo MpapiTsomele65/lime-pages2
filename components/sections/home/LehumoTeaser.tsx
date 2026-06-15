@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Star } from "lucide-react";
-import { LaunchCountdown } from "@/components/sections/lehumo/LaunchCountdown";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 } as const,
@@ -45,10 +44,6 @@ export function LehumoTeaser() {
             <p className="text-sm font-bold tracking-[1.8px] uppercase text-teal">
               Lehumo Collective Investment Trust
             </p>
-            <LaunchCountdown
-              eyebrow="Be part of the movement"
-              align="left"
-            />
             <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden">
               <Image
                 src="/images/iwaria-inc-M7ALc3UuX_g-unsplash.jpg"
