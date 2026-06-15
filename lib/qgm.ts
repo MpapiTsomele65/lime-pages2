@@ -17,10 +17,12 @@
  *  The kick-off in June (see KICK_OFF_DATE_ISO) is a standalone launch event,
  *  not part of the quarterly cadence. */
 export const QGM_FIRST_DATE_ISO = "2026-09-03";
-/** Kick-off QGM — Thursday 11 June 2026, 18:00 SAST. One-off launch
- *  meeting where the steering committee is introduced and the cohort
- *  marks the start of collections. Sits outside the quarterly cadence. */
-export const KICK_OFF_DATE_ISO = "2026-06-11";
+/** Kick-off QGM — Wednesday 24 June 2026, 18:00 SAST. One-off launch
+ *  meeting where the steering committee is introduced, the cohort marks
+ *  the start of collections, and members are reminded to make their
+ *  first contribution before month-end. Moved from 11 June. Sits
+ *  outside the quarterly cadence. */
+export const KICK_OFF_DATE_ISO = "2026-06-24";
 export const QGM_START_TIME_SAST = "18:00";
 export const QGM_END_TIME_SAST = "19:30";
 export const QGM_DURATION_MIN = 90;
@@ -30,7 +32,7 @@ export const QGM_DESCRIPTION =
   "Quarterly AGM-style update for Lehumo members. Investment performance review, governance committee updates, and member Q&A. Hosted by lehumo@limepages.co.za — meeting link will be circulated by email closer to the date.";
 export const KICK_OFF_TITLE = "Lehumo Kick-off QGM";
 export const KICK_OFF_DESCRIPTION =
-  "Kick-off meeting for the Lehumo founding cohort. We'll mark the official start of collections, introduce the Executive Steering Governance Committee, and walk through the next 12 months together. Hosted by lehumo@limepages.co.za — meeting link circulated by email closer to the date.";
+  "Kick-off meeting for the Lehumo founding cohort. We'll mark the official start of collections, introduce the Executive Steering Governance Committee, walk through the next 12 months together, and remind everyone to make their first R1,000 contribution before the end of June. Hosted by lehumo@limepages.co.za — meeting link circulated by email closer to the date.";
 
 export interface QGMDate {
   /** ISO date string, e.g. `2026-09-03`. SAST-relative. */
@@ -169,8 +171,11 @@ export function generateQGMIcs(): string {
   const dtstamp = fmtUtc(new Date());
 
   // Stable UIDs so re-importing the .ics updates existing entries
-  // instead of creating duplicates.
-  const kickOffUid = `qgm-lehumo-kickoff-${KICK_OFF_DATE_ISO}@limepages.co.za`;
+  // instead of creating duplicates. The kick-off UID is deliberately
+  // date-INDEPENDENT so that moving the meeting (e.g. 11 → 24 June)
+  // reschedules the member's existing calendar entry in place rather
+  // than leaving a stale event behind + adding a new one.
+  const kickOffUid = `qgm-lehumo-kickoff@limepages.co.za`;
   const quarterlyUid = `qgm-lehumo-${QGM_FIRST_DATE_ISO}@limepages.co.za`;
 
   // Replace newlines with `\n` (the ICS escape) so the calendar app

@@ -193,8 +193,8 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
               We&rsquo;re forming a six-person committee to provide oversight
               of the trust. If you&rsquo;d like to serve, tell us what expertise
               you bring. Decision at the{" "}
-              <strong className="text-white">Kick-off QGM</strong> on Thursday,
-              11 June 2026 — we&rsquo;ll run a quick election if more than six
+              <strong className="text-white">Kick-off QGM</strong> on Wednesday,
+              24 June 2026 — we&rsquo;ll run a quick election if more than six
               volunteer.
             </p>
           </div>

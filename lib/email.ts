@@ -996,7 +996,7 @@ export async function sendSteeringMemberAck(params: {
 <div style="font-size:13px;color:#46CDCF;margin-top:4px;">Executive Steering Governance Committee</div></td></tr>
 <tr><td style="padding:32px;">
 <h1 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 8px;">Thanks for stepping up, ${escapeHtml(firstName)}.</h1>
-<p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 20px;">${isUpdate ? "We&rsquo;ve updated your" : "We&rsquo;ve recorded your"} application for the Lehumo Executive Steering Governance Committee. A six-person committee will be confirmed at our <strong style="color:#fff;">Kick-off QGM on Thursday, 11 June 2026</strong>. If more than six people volunteer, we&rsquo;ll run a quick election before then.</p>
+<p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 20px;">${isUpdate ? "We&rsquo;ve updated your" : "We&rsquo;ve recorded your"} application for the Lehumo Executive Steering Governance Committee. A six-person committee will be confirmed at our <strong style="color:#fff;">Kick-off QGM on Wednesday, 24 June 2026</strong>. If more than six people volunteer, we&rsquo;ll run a quick election before then.</p>
 <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(184,255,0,0.06);border:1px solid rgba(184,255,0,0.20);border-radius:14px;margin-bottom:18px;"><tr><td style="padding:18px 22px;">
 <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">Member</div>
 <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:14px;">${escapeHtml(fullName)} &middot; ${memberRef}</div>

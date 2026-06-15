@@ -47,7 +47,7 @@ export default function LehumoLegalHubPage() {
               Collective Investment Trust. Read the Member Agreement
               before joining; the Terms of Reference are being
               co-created with the founding cohort and finalised at the
-              Kick-off QGM on 11 June 2026.
+              Kick-off QGM on 24 June 2026.
             </p>
           </motion.div>
         </Container>

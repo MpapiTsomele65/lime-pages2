@@ -107,7 +107,7 @@ export function QGMSummaryCard() {
           <p className="mt-2 text-[12.5px] text-white/55 leading-relaxed">
             {QGM_START_TIME_SAST}–{QGM_END_TIME_SAST} SAST · Virtual ·{" "}
             {next.kind === "kick-off"
-              ? "Launch celebration, steering committee introduction, Q&A"
+              ? "Launch celebration, steering committee introduction, first-contribution reminder, Q&A"
               : "Investment update, governance committee report, member Q&A"}
           </p>
           <p className="mt-3 text-[11px] text-white/40">
@@ -121,6 +121,19 @@ export function QGMSummaryCard() {
             — meeting link circulated by email the day before.
           </p>
         </div>
+
+        {/* Kick-off only — tie the launch meeting to the first-contribution
+            deadline so the two reinforce each other. */}
+        {next.kind === "kick-off" && (
+          <div className="rounded-[14px] border border-[#B8FF00]/20 bg-[#B8FF00]/[0.05] px-4 py-3 mb-5">
+            <p className="text-[12.5px] text-white/70 leading-relaxed">
+              <span className="font-semibold text-[#B8FF00]">Heads up:</span>{" "}
+              make your first R1,000 contribution before{" "}
+              <strong className="text-white">30 June</strong> — we&rsquo;ll walk
+              through how at the meeting.
+            </p>
+          </div>
+        )}
 
         {/* Calendar actions — both subscribe the user to the entire
             quarterly series via RRULE, not just the next meeting. */}
