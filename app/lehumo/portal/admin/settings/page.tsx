@@ -1,5 +1,7 @@
 import { getAdminSession } from "@/lib/admin-auth";
+import { getFundPortfolio } from "@/lib/fund-settings";
 import { AdminPageHeader } from "@/components/lehumo/admin/AdminPageHeader";
+import { FundPortfolioEditor } from "@/components/lehumo/admin/FundPortfolioEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminSettingsPage() {
   const session = await getAdminSession();
   const email = session?.email ?? "Admin";
+  const portfolio = await getFundPortfolio();
 
   return (
     <div className="space-y-8">
@@ -26,6 +29,8 @@ export default async function AdminSettingsPage() {
         subtitle="Pool configuration, environment variables, and operational toggles."
         rightChip={email}
       />
+
+      <FundPortfolioEditor initial={portfolio} />
 
       <section
         className="rounded-[24px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] p-7"

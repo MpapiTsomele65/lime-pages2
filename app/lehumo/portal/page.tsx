@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/session";
 import { getCommunityPoolStats, getMemberById } from "@/lib/airtable";
+import { getFundPortfolio } from "@/lib/fund-settings";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { getSastMonthInfo, isBeforeLaunch } from "@/lib/definitions";
 import { getSastCurrentPeriod } from "@/lib/member-contributions-view";
@@ -63,12 +64,18 @@ export default async function PortalDashboardPage({
     }
   }
 
-  const [member, communityStats] = await Promise.all([
+  const [member, communityStats, fundPortfolio] = await Promise.all([
     getMemberById(session.memberId),
     getCommunityPoolStats().catch((err) => {
       // Community stats are non-critical — don't break the dashboard if Airtable
       // returns an error for the list endpoint (e.g. permissions change).
       console.error("Failed to load community pool stats:", err);
+      return null;
+    }),
+    // getFundPortfolio already resolves to a default-allocation fallback on
+    // error, so it never rejects — but guard anyway for symmetry.
+    getFundPortfolio().catch((err) => {
+      console.error("Failed to load fund portfolio:", err);
       return null;
     }),
   ]);
@@ -117,6 +124,7 @@ export default async function PortalDashboardPage({
       <DashboardOverview
         member={member}
         communityStats={communityStats}
+        fundPortfolio={fundPortfolio}
         isAdmin={isAdmin}
         currentMonth={currentMonth}
         currentPeriod={currentPeriod}

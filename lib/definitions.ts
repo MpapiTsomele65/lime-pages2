@@ -288,6 +288,93 @@ export const ID_TYPE_CHOICE_ID_TO_NAME: Record<string, string> = {
  *  base as Members (`AIRTABLE_BASE_ID`). */
 export const CONTRIBUTIONS_TABLE_ID = "tblN9IO7pgfaMRE2f";
 
+/** Airtable table ID for the singleton Fund Settings table — holds the
+ *  current portfolio allocation + investment-strategy narrative shown on
+ *  the member portal, edited via admin Settings. Accessed by field name
+ *  (it's a small self-contained config table, not field-ID-keyed like
+ *  Contributions). Same base as Members. */
+export const LEHUMO_FUND_SETTINGS_TABLE_ID = "tbl5zyeRir8zNx0mW";
+
+/**
+ * One slice of the fund's portfolio allocation. `pct` is a whole-ish
+ * percentage (0–100); `color` is a hex string used for the donut + dot.
+ */
+export interface PortfolioSlice {
+  label: string;
+  pct: number;
+  color: string;
+}
+
+/**
+ * Fund-level portfolio + strategy config as the app consumes it.
+ * `asAt` is `YYYY-MM-DD` (or null if never set). The member "Where is
+ * our money now?" card + the admin editor both speak this shape.
+ */
+export interface FundPortfolio {
+  allocation: PortfolioSlice[];
+  strategyNote: string;
+  asAt: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+/**
+ * Canonical default allocation — mirrors the marketing site's
+ * InvestmentStrategy section (Sum1 40 / Cash 40 / Bonds 10 / Alt 10).
+ * Used as the seed for the Airtable singleton AND the fallback when the
+ * record is missing/unparseable, so the member card always renders.
+ */
+export const LEHUMO_DEFAULT_ALLOCATION: PortfolioSlice[] = [
+  { label: "Sum1 Investments", pct: 40, color: "#B8FF00" },
+  { label: "Cash Reserves", pct: 40, color: "#46cdcf" },
+  { label: "SA Bonds / Money Market", pct: 10, color: "#6366f1" },
+  { label: "Alternative Investments", pct: 10, color: "#a855f7" },
+];
+
+/** Palette cycled through for newly-added allocation rows in the admin
+ *  editor, so every slice gets a distinct donut colour without the
+ *  admin picking hex codes. */
+export const LEHUMO_ALLOCATION_PALETTE = [
+  "#B8FF00", "#46cdcf", "#6366f1", "#a855f7",
+  "#f59e0b", "#ec4899", "#10b981", "#0ea5e9",
+] as const;
+
+/**
+ * Admin save payload for the fund portfolio + strategy. Percentages
+ * are validated to sum to ~100 (allowing a 0.5 rounding tolerance) so
+ * the donut is always whole. Colors are hex; labels non-empty.
+ */
+export const FundPortfolioSchema = z
+  .object({
+    allocation: z
+      .array(
+        z.object({
+          label: z.string().trim().min(1, "Label required").max(60),
+          pct: z.number().min(0).max(100),
+          color: z
+            .string()
+            .regex(/^#[0-9a-fA-F]{6}$/, "Color must be a #RRGGBB hex"),
+        }),
+      )
+      .min(1, "At least one allocation row")
+      .max(12),
+    strategyNote: z.string().max(2000),
+    asAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+      .optional(),
+  })
+  .strict()
+  .refine(
+    (v) => {
+      const sum = v.allocation.reduce((s, r) => s + r.pct, 0);
+      return Math.abs(sum - 100) <= 0.5;
+    },
+    { message: "Allocation percentages must sum to 100", path: ["allocation"] },
+  );
+
+export type FundPortfolioInput = z.input<typeof FundPortfolioSchema>;
+
 /**
  * Field IDs on the Contributions table. Stable across schema changes,
  * unlike field names — always reference these in Airtable API calls.

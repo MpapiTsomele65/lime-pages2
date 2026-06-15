@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, CheckCircle2, Lock, Shield, X } from "lucide-react";
-import type { CommunityPoolStats, LehumoMember } from "@/lib/definitions";
+import type {
+  CommunityPoolStats,
+  FundPortfolio,
+  LehumoMember,
+} from "@/lib/definitions";
 import { formatMemberNumber } from "@/lib/definitions";
 import { MemberProfileCard } from "./MemberProfileCard";
 import { ContributionGrid } from "./ContributionGrid";
@@ -16,6 +20,7 @@ import { BeneficiaryCard } from "./BeneficiaryCard";
 import { PaymentCard } from "./PaymentCard";
 import { SetUpPaymentsCard } from "./SetUpPaymentsCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
+import { WhereIsOurMoneyCard } from "./WhereIsOurMoneyCard";
 import { CompletenessMeter } from "./CompletenessMeter";
 import { BankDepositCard } from "./BankDepositCard";
 import { EmergencyAccessCard } from "./EmergencyAccessCard";
@@ -26,6 +31,11 @@ import { SteeringCommitteeCard } from "./SteeringCommitteeCard";
 interface DashboardOverviewProps {
   member: LehumoMember;
   communityStats: CommunityPoolStats | null;
+  /** Current portfolio allocation + strategy for the "Where is our
+   *  money now?" card. Null only if the read threw — the card is
+   *  suppressed in that case (getFundPortfolio normally self-heals to
+   *  the default allocation). */
+  fundPortfolio: FundPortfolio | null;
   isAdmin?: boolean;
   /** SAST month code (e.g. "Apr") computed server-side. Powers the
    *  ContributionReminderCard's "pay this month" copy. */
@@ -53,6 +63,7 @@ interface DashboardOverviewProps {
 export function DashboardOverview({
   member,
   communityStats,
+  fundPortfolio,
   isAdmin = false,
   currentMonth,
   currentPeriod,
@@ -290,6 +301,19 @@ export function DashboardOverview({
           stats={communityStats}
           myContributed={myContributed}
           beforeLaunch={beforeLaunch}
+        />
+      )}
+
+      {/* Where is our money now? — current portfolio allocation +
+          strategy. Sits directly under the pool overview: members see
+          how much is pooled, then where it's invested. totalPool comes
+          from the same community stats. */}
+      {fundPortfolio && (
+        <WhereIsOurMoneyCard
+          allocation={fundPortfolio.allocation}
+          strategyNote={fundPortfolio.strategyNote}
+          asAt={fundPortfolio.asAt}
+          totalPool={communityStats?.totalPool ?? 0}
         />
       )}
 

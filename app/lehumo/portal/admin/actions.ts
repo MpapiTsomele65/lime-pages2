@@ -35,17 +35,21 @@ import {
   CONTRIBUTION_STATUS,
   BeneficiaryFormSchema,
   CONTRIBUTION_SOURCE,
+  FundPortfolioSchema,
   emailField,
   formatMemberNumber,
   todayDate,
   type ContributionSource,
   type ContributionStatus,
+  type FundPortfolio,
+  type FundPortfolioInput,
   type LehumoContribution,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
   type BeneficiaryFormData,
 } from "@/lib/definitions";
+import { upsertFundPortfolio } from "@/lib/fund-settings";
 import {
   ensureCanonicalMemberSchedule,
   getContributionById,
@@ -1010,6 +1014,45 @@ export async function adminBackfillMemberSchedule(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Schedule backfill failed",
+    };
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// adminUpdateFundPortfolio — edit the member-facing portfolio + strategy
+// ──────────────────────────────────────────────────────────────────────
+//
+// Backs the "Where is our money now?" admin editor on the Settings page.
+// Writes the singleton Lehumo Fund Settings row; the member portal reads
+// it via getFundPortfolio(). Gated by requireAdmin; the admin's email is
+// stamped onto the Updated By audit field.
+
+export type FundPortfolioActionResult =
+  | { ok: true; portfolio: FundPortfolio }
+  | { ok: false; error: string };
+
+export async function adminUpdateFundPortfolio(
+  input: FundPortfolioInput,
+): Promise<FundPortfolioActionResult> {
+  const session = await getAdminSession();
+  if (!session) return { ok: false, error: "Forbidden" };
+
+  const parsed = FundPortfolioSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  try {
+    const portfolio = await upsertFundPortfolio(parsed.data, session.email);
+    return { ok: true, portfolio };
+  } catch (err) {
+    console.error("adminUpdateFundPortfolio error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not save portfolio",
     };
   }
 }
