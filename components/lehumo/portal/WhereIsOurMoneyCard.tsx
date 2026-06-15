@@ -1,30 +1,40 @@
 "use client";
 
 /**
- * WhereIsOurMoneyCard — member-facing portfolio allocation.
+ * WhereIsOurMoneyCard — member-facing portfolio allocation, shown as
+ * two side-by-side views:
  *
- * Answers "where is our money now?" with a conic-gradient donut of the
- * current allocation, each slice's percentage AND its Rand value of the
- * live total pool, plus the admin-authored strategy narrative and an
- * "as at" date. Allocation + note come from the Lehumo Fund Settings
- * singleton (admin-editable on Settings); totalPool comes from the
- * community pool stats already loaded for the dashboard.
+ *   • CURRENT — where the money actually sits today (admin-editable via
+ *     the Fund Settings singleton). At launch this is ~100% cash while
+ *     the collective investment portfolio is established. Shows each
+ *     slice's % AND its Rand value of the live pool.
+ *   • TARGET — the agreed steady-state strategy the fund is building
+ *     toward (LEHUMO_TARGET_ALLOCATION, 40/40/10/10). Fixed north star,
+ *     percentages only.
  *
- * Dark navy card matching CommunityPoolCard; donut pattern mirrors the
- * marketing InvestmentStrategy section.
+ * Showing both together keeps members reminded that today's allocation
+ * is a deliberate, temporary build-phase position — not the destination.
+ * The admin-authored strategy note explains the progression.
+ *
+ * Dark navy card matching CommunityPoolCard; conic-gradient donuts
+ * mirror the marketing InvestmentStrategy section.
  */
 
 import { motion } from "framer-motion";
-import { PieChart } from "lucide-react";
+import { ArrowRight, PieChart } from "lucide-react";
 
-import type { PortfolioSlice } from "@/lib/definitions";
+import {
+  LEHUMO_TARGET_ALLOCATION,
+  type PortfolioSlice,
+} from "@/lib/definitions";
 
 interface WhereIsOurMoneyCardProps {
+  /** CURRENT allocation — where the money is today. */
   allocation: PortfolioSlice[];
   strategyNote: string;
   /** YYYY-MM-DD, or null. */
   asAt: string | null;
-  /** Current total pool in ZAR — drives each slice's Rand value. */
+  /** Current total pool in ZAR — drives the current view's Rand values. */
   totalPool: number;
 }
 
@@ -49,22 +59,6 @@ export function WhereIsOurMoneyCard({
   asAt,
   totalPool,
 }: WhereIsOurMoneyCardProps) {
-  // Normalise so the donut always closes a full circle even if the
-  // stored percentages drift slightly off 100.
-  const totalPct = allocation.reduce((s, r) => s + r.pct, 0) || 1;
-
-  // Build the conic-gradient stops + remember each slice's [start,end]
-  // sweep so the legend can read identically to the ring.
-  let cursor = 0;
-  const stops: string[] = [];
-  const slices = allocation.map((slice) => {
-    const start = (cursor / totalPct) * 100;
-    cursor += slice.pct;
-    const end = (cursor / totalPct) * 100;
-    stops.push(`${slice.color} ${start.toFixed(2)}% ${end.toFixed(2)}%`);
-    return { ...slice, randValue: (slice.pct / 100) * totalPool };
-  });
-  const conic = `conic-gradient(${stops.join(", ")})`;
   const asAtLabel = formatAsAt(asAt);
 
   return (
@@ -83,13 +77,13 @@ export function WhereIsOurMoneyCard({
             Where is our money now?
           </p>
           <h2 className="mt-1 text-xl md:text-2xl font-bold text-white">
-            Current portfolio allocation
+            Current allocation &amp; where we&rsquo;re heading
           </h2>
         </div>
         {asAtLabel && (
           <div className="text-right">
             <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40">
-              As at
+              Current as at
             </p>
             <p className="text-sm font-semibold text-white/80 tabular-nums mt-0.5">
               {asAtLabel}
@@ -98,56 +92,42 @@ export function WhereIsOurMoneyCard({
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8">
-        {/* Donut */}
-        <div className="relative shrink-0 mx-auto sm:mx-0">
-          <div
-            className="h-40 w-40 rounded-full"
-            style={{ background: conic }}
-            role="img"
-            aria-label="Portfolio allocation donut chart"
-          />
-          {/* Inner hole — punches the ring into a donut + shows the pool. */}
-          <div className="absolute inset-0 m-[26px] rounded-full bg-[#0F2040] border border-white/[0.06] flex flex-col items-center justify-center">
-            <span className="text-[9.5px] font-semibold uppercase tracking-[1px] text-white/40">
-              Total pool
-            </span>
-            <span className="text-base font-extrabold text-[#B8FF00] tabular-nums leading-tight">
-              {formatZAR(totalPool)}
-            </span>
-          </div>
+      {/* Two views: current (live) + target (steady state). The arrow
+          between them reads "today → destination". */}
+      <div className="flex flex-col lg:flex-row items-stretch gap-4">
+        {/* CURRENT */}
+        <AllocationView
+          allocation={allocation}
+          totalPool={totalPool}
+          showRand
+          eyebrow="Current"
+          eyebrowTint="text-[#46CDCF]"
+          note="Held in cash during the build phase"
+          centerLabel="Total pool"
+          centerValue={formatZAR(totalPool)}
+        />
+
+        {/* Arrow / progression marker */}
+        <div className="flex lg:flex-col items-center justify-center gap-1 text-white/30 shrink-0">
+          <ArrowRight className="h-5 w-5 lg:rotate-0 rotate-90 hidden lg:block" />
+          <ArrowRight className="h-5 w-5 rotate-90 lg:hidden" />
+          <span className="text-[9px] font-semibold uppercase tracking-[1px]">
+            Building toward
+          </span>
         </div>
 
-        {/* Legend */}
-        <ul className="flex-1 space-y-2.5 min-w-0">
-          {slices.map((slice) => (
-            <li
-              key={slice.label}
-              className="flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span
-                  className="h-3 w-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: slice.color }}
-                  aria-hidden
-                />
-                <span className="text-sm text-white/85 truncate">
-                  {slice.label}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2 shrink-0 tabular-nums">
-                <span className="text-sm font-bold text-white">
-                  {slice.pct}%
-                </span>
-                {totalPool > 0 && (
-                  <span className="text-xs text-white/45">
-                    {formatZAR(slice.randValue)}
-                  </span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        {/* TARGET */}
+        <AllocationView
+          allocation={LEHUMO_TARGET_ALLOCATION}
+          totalPool={0}
+          showRand={false}
+          eyebrow="Target · steady state"
+          eyebrowTint="text-[#B8FF00]"
+          note="Our agreed long-term strategy"
+          centerLabel="Steady"
+          centerValue="state"
+          muted
+        />
       </div>
 
       {/* Strategy narrative */}
@@ -163,10 +143,119 @@ export function WhereIsOurMoneyCard({
       )}
 
       <p className="mt-4 text-[10px] text-white/30 leading-relaxed">
-        Allocation reflects the fund&rsquo;s current strategy and is reviewed
-        regularly. Rand values are each slice&rsquo;s share of the total pool
-        today.
+        The current allocation is a deliberate build-phase position and is
+        reviewed regularly — we deploy toward the target as collective
+        investment mandates are signed. Rand values are each slice&rsquo;s
+        share of the total pool today.
       </p>
     </motion.section>
+  );
+}
+
+// ── Internal: one allocation view (donut + legend) ──────────────────
+
+function AllocationView({
+  allocation,
+  totalPool,
+  showRand,
+  eyebrow,
+  eyebrowTint,
+  note,
+  centerLabel,
+  centerValue,
+  muted = false,
+}: {
+  allocation: PortfolioSlice[];
+  totalPool: number;
+  showRand: boolean;
+  eyebrow: string;
+  eyebrowTint: string;
+  note: string;
+  centerLabel: string;
+  centerValue: string;
+  muted?: boolean;
+}) {
+  const totalPct = allocation.reduce((s, r) => s + r.pct, 0) || 1;
+  let cursor = 0;
+  const stops: string[] = [];
+  const slices = allocation.map((slice) => {
+    const start = (cursor / totalPct) * 100;
+    cursor += slice.pct;
+    const end = (cursor / totalPct) * 100;
+    stops.push(`${slice.color} ${start.toFixed(2)}% ${end.toFixed(2)}%`);
+    return { ...slice, randValue: (slice.pct / 100) * totalPool };
+  });
+  const conic = `conic-gradient(${stops.join(", ")})`;
+
+  return (
+    <div
+      className={`flex-1 rounded-[18px] border p-4 sm:p-5 ${
+        muted
+          ? "border-white/[0.06] bg-white/[0.015]"
+          : "border-white/[0.08] bg-white/[0.025]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <p
+          className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${eyebrowTint}`}
+        >
+          {eyebrow}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {/* Donut */}
+        <div className="relative shrink-0">
+          <div
+            className="h-28 w-28 rounded-full"
+            style={{ background: conic }}
+            role="img"
+            aria-label={`${eyebrow} allocation donut`}
+          />
+          <div className="absolute inset-0 m-[20px] rounded-full bg-[#0F2040] border border-white/[0.06] flex flex-col items-center justify-center text-center px-1">
+            <span className="text-[8px] font-semibold uppercase tracking-[0.5px] text-white/40 leading-tight">
+              {centerLabel}
+            </span>
+            <span
+              className={`text-[12px] font-extrabold tabular-nums leading-tight ${
+                muted ? "text-white/70" : "text-[#B8FF00]"
+              }`}
+            >
+              {centerValue}
+            </span>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <ul className="flex-1 min-w-0 space-y-2">
+          {slices.map((slice) => (
+            <li key={slice.label} className="min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="h-2.5 w-2.5 rounded-sm shrink-0"
+                    style={{ backgroundColor: slice.color }}
+                    aria-hidden
+                  />
+                  <span className="text-[12.5px] text-white/80 truncate">
+                    {slice.label}
+                  </span>
+                </div>
+                <span className="text-[12.5px] font-bold text-white tabular-nums shrink-0">
+                  {slice.pct}%
+                </span>
+              </div>
+              {showRand && totalPool > 0 && (
+                <p className="ml-[18px] text-[11px] text-white/40 tabular-nums">
+                  {formatZAR(slice.randValue)}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <p className="mt-3 text-[11px] text-white/40 leading-snug">{note}</p>
+    </div>
   );
 }

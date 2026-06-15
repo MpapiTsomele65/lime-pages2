@@ -96,11 +96,13 @@ export function FundPortfolioEditor({ initial }: FundPortfolioEditorProps) {
       }}
     >
       <h2 className="text-[17px] font-semibold tracking-tight text-[#0B0B0B] mb-1">
-        Portfolio allocation &amp; strategy
+        Current portfolio allocation &amp; strategy
       </h2>
       <p className="text-sm text-[#6B7280] mb-5">
-        Drives the member portal&rsquo;s &ldquo;Where is our money now?&rdquo;
-        card. Percentages must sum to 100%.
+        The <strong>current</strong> allocation shown on the member portal&rsquo;s
+        &ldquo;Where is our money now?&rdquo; card — update it as funds are
+        deployed. The 40/40/10/10 steady-state target sits beside it
+        automatically. Percentages must sum to 100%.
       </p>
 
       {/* Allocation rows */}

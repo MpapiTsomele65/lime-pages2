@@ -319,16 +319,30 @@ export interface FundPortfolio {
 }
 
 /**
- * Canonical default allocation — mirrors the marketing site's
- * InvestmentStrategy section (Sum1 40 / Cash 40 / Bonds 10 / Alt 10).
- * Used as the seed for the Airtable singleton AND the fallback when the
- * record is missing/unparseable, so the member card always renders.
+ * Target / steady-state allocation — the agreed ideal the fund is
+ * building toward (Sum1 40 / Cash 40 / Bonds 10 / Alt 10). Mirrors the
+ * marketing site's InvestmentStrategy section. Shown on the member card
+ * as "where we're heading" alongside the live current allocation, so
+ * members understand today's split is a stepping stone, not the
+ * destination. Fixed in code — it's the north star, not a monthly knob.
  */
-export const LEHUMO_DEFAULT_ALLOCATION: PortfolioSlice[] = [
+export const LEHUMO_TARGET_ALLOCATION: PortfolioSlice[] = [
   { label: "Sum1 Investments", pct: 40, color: "#B8FF00" },
   { label: "Cash Reserves", pct: 40, color: "#46cdcf" },
   { label: "SA Bonds / Money Market", pct: 10, color: "#6366f1" },
   { label: "Alternative Investments", pct: 10, color: "#a855f7" },
+];
+
+/**
+ * Default CURRENT allocation — where the money actually sits today.
+ * At launch the pool is held entirely in cash while the collective
+ * investment portfolio is established, so the default (and the fallback
+ * when the Fund Settings record is missing) is 100% cash. Admin edits
+ * this via Settings as funds are progressively deployed toward the
+ * LEHUMO_TARGET_ALLOCATION steady state.
+ */
+export const LEHUMO_DEFAULT_ALLOCATION: PortfolioSlice[] = [
+  { label: "Cash Reserves", pct: 100, color: "#46cdcf" },
 ];
 
 /** Palette cycled through for newly-added allocation rows in the admin
