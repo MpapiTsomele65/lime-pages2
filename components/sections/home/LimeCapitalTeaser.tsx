@@ -40,16 +40,19 @@ const pillars: Pillar[] = [
     icon: GraduationCap,
     title: "Capital markets, decoded",
     desc: "How unit trusts, ETFs, and the JSE actually work — in plain language.",
+    href: "/capital#investing-101",
   },
   {
     icon: LineChart,
     title: "Compare the funds",
     desc: "Real 10-year performance across SA's most-watched funds, side by side.",
+    href: "/capital#fund-performance",
   },
   {
     icon: Rocket,
     title: "Alternative investments",
     desc: "Co-invest in vetted early-stage ventures through the Angel Syndicate.",
+    href: "/capital#alternative-investments",
   },
   {
     icon: ScrollText,
