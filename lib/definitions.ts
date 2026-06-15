@@ -314,6 +314,9 @@ export interface FundPortfolio {
   allocation: PortfolioSlice[];
   strategyNote: string;
   asAt: string | null;
+  /** Cumulative pool interest earned to date (ZAR), admin-entered.
+   *  Feeds the member dashboard's Interest Earned tile + pool chart. */
+  interestEarned: number;
   updatedAt: string | null;
   updatedBy: string | null;
 }
@@ -388,6 +391,20 @@ export const FundPortfolioSchema = z
   );
 
 export type FundPortfolioInput = z.input<typeof FundPortfolioSchema>;
+
+/**
+ * Admin save payload for the manually-entered pool interest. Separate
+ * from the allocation/strategy save so the two can be edited
+ * independently (both write the same Fund Settings singleton). Capped
+ * at a sane ceiling to catch fat-finger entries.
+ */
+export const FundInterestSchema = z
+  .object({
+    interestEarned: z.number().min(0).max(100_000_000),
+  })
+  .strict();
+
+export type FundInterestInput = z.input<typeof FundInterestSchema>;
 
 /**
  * Field IDs on the Contributions table. Stable across schema changes,

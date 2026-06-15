@@ -36,6 +36,7 @@ import {
   BeneficiaryFormSchema,
   CONTRIBUTION_SOURCE,
   FundPortfolioSchema,
+  FundInterestSchema,
   emailField,
   formatMemberNumber,
   todayDate,
@@ -43,13 +44,14 @@ import {
   type ContributionStatus,
   type FundPortfolio,
   type FundPortfolioInput,
+  type FundInterestInput,
   type LehumoContribution,
   type LehumoMember,
   type MemberStatus,
   type KycStatus,
   type BeneficiaryFormData,
 } from "@/lib/definitions";
-import { upsertFundPortfolio } from "@/lib/fund-settings";
+import { upsertFundInterest, upsertFundPortfolio } from "@/lib/fund-settings";
 import {
   ensureCanonicalMemberSchedule,
   getContributionById,
@@ -1053,6 +1055,44 @@ export async function adminUpdateFundPortfolio(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Could not save portfolio",
+    };
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// adminUpdateFundInterest — manually-entered pool interest earned
+// ──────────────────────────────────────────────────────────────────────
+//
+// Backs the "Pool interest earned" input on the admin Portfolio page.
+// Writes the same Fund Settings singleton (just the Interest Earned
+// field) and feeds the member dashboard's Interest Earned tile. Gated
+// by requireAdmin; stamps Updated By.
+
+export async function adminUpdateFundInterest(
+  input: FundInterestInput,
+): Promise<FundPortfolioActionResult> {
+  const session = await getAdminSession();
+  if (!session) return { ok: false, error: "Forbidden" };
+
+  const parsed = FundInterestSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  try {
+    const portfolio = await upsertFundInterest(
+      parsed.data.interestEarned,
+      session.email,
+    );
+    return { ok: true, portfolio };
+  } catch (err) {
+    console.error("adminUpdateFundInterest error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not save interest",
     };
   }
 }

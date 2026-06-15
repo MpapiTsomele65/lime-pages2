@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getFundInterestConfig } from "./fund-settings";
 import {
   AIRTABLE_FIELDS,
   MONTH_NAMES,
@@ -890,8 +891,15 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
   const currentMonthIndex = now.getMonth();
   const currentMonth = MONTH_NAMES[currentMonthIndex];
 
+  // Interest now comes from the admin-entered Fund Settings value.
+  // During the transition we fall back to the legacy env vars when no
+  // interest has been entered in Airtable yet, so an existing env value
+  // isn't lost before admin sets it on the Portfolio page.
+  const fundInterest = await getFundInterestConfig(currentMonthIndex);
   const { total: totalInterest, monthly: monthlyInterest } =
-    loadInterestConfig(currentMonthIndex);
+    fundInterest.total > 0
+      ? fundInterest
+      : loadInterestConfig(currentMonthIndex);
 
   const monthlyContributors: number[] = MONTH_NAMES.map((month) =>
     allRecords.reduce((n, m) => n + (m.contributions[month] ? 1 : 0), 0),

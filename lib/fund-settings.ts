@@ -1,9 +1,9 @@
 import "server-only";
 
-import { getHeaders } from "./airtable";
 import {
   LEHUMO_DEFAULT_ALLOCATION,
   LEHUMO_FUND_SETTINGS_TABLE_ID,
+  MONTH_NAMES,
   type FundPortfolio,
   type FundPortfolioInput,
   type PortfolioSlice,
@@ -12,18 +12,28 @@ import {
 /**
  * Fund-level settings store — the singleton "portfolio" row in the
  * Lehumo Fund Settings table (one row, Key="portfolio"). Holds the
- * current portfolio allocation + investment-strategy narrative shown
- * on the member portal's "Where is our money now?" card, edited from
- * admin Settings.
+ * current portfolio allocation, investment-strategy note, and the
+ * manually-entered pool interest earned — all surfaced on the member
+ * portal and edited from the admin Portfolio page.
  *
  * Accessed by FIELD NAME (not field-ID) — it's a small self-contained
- * config table, not the field-ID-keyed Contributions/Members tables.
- * Reuses the shared `getHeaders` auth from lib/airtable.
+ * config table. Deliberately self-contained (its own Airtable auth
+ * header) rather than importing from lib/airtable, so lib/airtable can
+ * import THIS module for the interest config without a circular import.
  *
  * server-only: importing from a client component fails at build time.
  */
 
 const SINGLETON_KEY = "portfolio";
+
+function getHeaders() {
+  const pat = process.env.AIRTABLE_PAT;
+  if (!pat) throw new Error("AIRTABLE_PAT is not set");
+  return {
+    Authorization: `Bearer ${pat}`,
+    "Content-Type": "application/json",
+  };
+}
 
 function getSettingsUrl(recordId?: string): string {
   const baseId = process.env.AIRTABLE_BASE_ID;
@@ -45,8 +55,8 @@ function nowSastIso(): string {
 
 /**
  * Parse + sanitise the stored Allocation JSON. Anything malformed
- * (missing field, wrong type, empty array) falls back to the default
- * allocation so the member card never renders broken.
+ * falls back to the default allocation so the member card never
+ * renders broken.
  */
 function parseAllocation(raw: unknown): PortfolioSlice[] {
   if (typeof raw !== "string" || !raw.trim()) return LEHUMO_DEFAULT_ALLOCATION;
@@ -94,9 +104,9 @@ async function fetchPortfolioRecord(): Promise<{
 }
 
 /**
- * Read the current fund portfolio. Always resolves to a renderable
- * shape — falls back to the default allocation + empty narrative when
- * no record exists yet or the JSON is unparseable.
+ * Read the current fund settings. Always resolves to a renderable
+ * shape — falls back to the default allocation + zero interest when no
+ * record exists yet or the JSON is unparseable.
  */
 export async function getFundPortfolio(): Promise<FundPortfolio> {
   let record: Awaited<ReturnType<typeof fetchPortfolioRecord>> = null;
@@ -111,6 +121,7 @@ export async function getFundPortfolio(): Promise<FundPortfolio> {
       allocation: LEHUMO_DEFAULT_ALLOCATION,
       strategyNote: "",
       asAt: null,
+      interestEarned: 0,
       updatedAt: null,
       updatedBy: null,
     };
@@ -121,29 +132,29 @@ export async function getFundPortfolio(): Promise<FundPortfolio> {
     allocation: parseAllocation(f["Allocation"]),
     strategyNote: typeof f["Strategy Note"] === "string" ? f["Strategy Note"] : "",
     asAt: typeof f["As At"] === "string" ? f["As At"] : null,
+    interestEarned:
+      typeof f["Interest Earned"] === "number" ? f["Interest Earned"] : 0,
     updatedAt: typeof f["Updated At"] === "string" ? f["Updated At"] : null,
     updatedBy: typeof f["Updated By"] === "string" ? f["Updated By"] : null,
   };
 }
 
 /**
- * Upsert the singleton portfolio config. Validated input is expected
- * (the admin action runs FundPortfolioSchema first). Creates the row
- * on first save, PATCHes thereafter. Returns the freshly-read shape.
+ * Partial write to the singleton — only the provided fields are
+ * touched, plus the Updated At/By audit. Creates the row on first
+ * save, PATCHes thereafter. Shared by the allocation + interest save
+ * paths so each edits its own fields without clobbering the other.
  */
-export async function upsertFundPortfolio(
-  input: FundPortfolioInput,
+async function writeSettings(
+  fields: Record<string, unknown>,
   adminEmail: string,
 ): Promise<FundPortfolio> {
-  const now = nowSastIso();
-  const fields: Record<string, unknown> = {
+  const payload: Record<string, unknown> = {
+    ...fields,
     Key: SINGLETON_KEY,
-    Allocation: JSON.stringify(input.allocation),
-    "Strategy Note": input.strategyNote,
-    "Updated At": now,
+    "Updated At": nowSastIso(),
     "Updated By": adminEmail,
   };
-  if (input.asAt) fields["As At"] = input.asAt;
 
   const existing = await fetchPortfolioRecord();
 
@@ -151,21 +162,80 @@ export async function upsertFundPortfolio(
     ? await fetch(getSettingsUrl(existing.id), {
         method: "PATCH",
         headers: getHeaders(),
-        body: JSON.stringify({ fields }),
+        body: JSON.stringify({ fields: payload }),
       })
     : await fetch(getSettingsUrl(), {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ records: [{ fields }] }),
+        body: JSON.stringify({ records: [{ fields: payload }] }),
       });
 
   if (!res.ok) {
     throw new Error(
-      `Airtable upsertFundPortfolio error: ${res.status} — ${await res
+      `Airtable writeSettings error: ${res.status} — ${await res
         .text()
         .catch(() => "")}`,
     );
   }
 
   return getFundPortfolio();
+}
+
+/**
+ * Upsert the portfolio allocation + strategy + as-at. Validated input
+ * is expected (the admin action runs FundPortfolioSchema first).
+ */
+export async function upsertFundPortfolio(
+  input: FundPortfolioInput,
+  adminEmail: string,
+): Promise<FundPortfolio> {
+  const fields: Record<string, unknown> = {
+    Allocation: JSON.stringify(input.allocation),
+    "Strategy Note": input.strategyNote,
+  };
+  if (input.asAt) fields["As At"] = input.asAt;
+  return writeSettings(fields, adminEmail);
+}
+
+/**
+ * Upsert just the manually-entered pool interest. Independent of the
+ * allocation save so the two Portfolio-page cards don't overwrite each
+ * other.
+ */
+export async function upsertFundInterest(
+  interestEarned: number,
+  adminEmail: string,
+): Promise<FundPortfolio> {
+  return writeSettings({ "Interest Earned": interestEarned }, adminEmail);
+}
+
+/**
+ * Interest config for getCommunityPoolStats — mirrors the legacy
+ * env-based loadInterestConfig shape ({ total, monthly[] }) but sourced
+ * from the admin-entered Fund Settings value. The cumulative total is
+ * distributed linearly across elapsed calendar months so the dashboard
+ * pool chart renders a smooth interest curve. Returns total=0 when no
+ * interest has been entered, letting the caller fall back to the env
+ * var during the transition.
+ */
+export async function getFundInterestConfig(
+  currentMonthIndex: number,
+): Promise<{ total: number; monthly: number[] }> {
+  let total = 0;
+  try {
+    const { interestEarned } = await getFundPortfolio();
+    total = interestEarned;
+  } catch (err) {
+    console.error("[getFundInterestConfig] read failed:", err);
+  }
+
+  if (total <= 0 || currentMonthIndex < 0) {
+    return { total: 0, monthly: MONTH_NAMES.map(() => 0) };
+  }
+  const elapsed = currentMonthIndex + 1;
+  const perMonth = total / elapsed;
+  const monthly = MONTH_NAMES.map((_, i) =>
+    i <= currentMonthIndex ? perMonth : 0,
+  );
+  return { total, monthly };
 }
