@@ -40,6 +40,9 @@ interface DirectoryProfile {
   /** Optional headline rate, e.g. "R2,000 / hour" — rendered as a
    *  pill in the card header. Omit for quote-based services. */
   price?: string;
+  /** Optional small caption under the price pill — what the rate
+   *  covers, or VAT status. Rendered only when `price` is set. */
+  priceNote?: string;
   /** Optional compliance note rendered as a footnote at the bottom of
    *  the card (e.g. a "not financial advice" FAIS disclaimer). Omit
    *  for services that don't need one. */
@@ -78,6 +81,8 @@ const profiles: DirectoryProfile[] = [
     accentColor: "text-teal",
     accentBg: "bg-teal/10",
     accentBorder: "border-teal/25",
+    price: "R2,500",
+    priceNote: "Wills & estate · incl. consultation & drafting",
     featured: true,
   },
   {
@@ -108,6 +113,7 @@ const profiles: DirectoryProfile[] = [
     accentBg: "bg-capital/10",
     accentBorder: "border-capital/25",
     price: "R2,000 / hour",
+    priceNote: "Advisory rate · excl. VAT",
     disclaimer:
       "Not financial advice. This is a general financial and investment strategy advisory service — not regulated financial advice under the FAIS Act, and not a recommendation to buy, sell, or hold any financial product. Consult a licensed financial services provider (FSP) before making investment decisions.",
     featured: true,
@@ -217,13 +223,15 @@ export function Directory() {
 
                     {/* Headline rate — quote-based services omit this. */}
                     {profile.price && (
-                      <div className="shrink-0 text-right">
+                      <div className="shrink-0 text-right max-w-[140px]">
                         <span className="inline-flex items-center rounded-full bg-teal/10 border border-teal/25 px-3.5 py-1.5 text-[13px] font-extrabold text-teal whitespace-nowrap">
                           {profile.price}
                         </span>
-                        <p className="text-[10.5px] text-muted mt-1.5 tracking-wide">
-                          Advisory rate · excl. VAT
-                        </p>
+                        {profile.priceNote && (
+                          <p className="text-[10.5px] text-muted mt-1.5 leading-snug">
+                            {profile.priceNote}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
