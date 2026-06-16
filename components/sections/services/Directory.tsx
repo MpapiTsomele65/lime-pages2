@@ -86,9 +86,8 @@ const profiles: DirectoryProfile[] = [
     featured: true,
   },
   {
-    // Active service — placeholder copy. TODO: replace with the
-    // advisory provider's final name, description, and dedicated
-    // contact details once confirmed.
+    // Active service. Enquiries route to the Lehumo inbox by design;
+    // fuller service details may be added as the offering matures.
     id: "alternative-investment-advisory",
     name: "Financial & Investment Strategy Advisory",
     initials: "FS",
@@ -106,7 +105,7 @@ const profiles: DirectoryProfile[] = [
       "Investment readiness",
     ],
     contact: {
-      // Placeholder inbox until the advisory service has its own.
+      // Routed to the Lehumo inbox (intentional — see note above).
       email: "lehumo@limepages.co.za",
     },
     accentColor: "text-capital",
