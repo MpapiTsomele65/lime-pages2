@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { Users, Globe, Briefcase, Rocket, Calendar, ArrowRight, Check } from "lucide-react";
+import { Users, Globe, Briefcase, Rocket, Calendar, ArrowRight, Check, BadgeCheck } from "lucide-react";
 import { Directory } from "@/components/sections/services/Directory";
 
 const fadeUp = {
@@ -16,19 +16,19 @@ const fadeUp = {
 
 const features = [
   {
-    icon: Users,
-    title: "Community Profiles",
-    desc: "Showcase your business, skills, and services. Get discovered by the community.",
+    icon: BadgeCheck,
+    title: "Vetted & trusted",
+    desc: "Every provider is reviewed before they join \u2014 quality you can rely on, not a directory free-for-all.",
   },
   {
-    icon: Globe,
-    title: "Business Directory",
-    desc: "A curated directory of Black-owned businesses. Support each other, grow together.",
+    icon: Users,
+    title: "Built for members",
+    desc: "Services offered to the Lime Pages community \u2014 from wills & estates to financial & investment strategy.",
   },
   {
     icon: Briefcase,
-    title: "Deal Flow & Opportunities",
-    desc: "Angel investment opportunities, partnerships, and collaboration \u2014 all in one place.",
+    title: "One trusted hub",
+    desc: "Legal and financial-strategy expertise in one place, with more trusted partners joining over time.",
   },
 ];
 
@@ -41,8 +41,8 @@ const roadmap: {
 }[] = [
   {
     num: "01",
-    title: "Community profiles & directory",
-    desc: "Find and connect with entrepreneurs, investors, and professionals in the Lime Pages ecosystem.",
+    title: "Wills, estates & financial advisory",
+    desc: "Vetted legal and financial-strategy partners — live now for the Lime Pages community.",
     icon: Users,
     live: true,
   },
@@ -114,10 +114,10 @@ export default function ServicesPage() {
         <Container>
           <motion.div {...fadeUp} className="text-center mb-14">
             <p className="text-[18px] font-bold tracking-[1.5px] uppercase text-teal mb-4">
-              What We&apos;re Building
+              Why Lime Services
             </p>
             <h2 className="text-[clamp(1.8rem,4vw,2.8rem)] font-extrabold text-ink leading-[1.1] tracking-tight max-w-[560px] mx-auto">
-              More than a directory. A living network.
+              Vetted partners. Real expertise.
             </h2>
           </motion.div>
 
@@ -241,7 +241,7 @@ export default function ServicesPage() {
         <div className="absolute inset-0 bg-navy/60 z-[1]" />
         <div className="relative z-[2] h-full flex items-center justify-center">
           <p className="text-white/80 text-lg font-semibold tracking-wide text-center px-6">
-            The network you needed but never had access to.
+            The trusted services you needed &mdash; finally in one place.
           </p>
         </div>
       </section>

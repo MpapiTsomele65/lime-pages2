@@ -94,8 +94,8 @@ export default function TermsOfServicePage() {
                     content covering public and private capital markets.
                   </li>
                   <li>
-                    <strong>Lime Services:</strong> A professional networking
-                    and business directory platform.
+                    <strong>Lime Services:</strong> A curated platform of
+                    vetted professional services for the community.
                   </li>
                   <li>
                     <strong>Lemonade Station:</strong> Resources and tools
