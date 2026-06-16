@@ -10,7 +10,7 @@ export default async function Image() {
     heading: "Lime",
     headingAccent: "Services",
     subtitle:
-      "Vetted services for the Lime Pages community — wills & estate planning, alternative-investment advisory, and more.",
+      "Vetted services for the Lime Pages community — wills & estate planning, financial & investment strategy advisory, and more.",
     accentColor: "#46CDCF",
     backgroundImage: "iwaria-inc-M7ALc3UuX_g-unsplash.jpg",
   });

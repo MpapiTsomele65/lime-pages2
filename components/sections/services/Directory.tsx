@@ -13,6 +13,8 @@ import {
   Shield,
   MessageCircle,
   Star,
+  LineChart,
+  Info,
 } from "lucide-react";
 
 /* ─── Profile type ─── */
@@ -35,6 +37,13 @@ interface DirectoryProfile {
   accentColor: string;
   accentBg: string;
   accentBorder: string;
+  /** Optional headline rate, e.g. "R2,000 / hour" — rendered as a
+   *  pill in the card header. Omit for quote-based services. */
+  price?: string;
+  /** Optional compliance note rendered as a footnote at the bottom of
+   *  the card (e.g. a "not financial advice" FAIS disclaimer). Omit
+   *  for services that don't need one. */
+  disclaimer?: string;
   featured?: boolean;
 }
 
@@ -76,19 +85,19 @@ const profiles: DirectoryProfile[] = [
     // advisory provider's final name, description, and dedicated
     // contact details once confirmed.
     id: "alternative-investment-advisory",
-    name: "Alternative Investment Advisory",
-    initials: "AI",
-    tagline: "Make your money work beyond the basics",
+    name: "Financial & Investment Strategy Advisory",
+    initials: "FS",
+    tagline: "Strategy and structure for smarter money decisions",
     description:
-      "Guidance on alternative investments — angel-syndicate access, private deals, and portfolio diversification into assets normally reserved for institutions. Built for members allocating deliberately beyond cash and listed funds. Full service details coming soon.",
-    category: "Investment Advisory",
+      "Independent, fee-based guidance on financial and investment strategy — goal-based planning, portfolio structure, and access to alternative assets like angel syndicates and private deals normally reserved for institutions. Sessions focus on frameworks, structure, and options so you can make informed decisions. Full service details coming soon.",
+    category: "Financial Strategy",
     location: "South Africa",
-    badges: ["Angel Syndicate", "Alternative Assets", "Advisory"],
+    badges: ["Independent", "Strategy-Led", "Fee-Based"],
     services: [
-      "Angel-syndicate access",
-      "Alternative asset allocation",
-      "Portfolio diversification",
-      "Private deal flow",
+      "Goal-based financial planning",
+      "Investment strategy & structure",
+      "Portfolio construction review",
+      "Alternative asset access",
       "Investment readiness",
     ],
     contact: {
@@ -98,6 +107,9 @@ const profiles: DirectoryProfile[] = [
     accentColor: "text-capital",
     accentBg: "bg-capital/10",
     accentBorder: "border-capital/25",
+    price: "R2,000 / hour",
+    disclaimer:
+      "Not financial advice. This is a general financial and investment strategy advisory service — not regulated financial advice under the FAIS Act, and not a recommendation to buy, sell, or hold any financial product. Consult a licensed financial services provider (FSP) before making investment decisions.",
     featured: true,
   },
 ];
@@ -107,6 +119,7 @@ const categoryIcon: Record<string, React.ElementType> = {
   "Legal Services": Scale,
   "Wills & Estate Services": Scale,
   "Investment Advisory": Building2,
+  "Financial Strategy": LineChart,
   Business: Briefcase,
   Finance: Building2,
 };
@@ -135,7 +148,8 @@ export function Directory() {
           </h2>
           <p className="text-base text-muted leading-[1.8] max-w-[540px] mx-auto">
             Trusted partners offering services to Lime Pages members — from
-            wills &amp; estate planning to alternative-investment advisory.
+            wills &amp; estate planning to financial &amp; investment strategy
+            advisory.
           </p>
         </motion.div>
 
@@ -200,6 +214,18 @@ export function Directory() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Headline rate — quote-based services omit this. */}
+                    {profile.price && (
+                      <div className="shrink-0 text-right">
+                        <span className="inline-flex items-center rounded-full bg-teal/10 border border-teal/25 px-3.5 py-1.5 text-[13px] font-extrabold text-teal whitespace-nowrap">
+                          {profile.price}
+                        </span>
+                        <p className="text-[10.5px] text-muted mt-1.5 tracking-wide">
+                          Advisory rate · excl. VAT
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Badges */}
@@ -282,6 +308,16 @@ export function Directory() {
                       </a>
                     )}
                   </div>
+
+                  {/* Compliance footnote (e.g. FAIS "not advice") */}
+                  {profile.disclaimer && (
+                    <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-snow border border-border px-4 py-3">
+                      <Info className="w-4 h-4 text-muted/70 mt-px shrink-0" />
+                      <p className="text-[11.5px] leading-relaxed text-muted">
+                        {profile.disclaimer}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );

@@ -96,8 +96,8 @@ export default function ServicesPage() {
             </h1>
             <p className="text-lg text-white/55 leading-[1.8] max-w-[600px] mx-auto mb-10">
               Vetted services for the Lime Pages community &mdash; from wills
-              &amp; estate planning to alternative-investment advisory, with
-              more trusted partners joining soon.
+              &amp; estate planning to financial &amp; investment strategy
+              advisory, with more trusted partners joining soon.
             </p>
             <Link
               href="/lehumo#join"

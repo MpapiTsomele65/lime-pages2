@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Lime Services — Vetted Services for the Community | Lime Pages",
   description:
-    "Vetted services for the Lime Pages community — wills & estate planning, alternative-investment advisory, and more trusted partners joining soon.",
+    "Vetted services for the Lime Pages community — wills & estate planning, financial & investment strategy advisory, and more trusted partners joining soon.",
   openGraph: {
     title: "Lime Services — Vetted Services for the Community",
     description:
-      "Vetted services for the Lime Pages community — wills & estate planning, alternative-investment advisory, and more.",
+      "Vetted services for the Lime Pages community — wills & estate planning, financial & investment strategy advisory, and more.",
   },
 };
 
