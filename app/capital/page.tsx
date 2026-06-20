@@ -220,6 +220,7 @@ export default function CapitalPage() {
       <InvestorsLikeYou />
 
       {/* ═══ GETTING STARTED ═══ */}
+      <div id="getting-started" />
       <GettingStarted />
 
       {/* ═══ ALTERNATIVE INVESTMENTS ═══ */}

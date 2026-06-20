@@ -343,9 +343,9 @@ export function AdvisoryPreview() {
                 </svg>
               </div>
               <h3 className="text-[clamp(1.8rem,4vw,2.8rem)] font-extrabold text-ink leading-[1.1] tracking-tight text-left">
-                Your Financial Inclusion Jedi.
+                Your money questions, answered.
                 <br />
-                <span className="text-teal">Free AI-powered guidance.</span>
+                <span className="text-teal">Free, AI-powered guidance.</span>
               </h3>
             </div>
             <p className="text-base sm:text-lg text-muted leading-[1.7] max-w-[620px] mx-auto">
@@ -398,7 +398,7 @@ export function AdvisoryPreview() {
               href="mailto:hello@limepages.co.za?subject=Intro Call Request"
               className="bg-teal text-white px-8 py-3.5 rounded-full font-bold text-sm whitespace-nowrap hover:opacity-90 hover:-translate-y-0.5 transition-all"
             >
-              Book a free intro call &rarr;
+              Book a free intro call
             </a>
             <Link
               href="/advisory"

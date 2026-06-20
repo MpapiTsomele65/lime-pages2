@@ -1,6 +1,6 @@
 import { getCommunityPoolStats } from "@/lib/airtable";
 import HomeHero from "@/components/sections/home/HomeHero";
-import { Marquee } from "@/components/sections/home/Marquee";
+import { AssuranceStrip } from "@/components/sections/home/AssuranceStrip";
 import { LehumoTeaser } from "@/components/sections/home/LehumoTeaser";
 import { LimeCapitalTeaser } from "@/components/sections/home/LimeCapitalTeaser";
 import WhatWeDo from "@/components/sections/home/WhatWeDo";
@@ -22,7 +22,7 @@ export default async function HomePage() {
   return (
     <>
       <HomeHero />
-      <Marquee />
+      <AssuranceStrip />
       {/* Core objectives lead the page: Lehumo (collective investment +
           community) then Lime Capital (alternative investment solutions).
           The founding-member conversion block lives in the Lehumo section

@@ -40,7 +40,7 @@ export function CtaBanner() {
             href="/advisory"
             className="bg-lime text-navy px-8 py-3.5 rounded-full font-bold text-sm hover:opacity-90 hover:-translate-y-0.5 transition-all"
           >
-            Book Now →
+            Book a consultation
           </Link>
           <Link
             href="/about"

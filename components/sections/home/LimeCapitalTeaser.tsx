@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import {
   ArrowRight,
+  Calculator,
   GraduationCap,
   LineChart,
   Rocket,
-  ScrollText,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -30,35 +30,36 @@ const fadeUp = {
 
 /**
  * LimeCapitalTeaser — the second core pillar on the home page (after
- * Lehumo). Lifts Lime Capital as the "alternative investment solutions"
- * arm of Lime Pages: capital-markets education, fund comparison,
- * early-stage co-investment, and estate planning. Mirrors LehumoTeaser's
- * navy two-column layout for a matched pair, in the capital brand colour.
+ * Lehumo). Positions Lime Capital as the free, education-first hub for a
+ * long-term wealth-creation journey: Investing 101 (what ETFs are),
+ * comparing popular ETFs/funds, the home-loan accelerator tool, and how
+ * to begin. Mirrors LehumoTeaser's navy two-column layout for a matched
+ * pair, in the capital brand colour.
  */
 const pillars: Pillar[] = [
   {
     icon: GraduationCap,
-    title: "Capital markets, decoded",
-    desc: "How unit trusts, ETFs, and the JSE actually work — in plain language.",
+    title: "Investing 101",
+    desc: "What an ETF, RA, and TFSA actually are — in plain language.",
     href: "/capital#investing-101",
   },
   {
     icon: LineChart,
-    title: "Compare the funds",
-    desc: "Real 10-year performance across SA's most-watched funds, side by side.",
+    title: "Popular ETFs, compared",
+    desc: "Real 10-year performance across SA's most-watched funds.",
     href: "/capital#fund-performance",
   },
   {
-    icon: Rocket,
-    title: "Alternative investments",
-    desc: "Co-invest in vetted early-stage ventures through the Angel Syndicate.",
-    href: "/capital#alternative-investments",
+    icon: Calculator,
+    title: "Home-loan accelerator",
+    desc: "See how extra payments knock years — and interest — off your bond.",
+    href: "/capital#home-loan-accelerator-section",
   },
   {
-    icon: ScrollText,
-    title: "Protect your legacy",
-    desc: "Wills and estate planning so the wealth you build actually transfers.",
-    href: "/services#simelane-attorneys",
+    icon: Rocket,
+    title: "How to begin",
+    desc: "Your first steps into the market — platform, FICA, first R500.",
+    href: "/capital#getting-started",
   },
 ];
 
@@ -80,23 +81,23 @@ export function LimeCapitalTeaser() {
             </div>
 
             <h2 className="text-[clamp(2rem,5vw,3.4rem)] font-extrabold text-white leading-[1.05] tracking-tight mb-5">
-              Alternative investment
+              Your wealth-creation
               <br />
-              solutions, <span className="text-capital">decoded.</span>
+              journey, <span className="text-capital">decoded.</span>
             </h2>
 
             <p className="text-base text-white/60 leading-[1.8] mb-5">
-              Lime Capital is where you learn to make your money work beyond a
-              savings account — from your{" "}
-              <strong className="text-white">first ETF</strong> to co-investing
-              in early-stage ventures.
+              Lime Capital is the free, education-first side of Lime Pages —
+              built to teach you long-term investing from the ground up: what{" "}
+              <strong className="text-white">ETFs</strong> actually are, which
+              ones matter, and how to take your first step.
             </p>
 
             <p className="text-base text-white/60 leading-[1.8] mb-8">
-              Real market data, real context, and access to{" "}
-              <strong className="text-capital">alternative investments</strong>{" "}
-              normally reserved for the few — built for South Africans growing
-              wealth deliberately.
+              Plus practical tools — like the{" "}
+              <strong className="text-capital">home-loan accelerator</strong>{" "}
+              that shows how a little extra each month can knock years off your
+              bond and free up cash to invest.
             </p>
 
             <div className="flex gap-3.5 flex-wrap">
@@ -107,10 +108,10 @@ export function LimeCapitalTeaser() {
                 Explore Lime Capital <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                href="/capital#fund-performance"
+                href="/capital#investing-101"
                 className="text-capital px-5 py-[13px] rounded-full font-semibold text-sm border border-capital/30 inline-flex items-center gap-2 hover:bg-capital/10 transition-colors"
               >
-                Compare Funds
+                Start with Investing 101
               </Link>
             </div>
           </motion.div>
