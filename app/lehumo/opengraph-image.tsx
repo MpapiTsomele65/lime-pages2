@@ -12,6 +12,9 @@ export default async function Image() {
     subtitle:
       "30 Founding Members. R1,000/month. 5-year lock-in. A community-owned vehicle for long-term wealth creation.",
     accentColor: "#B8FF00",
-    backgroundImage: "ali-mkumbwa-AEz70PS5eSU-unsplash.jpg",
+    // Linked-pinkies "Partnership and trust" photo (shared with the Lime
+    // Capital hero) — promise + community wealth-building, vs the old
+    // card-machine photo that read as merchant/entrepreneur.
+    backgroundImage: "capital-hero-hands.jpg",
   });
 }
