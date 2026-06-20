@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" width="320" height="60" font-family="'Plus Jakarta Sans', Arial, sans-serif">
+  <g transform="translate(2,3)">
+    <polygon points="30,4 54,17 54,43 30,56 6,43 6,17" fill="#46cdcf" fill-opacity="0.08" stroke="#46cdcf" stroke-width="2.5"/>
+    <polygon points="30,12 47,21.5 47,40.5 30,50 13,40.5 13,21.5" fill="none" stroke="#46cdcf" stroke-width="1.5" opacity="0.4"/>
+  </g>
+  <text x="72" y="31" font-size="30" font-weight="800" fill="#B8FF00" letter-spacing="1.5">LEHUMO</text>
+  <text x="73" y="49" font-size="13.5" font-weight="500" fill="#46CDCF" letter-spacing="0.3">Collective Investment Trust</text>
+</svg>
