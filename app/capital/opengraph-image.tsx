@@ -10,7 +10,7 @@ export default async function Image() {
     heading: "Lime",
     headingAccent: "Capital",
     subtitle:
-      "Compare SA's top unit trusts, understand ETFs, and learn how startup deals are structured. Real data, real context.",
+      "Learn how capital markets work. Understand unit trusts, compare fund performance, and protect your legacy — from your first ETF to estate planning.",
     accentColor: "#C1FF72",
     backgroundImage: "capital-hero-hands.jpg",
   });

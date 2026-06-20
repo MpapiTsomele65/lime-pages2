@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { getOgFonts } from "@/lib/og-image";
 
 export const alt = "Lehumo — Collective Investment Trust | Lime Pages";
 export const size = { width: 1200, height: 630 };
@@ -22,6 +23,7 @@ export default async function Image() {
   const imgPath = join(process.cwd(), "public/images/capital-hero-hands.jpg");
   const imgData = await readFile(imgPath);
   const imgBase64 = `data:image/jpeg;base64,${imgData.toString("base64")}`;
+  const fonts = await getOgFonts();
 
   return new ImageResponse(
     (
@@ -34,7 +36,7 @@ export default async function Image() {
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          fontFamily: "sans-serif",
+          fontFamily: "Plus Jakarta Sans",
         }}
       >
         {/* Background — linked-pinkies partnership photo (kept as-is) */}
@@ -205,6 +207,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, fonts }
   );
 }

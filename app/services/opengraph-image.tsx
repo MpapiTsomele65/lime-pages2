@@ -6,12 +6,12 @@ export const contentType = ogContentType;
 
 export default async function Image() {
   return buildOgImage({
-    badge: "Vetted Services",
+    badge: "Now Live",
     heading: "Lime",
     headingAccent: "Services",
     subtitle:
-      "Vetted services for the Lime Pages community — wills & estate planning, financial & investment strategy advisory, and more.",
+      "Vetted services for the Lime Pages community — from wills & estate planning to financial & investment strategy advisory, with more trusted partners joining soon.",
     accentColor: "#46CDCF",
-    backgroundImage: "iwaria-inc-M7ALc3UuX_g-unsplash.jpg",
+    backgroundImage: "ninthgrid-5tteWzfhMaA-unsplash.jpg",
   });
 }

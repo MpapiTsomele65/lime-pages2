@@ -14,6 +14,37 @@ interface OgImageConfig {
 export const ogSize = { width: 1200, height: 630 };
 export const ogContentType = "image/png";
 
+/**
+ * Plus Jakarta Sans (the site font) loaded for Satori so OG cards render
+ * in the brand typeface instead of a generic system sans-serif. Cached
+ * per server process — the woff files are read once. WOFF1 is fine for
+ * Satori; woff2 is not supported.
+ */
+let cachedFonts: Awaited<ReturnType<typeof loadOgFonts>> | null = null;
+
+async function loadOgFonts() {
+  const dir = join(process.cwd(), "public/fonts");
+  const read = (w: number) =>
+    readFile(join(dir, `plus-jakarta-sans-${w}.woff`));
+  const [w400, w500, w700, w800] = await Promise.all([
+    read(400),
+    read(500),
+    read(700),
+    read(800),
+  ]);
+  return [
+    { name: "Plus Jakarta Sans", data: w400, weight: 400 as const, style: "normal" as const },
+    { name: "Plus Jakarta Sans", data: w500, weight: 500 as const, style: "normal" as const },
+    { name: "Plus Jakarta Sans", data: w700, weight: 700 as const, style: "normal" as const },
+    { name: "Plus Jakarta Sans", data: w800, weight: 800 as const, style: "normal" as const },
+  ];
+}
+
+export async function getOgFonts() {
+  if (!cachedFonts) cachedFonts = await loadOgFonts();
+  return cachedFonts;
+}
+
 export async function buildOgImage({
   badge,
   heading,
@@ -25,6 +56,7 @@ export async function buildOgImage({
   const imgPath = join(process.cwd(), `public/images/${backgroundImage}`);
   const imgData = await readFile(imgPath);
   const imgBase64 = `data:image/jpeg;base64,${imgData.toString("base64")}`;
+  const fonts = await getOgFonts();
 
   return new ImageResponse(
     (
@@ -37,7 +69,7 @@ export async function buildOgImage({
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          fontFamily: "sans-serif",
+          fontFamily: "Plus Jakarta Sans",
         }}
       >
         <img
@@ -115,11 +147,10 @@ export async function buildOgImage({
               textAlign: "center",
               lineHeight: 1.1,
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
             }}
           >
-            <span>{heading}</span>
+            <span>{heading}&nbsp;</span>
             <span style={{ color: accentColor }}>{headingAccent}</span>
           </div>
 
@@ -170,6 +201,6 @@ export async function buildOgImage({
         </div>
       </div>
     ),
-    { ...ogSize }
+    { ...ogSize, fonts }
   );
 }

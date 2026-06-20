@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { getOgFonts } from "@/lib/og-image";
 
 export const alt = "Lime Pages — Building Wealth Together";
 export const size = { width: 1200, height: 630 };
@@ -14,6 +15,7 @@ export default async function Image() {
   );
   const heroImageData = await readFile(heroImagePath);
   const heroBase64 = `data:image/jpeg;base64,${heroImageData.toString("base64")}`;
+  const fonts = await getOgFonts();
 
   return new ImageResponse(
     (
@@ -26,7 +28,7 @@ export default async function Image() {
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          fontFamily: "sans-serif",
+          fontFamily: "Plus Jakarta Sans",
         }}
       >
         {/* Hero background image */}
@@ -171,6 +173,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, fonts }
   );
 }

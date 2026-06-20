@@ -6,12 +6,12 @@ export const contentType = ogContentType;
 
 export default async function Image() {
   return buildOgImage({
-    badge: "For Founders & SMMEs",
+    badge: "For Founders, Entrepreneurs & SMMEs",
     heading: "Lemonade",
     headingAccent: "Station",
     subtitle:
-      "Everything entrepreneurs need to raise capital, structure deals, and scale. Guides, templates, VC insights, and sector data.",
-    accentColor: "#C1FF72",
-    backgroundImage: "small-business-owner.jpg",
+      "When life gives you lemons, make lemonade. Everything you need to raise capital, structure deals, and build a fundable business.",
+    accentColor: "#FFE600",
+    backgroundImage: "ali-mkumbwa-VhYvF2XaRuI-unsplash.jpg",
   });
 }
