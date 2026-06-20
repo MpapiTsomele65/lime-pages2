@@ -21,9 +21,10 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.limepages.co.za"),
   title: "Lime Pages — Building Wealth Together",
   description:
-    "Advisory & Fintech solutions to fuel Africa's entrepreneurial revolution. Equipping entrepreneurs and young professionals with tools to build thriving businesses and generational wealth.",
+    "Equipping young professionals & entrepreneurs with alternative investment strategies and solutions to build wealth — from collective investing to capital-markets education.",
   keywords: [
     "Lime Pages",
+    "alternative investments",
     "financial advisory",
     "South Africa",
     "SMME",
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Lime Pages — Building Wealth Together",
     description:
-      "Advisory & Fintech solutions to fuel Africa's entrepreneurial revolution.",
+      "Equipping young professionals & entrepreneurs with alternative investment strategies and solutions to build wealth.",
     siteName: "Lime Pages",
     url: "https://www.limepages.co.za",
     type: "website",
@@ -48,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Lime Pages — Building Wealth Together",
     description:
-      "Advisory & Fintech solutions to fuel Africa's entrepreneurial revolution.",
+      "Equipping young professionals & entrepreneurs with alternative investment strategies and solutions to build wealth.",
   },
   other: {
     "instagram:site": "@limepages",

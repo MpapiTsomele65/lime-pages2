@@ -6,7 +6,7 @@ export function OrganizationJsonLd() {
     url: "https://www.limepages.co.za",
     logo: "https://www.limepages.co.za/icon.svg",
     description:
-      "Advisory & Fintech solutions empowering African entrepreneurs and young professionals to build thriving businesses and generational wealth.",
+      "Equipping young professionals & entrepreneurs with alternative investment strategies and solutions to build wealth.",
     foundingDate: "2019",
     founder: {
       "@type": "Person",

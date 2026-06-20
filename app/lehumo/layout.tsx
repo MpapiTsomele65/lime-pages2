@@ -5,9 +5,9 @@ export const metadata: Metadata = {
   description:
     "Join 30 Founding Members building an Investment Trust to create Generational Wealth. R1,000/month. 5-Year Lock-in. R2 Million target.",
   // Lehumo-specific share card — without these, the root layout's generic
-  // "Lime Pages — Building Wealth Together / Advisory & Fintech…" openGraph
-  // is inherited (wrong context when /lehumo is shared). The colocated
-  // opengraph-image.tsx is auto-attached as the image, so no images here.
+  // site-wide openGraph is inherited (wrong context when /lehumo is
+  // shared). The colocated opengraph-image.tsx is auto-attached as the
+  // image, so no images here.
   openGraph: {
     title: "Lehumo — Collective Investment Trust",
     description:

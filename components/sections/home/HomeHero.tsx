@@ -81,8 +81,8 @@ export default function HomeHero() {
           transition={{ duration: 0.6, ease: "easeOut" as const, delay: 0.2 }}
           className="max-w-[640px] mx-auto text-[clamp(1rem,1.8vw,1.2rem)] leading-relaxed text-white/70"
         >
-          Equipping entrepreneurs and young professionals with the strategies
-          and solutions to build thriving businesses and generational wealth.
+          Equipping young professionals &amp; entrepreneurs with alternative
+          investment strategies and solutions to build wealth.
         </motion.p>
 
         {/* Scroll hint */}

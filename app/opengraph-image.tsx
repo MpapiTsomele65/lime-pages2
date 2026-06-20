@@ -131,8 +131,8 @@ export default async function Image() {
               lineHeight: 1.5,
             }}
           >
-            Equipping entrepreneurs and young professionals with the strategies
-            and solutions to build thriving businesses and generational wealth.
+            Equipping young professionals &amp; entrepreneurs with alternative
+            investment strategies and solutions to build wealth.
           </div>
         </div>
 
