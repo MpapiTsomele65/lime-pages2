@@ -96,24 +96,38 @@ export default function InvestorsLikeYou() {
     <section className="py-24 md:py-32 bg-snow">
       <Container>
         {/* ── Header with EasyEquities trust badge ── */}
-        <motion.div {...fadeUp} className="max-w-2xl mb-14">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="h-8 px-3 rounded-full bg-white border border-gray-200 flex items-center gap-2 shadow-sm">
-              <Image src="/images/logos/easyequities.svg" alt="EasyEquities" width={90} height={18} className="object-contain" />
-              <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider">Platform Data</span>
+        <motion.div {...fadeUp} className="mb-14">
+          {/* Enlarged trust badge */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-11 px-5 rounded-full bg-white border border-gray-200 flex items-center gap-3 shadow-sm">
+              <Image
+                src="/images/logos/easyequities.svg"
+                alt="EasyEquities"
+                width={120}
+                height={24}
+                className="object-contain"
+              />
+              <span className="h-5 w-px bg-gray-200" />
+              <span className="text-xs font-bold text-[#71717A] uppercase tracking-wider">
+                Platform Data
+              </span>
             </div>
           </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-navy mb-4">
-            Where people like you
-            <br />
-            <span className="text-teal">are investing.</span>
-          </h2>
-          <p className="text-base md:text-lg text-[#3F3F46] leading-relaxed">
-            Real investment behaviour from 2.6 million South Africans on
-            EasyEquities &mdash; what they buy, how they allocate, and what the
-            top performers do differently. Data sourced from Purple Group (JSE: PPE)
-            public filings and reports.
-          </p>
+          {/* Heading + description side by side — shorter vertically,
+              wider horizontally. Stacks on mobile. */}
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-navy leading-[1.1]">
+              Where people like you
+              <br />
+              <span className="text-teal">are investing.</span>
+            </h2>
+            <p className="text-base md:text-lg text-[#3F3F46] leading-relaxed">
+              Real investment behaviour from 2.6 million South Africans on
+              EasyEquities &mdash; what they buy, how they allocate, and what the
+              top performers do differently. Data sourced from Purple Group (JSE:
+              PPE) public filings and reports.
+            </p>
+          </div>
         </motion.div>
 
         {/* ── Platform stats strip ── */}
