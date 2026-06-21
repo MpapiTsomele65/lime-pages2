@@ -13,10 +13,12 @@ import {
   BarChart3,
   Lightbulb,
   FileText,
+  Gauge,
 } from "lucide-react";
 import BondCalculator from "@/components/sections/capital/BondCalculator";
 import { ReadingProgressBar } from "@/components/ui/ReadingProgressBar";
 import FundComparison from "@/components/sections/capital/FundComparison";
+import RiskProfiler from "@/components/sections/capital/RiskProfiler";
 import InvestingGuide from "@/components/sections/capital/InvestingGuide";
 import AngelSyndicate from "@/components/sections/capital/AngelSyndicate";
 import LehumoTeaser from "@/components/sections/capital/LehumoTeaser";
@@ -55,6 +57,15 @@ const tracks = [
     title: "Wills & Estates",
     desc: "Protect your legacy with a professionally drafted Will \u2014 and ensure your assets go where you intend them to.",
     href: "#wills-estates",
+    color: "teal",
+    iconBg: "bg-teal/15",
+    hoverBorder: "hover:border-teal/40",
+  },
+  {
+    icon: Gauge,
+    title: "Know Your Risk",
+    desc: "Take a 2-minute scenario quiz to find your investor risk profile — and the Satrix ETFs that tend to suit it.",
+    href: "#risk-profile",
     color: "teal",
     iconBg: "bg-teal/15",
     hoverBorder: "hover:border-teal/40",
@@ -139,6 +150,15 @@ export default function CapitalPage() {
                 Compare Funds
               </Link>
             </div>
+            <div className="mt-4 flex justify-center">
+              <Link
+                href="#risk-profile"
+                className="inline-flex items-center gap-2 text-white px-9 py-4 rounded-full font-semibold text-sm bg-teal/15 border-2 border-teal/40 hover:bg-teal/25 hover:border-teal/60 hover:-translate-y-0.5 transition-all"
+              >
+                <Gauge className="w-4 h-4 text-teal" /> What&rsquo;s my investing
+                risk profile?
+              </Link>
+            </div>
           </motion.div>
         </Container>
       </section>
@@ -207,6 +227,14 @@ export default function CapitalPage() {
 
       <div id="fund-performance" />
       <FundComparison />
+
+      {/* ═══ RISK PROFILER ═══ */}
+      <SectionDivider
+        label="Find Your Risk Profile"
+        id="risk-profile-section"
+        icon={Gauge}
+      />
+      <RiskProfiler />
 
       {/* ═══ HOME LOAN ACCELERATOR ═══ */}
       <SectionDivider
