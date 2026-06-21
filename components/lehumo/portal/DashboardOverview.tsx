@@ -284,22 +284,23 @@ export function DashboardOverview({
           Also suppressed during the SetUpPaymentsCard phase so we
           don't give a member two competing "pay" prompts pre-first-
           contribution. */}
-      {!needsPaymentSetup && (
-        <ContributionReminderCard
-          contributions={member.contributions}
-          contributionRows={member.contributionRows}
-          currentMonth={currentMonth}
-          currentPeriod={currentPeriod}
-          daysLeftInMonth={daysLeftInMonth}
-          beforeLaunch={beforeLaunch}
-          member={member}
-        />
-      )}
-
-      {/* Investor risk profile quiz — placed high, just before the pool's
-          cumulative-growth curve, so members set their profile early. Saves
-          to the member's Airtable record on confirm; admin sees it too. */}
-      <RiskProfileCard member={member} />
+      {/* Action row — this month's contribution + the investor-profile
+          quiz, packed two-up to cut vertical space. Stacks on mobile. The
+          risk card saves to Airtable on confirm; admin sees it too. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {!needsPaymentSetup && (
+          <ContributionReminderCard
+            contributions={member.contributions}
+            contributionRows={member.contributionRows}
+            currentMonth={currentMonth}
+            currentPeriod={currentPeriod}
+            daysLeftInMonth={daysLeftInMonth}
+            beforeLaunch={beforeLaunch}
+            member={member}
+          />
+        )}
+        <RiskProfileCard member={member} />
+      </div>
 
       {/* Community pool overview */}
       {communityStats && (
@@ -330,15 +331,14 @@ export function DashboardOverview({
           "where my account stands". Both calendar exports use an RRULE
           covering the entire QGM series so members add once and stay
           tracked for every quarter. */}
-      <div id="qgm" className="scroll-mt-24">
-        <QGMSummaryCard />
+      {/* Governance row — the QGM touchpoint + Steering Committee opt-in,
+          two-up. Both are compact governance cards. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div id="qgm" className="scroll-mt-24">
+          <QGMSummaryCard />
+        </div>
+        <SteeringCommitteeCard member={member} />
       </div>
-
-      {/* Steering Committee volunteer flow — paired with the QGM card
-          because both are governance touchpoints, and the committee is
-          announced at the kick-off QGM. Members can opt in, edit, or
-          withdraw any time before the decision date. */}
-      <SteeringCommitteeCard member={member} />
 
       {/* Dashboard grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -397,70 +397,56 @@ export function DashboardOverview({
         )}
       </div>
 
-      {/* Plan management — only shown post-first-payment, since pre-
-          payment the SetUpPaymentsCard above already owns the plan
-          choice. Once a member is past their first contribution,
-          this card becomes the persistent surface for switching
-          between Standard (auto-debit) and Basic (manual EFT) — so
-          they can pause their card debit any time without emailing
-          admin. Sits directly above BankDepositCard because the two
-          flow as a pair: pick how you'd like to pay, then (if Basic)
-          here are the bank details. */}
+      {/* Plan management — floated full-width on its own. Only renders once
+          a member is past their first payment (pre-payment, the
+          SetUpPaymentsCard above owns the plan choice). The persistent
+          surface for switching between Standard (auto-debit) and Basic
+          (manual EFT) without emailing admin. */}
       {!needsPaymentSetup && hasFirstContribution && (
         <PlanManagementCard member={member} />
       )}
 
-      {/* Bank deposit / EFT details — visible to every member. Basic
-          plan members need this as their primary payment route; Standard
-          / VIP members fall back to it when their card has issues or
-          they prefer manual control. The member's personalised
-          reference (Leh## I.Surname) is generated client-side from
-          their profile so admin recon always matches a known member. */}
-      <BankDepositCard member={member} />
+      {/* Bank deposit + Emergency Access, two-up — where you pay, and your
+          20% emergency safety-net position (locked / available / active-
+          loan). Both render for every member. The bank card's personalised
+          reference (Leh## I.Surname) is generated client-side so admin
+          recon always matches a member. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <BankDepositCard member={member} />
+        <motion.div
+          id="emergency-access"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.45, ease: iosEase }}
+          className="scroll-mt-24"
+        >
+          <EmergencyAccessCard member={member} />
+        </motion.div>
+      </div>
 
-      {/* Emergency Access — surfaces the member's 20% self-loan position.
-          Adapts to three states (locked / available / active-loan). For
-          members <6 months in it serves as an aspirational signal of the
-          safety net coming; for eligible members it's an actionable
-          request CTA; for active borrowers it's the outstanding-balance
-          ledger. Sits between the immediate-action grid and the KYC /
-          beneficiary maintenance cards. */}
-      <motion.div
-        id="emergency-access"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.45, ease: iosEase }}
-        className="scroll-mt-24"
-      >
-        <EmergencyAccessCard member={member} />
-      </motion.div>
-
-      {/* KYC Documents — full-width below the grid. Stays mounted even
-          after verification so members can re-find their submitted docs;
-          the card itself swaps to a verified-state view internally. */}
-      <motion.div
-        id="kyc-docs"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5, ease: iosEase }}
-        className="scroll-mt-24"
-      >
-        <KycDocumentsCard member={member} />
-      </motion.div>
-
-      {/* Next of Kin / Beneficiary — full-width row matching the KYC card.
-          Placed below KYC because next-of-kin is the natural follow-up to
-          identity verification: once the member is verified, the next thing
-          we need is who to contact if anything happens to them. */}
-      <motion.div
-        id="beneficiary"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6, ease: iosEase }}
-        className="scroll-mt-24"
-      >
-        <BeneficiaryCard member={member} />
-      </motion.div>
+      {/* KYC documents + beneficiary — identity maintenance cards, two-up
+          (next-of-kin is the natural follow-up to identity verification).
+          Both stay mounted post-verification so members can re-find docs. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <motion.div
+          id="kyc-docs"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5, ease: iosEase }}
+          className="scroll-mt-24"
+        >
+          <KycDocumentsCard member={member} />
+        </motion.div>
+        <motion.div
+          id="beneficiary"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6, ease: iosEase }}
+          className="scroll-mt-24"
+        >
+          <BeneficiaryCard member={member} />
+        </motion.div>
+      </div>
     </div>
   );
 }
