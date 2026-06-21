@@ -8,6 +8,7 @@ import {
   KYC_CHOICE_ID_TO_NAME,
   SOURCE_CHOICE_ID_TO_NAME,
   ID_TYPE_CHOICE_ID_TO_NAME,
+  RISK_PROFILE_CHOICE_ID_TO_NAME,
   RELATIONSHIP_CHOICE_ID_TO_NAME,
   LOAN_TYPE_CHOICE_ID_TO_NAME,
   CONTRIBUTION_SOURCE,
@@ -28,6 +29,7 @@ import {
   type AirtableAttachment,
   type BeneficiaryRelationship,
   type ActiveLoanType,
+  type LehumoRiskProfile,
 } from "./definitions";
 import {
   listContributionsForMember,
@@ -174,6 +176,17 @@ export function parseRecord(record: any): LehumoMember {
     kycProofOfAddress: poaDoc && poaDoc.length > 0 ? poaDoc : undefined,
     kycSubmittedAt: f[AIRTABLE_FIELDS.kycSubmittedAt] || undefined,
     kycVerifiedAt: f[AIRTABLE_FIELDS.kycVerifiedAt] || undefined,
+    // ── Investor risk profile (portal quiz; dedicated columns) ──
+    riskProfile: resolveSelect(
+      f[AIRTABLE_FIELDS.riskProfile],
+      RISK_PROFILE_CHOICE_ID_TO_NAME,
+      "",
+    ) as LehumoRiskProfile | "",
+    riskScore:
+      typeof f[AIRTABLE_FIELDS.riskScore] === "number"
+        ? (f[AIRTABLE_FIELDS.riskScore] as number)
+        : undefined,
+    riskAssessed: f[AIRTABLE_FIELDS.riskAssessed] || undefined,
     // ── Beneficiary / next-of-kin (all optional) ──
     beneficiaryFirstName: f[AIRTABLE_FIELDS.beneficiaryFirstName] || undefined,
     beneficiarySurname: f[AIRTABLE_FIELDS.beneficiarySurname] || undefined,

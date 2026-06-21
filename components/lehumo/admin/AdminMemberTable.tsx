@@ -253,6 +253,9 @@ export function AdminMemberTable({
               <th className="px-3 py-3 font-medium min-w-[120px]">
                 Active Loan
               </th>
+              <th className="px-3 py-3 font-medium min-w-[130px]">
+                Risk Profile
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -377,6 +380,9 @@ export function AdminMemberTable({
                     columns directly). */}
                 <td className="px-3 py-3">
                   <LoanCell member={m} />
+                </td>
+                <td className="px-3 py-3">
+                  <RiskCell member={m} />
                 </td>
               </tr>
             ))}
@@ -793,6 +799,47 @@ function SelectCell({
           <span className="text-[10px]">▾</span>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Risk-profile colour mapping for the admin Members table. Income-leaning
+ * tiers read teal, balanced reads indigo, growth-leaning reads lime —
+ * mirroring the income → growth spectrum the member quiz surfaces.
+ */
+const RISK_TONE: Record<string, string> = {
+  Conservative: "bg-[#46CDCF]/12 border-[#46CDCF]/40 text-[#0E7490]",
+  Cautious: "bg-[#46CDCF]/12 border-[#46CDCF]/40 text-[#0E7490]",
+  Moderate: "bg-[#6366F1]/10 border-[#6366F1]/35 text-[#4338CA]",
+  "Moderate-Aggressive": "bg-[#84CC16]/15 border-[#84CC16]/45 text-[#3F6212]",
+  Aggressive: "bg-[#84CC16]/15 border-[#84CC16]/45 text-[#3F6212]",
+};
+
+/**
+ * Risk-profile cell — shows the member's self-assessed investor profile
+ * (set via the portal quiz) as a colour-coded badge, with the assessed
+ * date beneath. "Not taken" when the member hasn't completed it yet.
+ */
+function RiskCell({ member }: { member: LehumoMember }) {
+  const profile = member.riskProfile;
+  if (!profile) {
+    return <span className="text-[11px] text-[#9CA3AF]">Not taken</span>;
+  }
+  const tone =
+    RISK_TONE[profile] ?? "bg-[#F8F9FA] border-[#E5E7EB] text-[#6B7280]";
+  return (
+    <div>
+      <span
+        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${tone}`}
+      >
+        {profile}
+      </span>
+      {member.riskAssessed && (
+        <div className="mt-1 text-[10px] text-[#9CA3AF]">
+          {member.riskAssessed}
+        </div>
+      )}
     </div>
   );
 }

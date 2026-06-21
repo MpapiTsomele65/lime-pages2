@@ -27,6 +27,7 @@ import { EmergencyAccessCard } from "./EmergencyAccessCard";
 import { PlanManagementCard } from "./PlanManagementCard";
 import { QGMSummaryCard } from "./QGMSummaryCard";
 import { SteeringCommitteeCard } from "./SteeringCommitteeCard";
+import { RiskProfileCard } from "./RiskProfileCard";
 
 interface DashboardOverviewProps {
   member: LehumoMember;
@@ -294,6 +295,11 @@ export function DashboardOverview({
           member={member}
         />
       )}
+
+      {/* Investor risk profile quiz — placed high, just before the pool's
+          cumulative-growth curve, so members set their profile early. Saves
+          to the member's Airtable record on confirm; admin sees it too. */}
+      <RiskProfileCard member={member} />
 
       {/* Community pool overview */}
       {communityStats && (

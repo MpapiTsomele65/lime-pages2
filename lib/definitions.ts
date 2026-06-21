@@ -90,6 +90,12 @@ export const AIRTABLE_FIELDS = {
   activeLoanBalance: "fld70n897jjS4st8W",
   activeLoanIssuedAt: "flddkKeNUDWCrHrsh",
   activeLoanType: "fld9GqPKfrJMoeL2d",
+  // ── Investor risk profile (portal scenario quiz, Jun 2026). Dedicated
+  //    columns so admin can see / filter / sort risk appetite. Set when
+  //    the member completes AND confirms the quiz in the portal. ──
+  riskProfile: "fldibCJ9IoaJs90N8",
+  riskScore: "fldpbX5MXFqAP9iow",
+  riskAssessed: "fldtoHYTnh8CxOcaT",
   // Plan & Source-of-Funds still ride along in `notes` — add dedicated
   // columns later if/when reporting needs them as first-class fields.
   // plan: "fldXXXXXXXXXXXXXXX",
@@ -266,6 +272,17 @@ export const SOURCE_CHOICE_ID_TO_NAME: Record<string, string> = {
 export const ID_TYPE_CHOICE_ID_TO_NAME: Record<string, string> = {
   selu73LPS0rKoSq7c: "SA ID",
   sel2aXQ83h42dEBkU: "Passport",
+};
+
+/** Risk Profile single-select choice IDs → display names. Used by the
+ *  member mapper's resolveSelect so admin + portal read the tier name
+ *  whether Airtable returns the choice ID or the name. */
+export const RISK_PROFILE_CHOICE_ID_TO_NAME: Record<string, string> = {
+  selP4jvFlzqnKCRT4: "Conservative",
+  sel5qZdUTmZ2ebzUh: "Cautious",
+  selfhGtYEnvBmAYqj: "Moderate",
+  selrwizRloIm7OIlE: "Moderate-Aggressive",
+  selajAll04h4o9Gw6: "Aggressive",
 };
 
 // ─── Contributions table ────────────────────────────────────────────
@@ -788,6 +805,15 @@ export interface AirtableAttachment {
   };
 }
 
+/** The five investor risk-profile tiers (matches the Airtable Risk
+ *  Profile single-select options). Conservative → Aggressive. */
+export type LehumoRiskProfile =
+  | "Conservative"
+  | "Cautious"
+  | "Moderate"
+  | "Moderate-Aggressive"
+  | "Aggressive";
+
 export interface LehumoMember {
   id: string; // Airtable record ID
   fullName: string;
@@ -834,6 +860,12 @@ export interface LehumoMember {
   activeLoanBalance?: number;
   activeLoanIssuedAt?: string; // YYYY-MM-DD (Airtable date-only field)
   activeLoanType?: ActiveLoanType | "";
+  // ── Investor risk profile (optional — set when the member completes &
+  //    confirms the portal risk quiz). Stored in dedicated Airtable
+  //    columns (Risk Profile / Risk Score / Risk Assessed), not notes. ──
+  riskProfile?: LehumoRiskProfile | "";
+  riskScore?: number;
+  riskAssessed?: string; // YYYY-MM-DD
   // ── Plan tier captured during onboarding Step 2 (basic / standard / vip).
   //    Stored in the notes blob as "Plan: <tier>" pending a dedicated
   //    Airtable column; parseRecord extracts it on read so portal + admin
