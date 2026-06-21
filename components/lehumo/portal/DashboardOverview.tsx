@@ -406,23 +406,25 @@ export function DashboardOverview({
         <PlanManagementCard member={member} />
       )}
 
-      {/* Bank deposit + Emergency Access, two-up — where you pay, and your
-          20% emergency safety-net position (locked / available / active-
-          loan). Both render for every member. The bank card's personalised
-          reference (Leh## I.Surname) is generated client-side so admin
-          recon always matches a member. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <BankDepositCard member={member} />
-        <motion.div
-          id="emergency-access"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.45, ease: iosEase }}
-          className="scroll-mt-24"
-        >
-          <EmergencyAccessCard member={member} />
-        </motion.div>
-      </div>
+      {/* Bank deposit / EFT details — full-width. The card carries the full
+          account details (holder, account no., branch, SWIFT…) so it runs
+          tall and reads better stacked than paired. The member's
+          personalised reference (Leh## I.Surname) is generated client-side
+          so admin recon always matches a member. */}
+      <BankDepositCard member={member} />
+
+      {/* Emergency Access — full-width, below the bank details. Surfaces the
+          member's 20% self-loan position (locked / available / active-loan
+          safety net). */}
+      <motion.div
+        id="emergency-access"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.45, ease: iosEase }}
+        className="scroll-mt-24"
+      >
+        <EmergencyAccessCard member={member} />
+      </motion.div>
 
       {/* KYC documents + beneficiary — identity maintenance cards, two-up
           (next-of-kin is the natural follow-up to identity verification).
