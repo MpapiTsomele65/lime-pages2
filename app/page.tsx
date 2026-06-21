@@ -6,6 +6,10 @@ import { LimeCapitalTeaser } from "@/components/sections/home/LimeCapitalTeaser"
 import WhatWeDo from "@/components/sections/home/WhatWeDo";
 import { AdvisoryPreview } from "@/components/sections/home/AdvisoryPreview";
 import { CtaBanner } from "@/components/sections/home/CtaBanner";
+// Reused from the Lime Capital page — same self-contained sections,
+// surfaced on the home page too.
+import InvestorsLikeYou from "@/components/sections/capital/InvestorsLikeYou";
+import InvestingGuide from "@/components/sections/capital/InvestingGuide";
 
 // ISR — the hero's live founding-cohort stats (spots left, members
 // contributed) refresh every 5 minutes. Keeps the home page cached/fast.
@@ -34,6 +38,10 @@ export default async function HomePage() {
         totalContributed={stats?.totalContributed ?? null}
       />
       <LimeCapitalTeaser />
+      {/* Investing education carried over from Lime Capital: social proof
+          of where peers invest, then the Investing 101 how-to guide. */}
+      <InvestorsLikeYou />
+      <InvestingGuide />
       <WhatWeDo />
       <AdvisoryPreview />
       <CtaBanner />
