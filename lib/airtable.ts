@@ -9,6 +9,8 @@ import {
   SOURCE_CHOICE_ID_TO_NAME,
   ID_TYPE_CHOICE_ID_TO_NAME,
   RISK_PROFILE_CHOICE_ID_TO_NAME,
+  WEALTH_PREFERENCE_CHOICE_ID_TO_NAME,
+  ASSET_CLASS_CHOICE_ID_TO_NAME,
   RELATIONSHIP_CHOICE_ID_TO_NAME,
   LOAN_TYPE_CHOICE_ID_TO_NAME,
   CONTRIBUTION_SOURCE,
@@ -30,6 +32,8 @@ import {
   type BeneficiaryRelationship,
   type ActiveLoanType,
   type LehumoRiskProfile,
+  type LehumoWealthPreference,
+  type LehumoAssetClass,
 } from "./definitions";
 import {
   listContributionsForMember,
@@ -187,6 +191,16 @@ export function parseRecord(record: any): LehumoMember {
         ? (f[AIRTABLE_FIELDS.riskScore] as number)
         : undefined,
     riskAssessed: f[AIRTABLE_FIELDS.riskAssessed] || undefined,
+    wealthPreference: resolveSelect(
+      f[AIRTABLE_FIELDS.wealthPreference],
+      WEALTH_PREFERENCE_CHOICE_ID_TO_NAME,
+      "",
+    ) as LehumoWealthPreference | "",
+    preferredAssetClass: resolveSelect(
+      f[AIRTABLE_FIELDS.preferredAssetClass],
+      ASSET_CLASS_CHOICE_ID_TO_NAME,
+      "",
+    ) as LehumoAssetClass | "",
     // ── Beneficiary / next-of-kin (all optional) ──
     beneficiaryFirstName: f[AIRTABLE_FIELDS.beneficiaryFirstName] || undefined,
     beneficiarySurname: f[AIRTABLE_FIELDS.beneficiarySurname] || undefined,

@@ -96,6 +96,10 @@ export const AIRTABLE_FIELDS = {
   riskProfile: "fldibCJ9IoaJs90N8",
   riskScore: "fldpbX5MXFqAP9iow",
   riskAssessed: "fldtoHYTnh8CxOcaT",
+  // ── Wealth preference + favoured asset class (portal quiz, second
+  //    dimension). Post-accumulation income-vs-growth lean + asset class. ──
+  wealthPreference: "fldd0HWg1My2jpGi0",
+  preferredAssetClass: "fldX0fQIW5WtnXk4e",
   // Plan & Source-of-Funds still ride along in `notes` — add dedicated
   // columns later if/when reporting needs them as first-class fields.
   // plan: "fldXXXXXXXXXXXXXXX",
@@ -283,6 +287,21 @@ export const RISK_PROFILE_CHOICE_ID_TO_NAME: Record<string, string> = {
   selfhGtYEnvBmAYqj: "Moderate",
   selrwizRloIm7OIlE: "Moderate-Aggressive",
   selajAll04h4o9Gw6: "Aggressive",
+};
+
+/** Wealth Preference single-select choice IDs → display names. */
+export const WEALTH_PREFERENCE_CHOICE_ID_TO_NAME: Record<string, string> = {
+  selPhhr5nBJSTAogF: "Income",
+  selMdz4MQCbG9s6is: "Balanced",
+  selhJZzwCm7pX6EM5: "Growth",
+};
+
+/** Preferred Asset Class single-select choice IDs → display names. */
+export const ASSET_CLASS_CHOICE_ID_TO_NAME: Record<string, string> = {
+  sellMPLlUbtqRqc85: "Property",
+  selu9zWaqXmUGVkmj: "Dividend income",
+  selbb1UkfyNVrHHQE: "Growth equity",
+  selS5VCnCoYS01Adt: "Cash & bonds",
 };
 
 // ─── Contributions table ────────────────────────────────────────────
@@ -814,6 +833,16 @@ export type LehumoRiskProfile =
   | "Moderate-Aggressive"
   | "Aggressive";
 
+/** Post-accumulation income-vs-growth lean from the portal quiz. */
+export type LehumoWealthPreference = "Income" | "Balanced" | "Growth";
+
+/** Favoured asset class from the portal quiz. */
+export type LehumoAssetClass =
+  | "Property"
+  | "Dividend income"
+  | "Growth equity"
+  | "Cash & bonds";
+
 export interface LehumoMember {
   id: string; // Airtable record ID
   fullName: string;
@@ -866,6 +895,10 @@ export interface LehumoMember {
   riskProfile?: LehumoRiskProfile | "";
   riskScore?: number;
   riskAssessed?: string; // YYYY-MM-DD
+  // ── Wealth preference + favoured asset class (portal quiz, 2nd
+  //    dimension; dedicated Airtable columns). ──
+  wealthPreference?: LehumoWealthPreference | "";
+  preferredAssetClass?: LehumoAssetClass | "";
   // ── Plan tier captured during onboarding Step 2 (basic / standard / vip).
   //    Stored in the notes blob as "Plan: <tier>" pending a dedicated
   //    Airtable column; parseRecord extracts it on read so portal + admin

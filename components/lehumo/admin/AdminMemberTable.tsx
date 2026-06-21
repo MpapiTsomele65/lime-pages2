@@ -840,6 +840,13 @@ function RiskCell({ member }: { member: LehumoMember }) {
           {member.riskAssessed}
         </div>
       )}
+      {(member.wealthPreference || member.preferredAssetClass) && (
+        <div className="mt-1 text-[10px] text-[#6B7280] leading-tight">
+          {[member.wealthPreference, member.preferredAssetClass]
+            .filter(Boolean)
+            .join(" · ")}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * Investor risk-profile card for the Lehumo member portal.
+ * Risk + wealth profile card for the Lehumo member portal.
  *
- * A scenario-based mini-quiz (6 questions, R10k figures scaled to Lehumo
- * cashflows — see lib/lehumo-risk.ts) that maps the member to one of the
- * five risk tiers. Output is intentionally limited to the profile
- * outcome + description (no ETF matching). The member is asked to confirm
- * the result ("yes, that's me") before it's saved to their Airtable
- * record; if it doesn't resonate they can retake. The saved profile also
- * surfaces in the admin member table.
+ * A scenario quiz framed around Lehumo's pooled-savings context (see
+ * lib/lehumo-risk.ts) that produces two reads: a five-tier risk profile
+ * (protect ↔ grow the pool) and a wealth preference for the post-5-year
+ * decision (passive income ↔ keep growing), plus the asset class that
+ * most appeals to them. The member confirms before it saves to their
+ * Airtable record; both reads also surface in the admin member table.
  *
  * Dark portal theme via PortalCard. POST → /api/lehumo/portal/member/risk
  * then router.refresh() so the saved state re-renders from fresh data.
@@ -26,14 +25,17 @@ import {
   RotateCcw,
   Loader2,
   Info,
+  Coins,
 } from "lucide-react";
 
 import type { LehumoMember } from "@/lib/definitions";
 import {
   PORTAL_QUESTIONS,
-  portalProfileFor,
-  profileByName,
-  type RiskProfile,
+  scoreLehumoSurvey,
+  riskTierByName,
+  wealthPrefByName,
+  WEALTH_PREFERENCES,
+  type LehumoSurveyResult,
 } from "@/lib/lehumo-risk";
 import { PortalCard } from "./PortalCard";
 
@@ -41,8 +43,11 @@ const iosEase = [0.32, 0.72, 0, 1] as const;
 
 export function RiskProfileCard({ member }: { member: LehumoMember }) {
   const router = useRouter();
-  const saved = member.riskProfile || "";
-  const savedTier = saved ? profileByName(saved) : undefined;
+  const savedRiskName = member.riskProfile || "";
+  const savedRisk = savedRiskName ? riskTierByName(savedRiskName) : undefined;
+  const savedWealth = member.wealthPreference
+    ? wealthPrefByName(member.wealthPreference)
+    : undefined;
 
   const [phase, setPhase] = useState<"idle" | "quiz" | "result">("idle");
   const [answers, setAnswers] = useState<number[]>(() =>
@@ -52,8 +57,8 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const result: RiskProfile | null =
-    phase === "result" ? portalProfileFor(answers) : null;
+  const result: LehumoSurveyResult | null =
+    phase === "result" ? scoreLehumoSurvey(answers) : null;
   const progress =
     phase === "result" ? 100 : (step / PORTAL_QUESTIONS.length) * 100;
 
@@ -126,20 +131,20 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 mb-1">
-              Investor risk profile
+              Your investor profile
             </p>
             <h2
               id="risk-profile-title"
               className="text-[17px] font-semibold tracking-tight text-white leading-tight"
             >
-              {saved
-                ? "Your investor risk profile"
-                : "What kind of investor are you?"}
+              {savedRiskName
+                ? "Your Lehumo investor profile"
+                : "How should the pool work for you?"}
             </h2>
             <p className="mt-1 text-[12.5px] text-white/55 leading-relaxed">
-              {saved
-                ? "This helps us shape where the trust invests around the community's appetite. Retake any time your view changes."
-                : "Six quick scenarios — no numbers or jargon — to find your risk profile. It helps us shape the trust's investment approach around the community."}
+              {savedRiskName
+                ? "This helps us shape how the pooled savings are invested — and plan the payout phase — around the community's appetite. Retake any time."
+                : "A few quick scenarios about the pooled savings and your own money style. It shapes how we invest the pool and plan life after the 5 years."}
             </p>
           </div>
         </div>
@@ -166,20 +171,43 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
             >
-              {saved ? (
+              {savedRiskName ? (
                 <div className="rounded-[16px] border border-[#B8FF00]/20 bg-[#B8FF00]/[0.05] p-4">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#B8FF00]">
-                    Your profile
-                  </span>
-                  <p className="mt-1 text-[20px] font-semibold tracking-tight text-white">
-                    {saved}
-                  </p>
-                  {savedTier && (
-                    <p className="mt-1 text-[12.5px] text-white/60 leading-relaxed">
-                      {savedTier.blurb}
-                    </p>
-                  )}
-                  <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#B8FF00]">
+                        Risk profile
+                      </span>
+                      <p className="mt-0.5 text-[18px] font-semibold tracking-tight text-white">
+                        {savedRiskName}
+                      </p>
+                      {savedRisk && (
+                        <p className="mt-1 text-[12px] text-white/55 leading-relaxed">
+                          {savedRisk.blurb}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#46CDCF]">
+                        After 5 years
+                      </span>
+                      <p className="mt-0.5 text-[18px] font-semibold tracking-tight text-white">
+                        {member.wealthPreference || "—"}
+                      </p>
+                      {savedWealth && (
+                        <p className="mt-0.5 text-[11.5px] text-white/45">
+                          {savedWealth.tagline}
+                        </p>
+                      )}
+                      {member.preferredAssetClass && (
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-[11.5px] text-white/55">
+                          <Coins className="h-3.5 w-3.5 text-white/40" />
+                          Drawn to {member.preferredAssetClass}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 flex-wrap border-t border-white/[0.06] pt-3">
                     {member.riskAssessed && (
                       <span className="text-[11px] text-white/35">
                         Last assessed {member.riskAssessed}
@@ -191,7 +219,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                       className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.03] px-3.5 py-2 text-[12px] font-semibold text-white/70 hover:text-white hover:border-[#46CDCF]/40 transition-colors"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
-                      Retake the quiz
+                      Retake
                     </button>
                   </div>
                 </div>
@@ -286,36 +314,68 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.35, ease: iosEase }}
             >
+              {/* Risk profile */}
               <div className="rounded-[16px] border border-[#46CDCF]/25 bg-gradient-to-br from-[#46CDCF]/[0.08] to-[#B8FF00]/[0.03] p-5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#46CDCF]">
-                  You look like a
+                  Your risk profile
                 </span>
-                <p className="mt-1 text-[24px] font-semibold tracking-tight text-white leading-tight">
-                  {result.name}
+                <p className="mt-1 text-[22px] font-semibold tracking-tight text-white leading-tight">
+                  {result.riskTier.name}
                 </p>
                 <p className="text-[12.5px] font-semibold text-[#B8FF00]">
-                  {result.tagline}
+                  {result.riskTier.tagline}
                 </p>
-                <p className="mt-2.5 text-[13px] text-white/70 leading-relaxed">
-                  {result.blurb}
+                <p className="mt-2 text-[13px] text-white/70 leading-relaxed">
+                  {result.riskTier.blurb}
                 </p>
-
-                {/* Income ↔ growth lean */}
                 <div className="mt-4">
                   <div className="flex justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-1.5">
-                    <span>Income</span>
-                    <span>Growth</span>
+                    <span>Protect the pool</span>
+                    <span>Grow the pool</span>
                   </div>
                   <div className="relative h-2 rounded-full bg-gradient-to-r from-[#46CDCF] via-white/15 to-[#B8FF00]">
                     <div
                       className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#0F2040]"
-                      style={{ left: `${result.lean}%` }}
+                      style={{ left: `${result.riskTier.lean}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-[11.5px] text-white/45">
-                    Typical horizon: {result.horizon} · {result.leanLabel}
-                  </p>
                 </div>
+              </div>
+
+              {/* Wealth preference + asset class */}
+              <div className="mt-3 rounded-[16px] border border-white/[0.08] bg-white/[0.02] p-5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#46CDCF]">
+                  After the 5 years, you lean toward
+                </span>
+                <div className="mt-2 flex gap-2">
+                  {WEALTH_PREFERENCES.map((w) => {
+                    const on = w.id === result.wealthPref.id;
+                    return (
+                      <span
+                        key={w.id}
+                        className={`flex-1 text-center rounded-full border px-2 py-1.5 text-[12px] font-semibold transition-colors ${
+                          on
+                            ? "border-[#B8FF00]/40 bg-[#B8FF00]/[0.12] text-[#B8FF00]"
+                            : "border-white/[0.08] text-white/40"
+                        }`}
+                      >
+                        {w.name}
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="mt-2.5 text-[13px] text-white/70 leading-relaxed">
+                  {result.wealthPref.blurb}
+                </p>
+                {result.assetClass && (
+                  <p className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 text-[12px] text-white/75">
+                    <Coins className="h-3.5 w-3.5 text-[#46CDCF]" />
+                    Most drawn to{" "}
+                    <span className="font-semibold text-white">
+                      {result.assetClass}
+                    </span>
+                  </p>
+                )}
               </div>
 
               {/* Confirm / retake */}
@@ -356,7 +416,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
               <p className="mt-4 flex items-start gap-1.5 text-[11px] text-white/35 leading-relaxed">
                 <Info className="h-3 w-3 mt-0.5 shrink-0" />
                 Educational only — this isn&rsquo;t financial advice. It helps the
-                trust understand the community&rsquo;s risk appetite.
+                trust shape how the pool is invested around the community.
               </p>
             </motion.div>
           )}

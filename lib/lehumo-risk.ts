@@ -1,120 +1,314 @@
 /**
- * Lehumo portal risk-profile quiz.
+ * Lehumo portal risk + wealth profiler.
  *
- * Scenario questions scaled to **R10,000** figures that map to Lehumo
- * member cashflows (the public /capital profiler uses the larger
- * R50k/R100k scenarios). The five-tier framework + tier copy is shared
- * with the marketing profiler (lib/satrix-etfs.ts), but scoring here is
- * self-contained so the portal never depends on the marketing question
- * set. The portal output is intentionally limited to the profile
- * outcome — no ETF matching.
+ * Unlike the generic public /capital profiler (lib/satrix-etfs.ts), this
+ * is framed around Lehumo's specific context — a POOLED savings vehicle
+ * with a 5-year accumulation phase and then a payout decision. The quiz
+ * blends pooled-savings scenarios with money-personality questions and
+ * produces TWO reads:
+ *
+ *   1. Risk profile — protecting vs growing their share of the pool
+ *      (five tiers, Conservative → Aggressive).
+ *   2. Wealth preference — after the 5 years, draw passive income or keep
+ *      growing (Income / Balanced / Growth), plus the asset class that
+ *      most appeals to them (property, dividends, growth equity, cash &
+ *      bonds).
+ *
+ * Educational only — not financial advice.
  */
 
-import {
-  RISK_PROFILES,
-  type QuizQuestion,
-  type RiskProfile,
-} from "@/lib/satrix-etfs";
+import type {
+  LehumoRiskProfile,
+  LehumoWealthPreference,
+  LehumoAssetClass,
+} from "@/lib/definitions";
 
-export { RISK_PROFILES };
-export type { QuizQuestion, RiskProfile };
+// ── Risk tiers (protect ↔ grow the pool) ─────────────────────────────
+export type RiskTierId =
+  | "conservative"
+  | "cautious"
+  | "moderate"
+  | "moderate-aggressive"
+  | "aggressive";
 
-export const PORTAL_QUESTIONS: QuizQuestion[] = [
+export interface RiskTier {
+  id: RiskTierId;
+  /** Matches the Airtable Risk Profile single-select option. */
+  name: LehumoRiskProfile;
+  tagline: string;
+  blurb: string;
+  /** 0 (protect) → 100 (grow) position, for the meter. */
+  lean: number;
+}
+
+export const RISK_TIERS: RiskTier[] = [
   {
-    id: "horizon",
-    prompt: "When are you most likely to need this money back?",
-    helper: "Your time horizon shapes how much short-term risk makes sense.",
-    options: [
-      { label: "Within the next 2 years", score: 0 },
-      { label: "In about 3 to 5 years", score: 1 },
-      { label: "In 7 to 10 years", score: 2 },
-      { label: "10+ years — I'm in no rush", score: 3 },
-    ],
+    id: "conservative",
+    name: "Conservative",
+    tagline: "Protect the pool first",
+    blurb:
+      "You'd rather the pool grew slowly and safely than risk any of everyone's hard-earned contributions. Keeping the capital safe matters most.",
+    lean: 8,
   },
   {
-    id: "loss",
+    id: "cautious",
+    name: "Cautious",
+    tagline: "Safety, with a little growth",
+    blurb:
+      "You want the pool to stay stable but still beat inflation. You'll accept small dips for a slightly better return — nothing dramatic.",
+    lean: 28,
+  },
+  {
+    id: "moderate",
+    name: "Moderate",
+    tagline: "A steady balance",
+    blurb:
+      "You're comfortable with moderate ups and downs in exchange for real growth on the pool — a balance between safety and building wealth.",
+    lean: 50,
+  },
+  {
+    id: "moderate-aggressive",
+    name: "Moderate-Aggressive",
+    tagline: "Grow the pool",
+    blurb:
+      "Growing the pool is the priority and you can ride out tougher years. You're in it for the long haul and want the pool working hard.",
+    lean: 72,
+  },
+  {
+    id: "aggressive",
+    name: "Aggressive",
+    tagline: "Maximise the pool's growth",
+    blurb:
+      "You're happy for the pool to ride full market ups and downs in exchange for the strongest possible long-term growth. Time is on your side.",
+    lean: 92,
+  },
+];
+
+export const riskTierByName = (name: string): RiskTier | undefined =>
+  RISK_TIERS.find((t) => t.name === name);
+
+// ── Wealth preference (income ↔ growth, post-accumulation) ───────────
+export type WealthPreferenceId = "income" | "balanced" | "growth";
+
+export interface WealthPref {
+  id: WealthPreferenceId;
+  /** Matches the Airtable Wealth Preference single-select option. */
+  name: LehumoWealthPreference;
+  tagline: string;
+  blurb: string;
+}
+
+export const WEALTH_PREFERENCES: WealthPref[] = [
+  {
+    id: "income",
+    name: "Income",
+    tagline: "Passive cashflow",
+    blurb:
+      "After the 5 years you'd lean toward drawing a steady, passive income from your share — think high-dividend or rental-style cashflow.",
+  },
+  {
+    id: "balanced",
+    name: "Balanced",
+    tagline: "Income + growth",
+    blurb:
+      "You'd want a bit of both — some income to enjoy now, with the rest left invested to keep growing your share.",
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    tagline: "Keep compounding",
+    blurb:
+      "After the 5 years you'd rather reinvest and keep growing your share than draw it down — building wealth for the longer term.",
+  },
+];
+
+export const wealthPrefByName = (name: string): WealthPref | undefined =>
+  WEALTH_PREFERENCES.find((w) => w.name === name);
+
+// ── Questions ────────────────────────────────────────────────────────
+export type Dimension = "risk" | "wealth";
+
+export interface PortalOption {
+  label: string;
+  score: number;
+  /** Only on the asset-class question — the categorical preference
+   *  captured directly from the member's choice. */
+  assetClass?: LehumoAssetClass;
+}
+
+export interface PortalQuestion {
+  id: string;
+  prompt: string;
+  helper?: string;
+  dimension: Dimension;
+  options: PortalOption[];
+}
+
+export const PORTAL_QUESTIONS: PortalQuestion[] = [
+  // ── Risk dimension: protect ↔ grow the pool ──
+  {
+    id: "pool-priority",
+    dimension: "risk",
     prompt:
-      "Your R10,000 investment falls to R8,000 in three months. Your honest first reaction?",
-    helper: "How you feel about a real drop says a lot about your appetite.",
+      "Lehumo invests everyone's monthly contributions together as one pool. For your share, what matters most?",
     options: [
-      { label: "Sell now — I can't watch it drop further", score: 0 },
-      { label: "Move some into something safer", score: 1 },
-      { label: "Sit tight and wait for it to recover", score: 2 },
-      { label: "Buy more while it's cheaper", score: 3 },
+      { label: "Protecting every rand, even if it grows slowly", score: 0 },
+      { label: "Mostly safety, with a little growth", score: 1 },
+      { label: "A balance of safety and growth", score: 2 },
+      { label: "Mostly growth, accepting some ups and downs", score: 3 },
+      { label: "The strongest growth, even through bad years", score: 4 },
     ],
   },
   {
-    id: "income-growth",
-    prompt: "What would you most want this money to do?",
-    helper: "The classic trade-off: reliable income now, or growth for later.",
-    options: [
-      { label: "Pay me a steady, reliable income now", score: 0 },
-      { label: "Mostly income, with a little growth", score: 1 },
-      { label: "An even balance of income and growth", score: 2 },
-      { label: "Mostly growth, a little income", score: 3 },
-      { label: "Maximise long-term growth — I don't need income now", score: 4 },
-    ],
-  },
-  {
-    id: "outcome-band",
+    id: "down-year",
+    dimension: "risk",
     prompt:
-      "Over one year, which range of outcomes for R10,000 sits most comfortably with you?",
-    helper: "Bigger possible gains always come with bigger possible drops.",
+      "In a tough year, the pool's value drops about 10% on paper. How would you feel?",
+    helper: "There's no wrong answer — it's just how you're wired.",
     options: [
-      { label: "R10,400 up / R9,800 down — small and steady", score: 0 },
-      { label: "R11,200 up / R9,400 down", score: 1 },
-      { label: "R12,500 up / R8,500 down", score: 2 },
-      { label: "R14,000 up / R7,500 down — big swings are fine", score: 3 },
+      { label: "Very anxious — I'd want to pull my share out", score: 0 },
+      { label: "Uneasy, but I'd hold on", score: 1 },
+      { label: "Fine — markets go up and down", score: 2 },
+      { label: "Relaxed — I might even want to add more", score: 3 },
     ],
   },
   {
-    id: "goal",
-    prompt: "What's this money really for?",
+    id: "spare-money",
+    dimension: "risk",
+    prompt:
+      "When you have spare money after your monthly expenses, what do you usually do with it?",
+    helper: "How you handle your own money is a good guide.",
     options: [
-      { label: "Protecting savings I can't afford to lose", score: 0 },
-      { label: "A reliable income stream", score: 1 },
-      { label: "Steadily building wealth over time", score: 2 },
-      { label: "Maximum growth over the years ahead", score: 3 },
+      { label: "Keep it safe in savings", score: 0 },
+      { label: "Save most, invest a little", score: 1 },
+      { label: "Split it between saving and investing", score: 2 },
+      { label: "Invest most of it to grow", score: 3 },
     ],
   },
   {
-    id: "self-image",
-    prompt: "Which sounds most like you?",
+    id: "lock-in",
+    dimension: "risk",
+    prompt:
+      "Lehumo locks contributions for the 5-year accumulation phase. How does that sit with you?",
     options: [
-      { label: "I'd rather avoid risk altogether", score: 0 },
-      { label: "I'm cautious and weigh things carefully", score: 1 },
-      { label: "I'm comfortable with ups and downs for better returns", score: 2 },
-      { label: "I actively chase high-growth opportunities", score: 3 },
+      { label: "I'd be nervous not being able to touch it", score: 0 },
+      { label: "A little, but I understand why", score: 1 },
+      { label: "Comfortable — that's the plan", score: 2 },
+      { label: "Happy to leave it even longer for more growth", score: 3 },
+    ],
+  },
+  // ── Wealth dimension: income ↔ growth + asset class ──
+  {
+    id: "post-accumulation",
+    dimension: "wealth",
+    prompt:
+      "After the 5 years, once the pool has grown (say ~R2m for the group), what would you most want for your share?",
+    helper: "This helps us plan the next phase around what members want.",
+    options: [
+      { label: "A steady income paid out to me each month", score: 0 },
+      { label: "Mostly income, with some left to grow", score: 1 },
+      { label: "An even mix of income and growth", score: 2 },
+      { label: "Mostly reinvested to grow, a little income", score: 3 },
+      { label: "Reinvest it all to keep growing my wealth", score: 4 },
+    ],
+  },
+  {
+    id: "asset-appeal",
+    dimension: "wealth",
+    prompt: "Which of these appeals most to you for building wealth?",
+    helper: "Tells us the kind of assets the community is drawn to.",
+    options: [
+      {
+        label: "Safe interest from bonds & cash",
+        score: 0,
+        assetClass: "Cash & bonds",
+      },
+      {
+        label: "Shares that pay regular dividends",
+        score: 1,
+        assetClass: "Dividend income",
+      },
+      {
+        label: "Property you can earn rent from",
+        score: 2,
+        assetClass: "Property",
+      },
+      {
+        label: "Growth shares & ETFs that rise over time",
+        score: 3,
+        assetClass: "Growth equity",
+      },
+    ],
+  },
+  {
+    id: "ideal-win",
+    dimension: "wealth",
+    prompt: "Picture your ideal money 'win'. Which feels better?",
+    options: [
+      { label: "A reliable monthly payout I can count on", score: 0 },
+      { label: "A nice balance of payout and a growing balance", score: 2 },
+      { label: "A much bigger balance years from now", score: 4 },
     ],
   },
 ];
 
-/** Highest attainable score for the portal question set. */
-export const PORTAL_MAX_SCORE = PORTAL_QUESTIONS.reduce(
-  (s, q) => s + Math.max(...q.options.map((o) => o.score)),
-  0,
+export const PORTAL_QUESTION_COUNT = PORTAL_QUESTIONS.length;
+
+// ── Scoring ──────────────────────────────────────────────────────────
+const RISK_QUESTIONS = PORTAL_QUESTIONS.filter((q) => q.dimension === "risk");
+const WEALTH_QUESTIONS = PORTAL_QUESTIONS.filter(
+  (q) => q.dimension === "wealth",
 );
+const dimMax = (qs: PortalQuestion[]) =>
+  qs.reduce((s, q) => s + Math.max(...q.options.map((o) => o.score)), 0);
+const RISK_MAX = dimMax(RISK_QUESTIONS);
+const WEALTH_MAX = dimMax(WEALTH_QUESTIONS);
 
-/** Sum the option scores for a set of answer indices (one per question). */
-export function scorePortalAnswers(answers: number[]): number {
-  return answers.reduce((sum, choice, i) => {
-    const q = PORTAL_QUESTIONS[i];
-    return q && choice >= 0 ? sum + (q.options[choice]?.score ?? 0) : sum;
-  }, 0);
+export interface LehumoSurveyResult {
+  riskTier: RiskTier;
+  riskScore: number;
+  wealthPref: WealthPref;
+  assetClass: LehumoAssetClass | null;
 }
 
-/** Map a full set of answers to one of the five risk-profile tiers,
- *  banding by 20% slices of the portal max (self-contained — does not
- *  depend on the marketing scorer). */
-export function portalProfileFor(answers: number[]): RiskProfile {
-  const pct = PORTAL_MAX_SCORE > 0 ? scorePortalAnswers(answers) / PORTAL_MAX_SCORE : 0;
-  const idx =
-    pct <= 0.2 ? 0 : pct <= 0.4 ? 1 : pct <= 0.6 ? 2 : pct <= 0.8 ? 3 : 4;
-  return RISK_PROFILES[idx];
-}
+/**
+ * Score a full set of answers (option index per question, aligned to
+ * PORTAL_QUESTIONS order) into the two-dimension result. Risk bands by
+ * even 20% slices; wealth into Income / Balanced / Growth thirds.
+ */
+export function scoreLehumoSurvey(answers: number[]): LehumoSurveyResult {
+  let riskScore = 0;
+  let wealthScore = 0;
+  let assetClass: LehumoAssetClass | null = null;
 
-/** Look up a tier object by its display name (e.g. the value stored on
- *  the member record). */
-export function profileByName(name: string): RiskProfile | undefined {
-  return RISK_PROFILES.find((p) => p.name === name);
+  PORTAL_QUESTIONS.forEach((q, i) => {
+    const choice = answers[i];
+    const opt = choice >= 0 ? q.options[choice] : undefined;
+    if (!opt) return;
+    if (q.dimension === "risk") riskScore += opt.score;
+    else wealthScore += opt.score;
+    if (opt.assetClass) assetClass = opt.assetClass;
+  });
+
+  const riskPct = RISK_MAX > 0 ? riskScore / RISK_MAX : 0;
+  const riskIdx =
+    riskPct <= 0.2
+      ? 0
+      : riskPct <= 0.4
+        ? 1
+        : riskPct <= 0.6
+          ? 2
+          : riskPct <= 0.8
+            ? 3
+            : 4;
+
+  const wealthPct = WEALTH_MAX > 0 ? wealthScore / WEALTH_MAX : 0;
+  const wealthIdx = wealthPct <= 0.34 ? 0 : wealthPct <= 0.66 ? 1 : 2;
+
+  return {
+    riskTier: RISK_TIERS[riskIdx],
+    riskScore,
+    wealthPref: WEALTH_PREFERENCES[wealthIdx],
+    assetClass,
+  };
 }
