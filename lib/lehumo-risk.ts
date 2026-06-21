@@ -179,10 +179,11 @@ export const PORTAL_QUESTIONS: PortalQuestion[] = [
       "When you have spare money after your monthly expenses, what do you usually do with it?",
     helper: "How you handle your own money is a good guide.",
     options: [
-      { label: "Keep it safe in savings", score: 0 },
-      { label: "Save most, invest a little", score: 1 },
-      { label: "Split it between saving and investing", score: 2 },
-      { label: "Invest most of it to grow", score: 3 },
+      { label: "Spend it — treat myself or enjoy it", score: 0 },
+      { label: "Keep it safe in savings", score: 1 },
+      { label: "Save most, invest a little", score: 2 },
+      { label: "Split it between saving and investing", score: 3 },
+      { label: "Invest most of it to grow", score: 4 },
     ],
   },
   {
@@ -205,11 +206,9 @@ export const PORTAL_QUESTIONS: PortalQuestion[] = [
       "After the 5 years, once the pool has grown (say ~R2m for the group), what would you most want for your share?",
     helper: "This helps us plan the next phase around what members want.",
     options: [
-      { label: "A steady income paid out to me each month", score: 0 },
-      { label: "Mostly income, with some left to grow", score: 1 },
-      { label: "An even mix of income and growth", score: 2 },
-      { label: "Mostly reinvested to grow, a little income", score: 3 },
-      { label: "Reinvest it all to keep growing my wealth", score: 4 },
+      { label: "A steady passive income paid out to me", score: 0 },
+      { label: "A mix of some income and some growth", score: 2 },
+      { label: "Long-term capital growth, with little or no income", score: 4 },
     ],
   },
   {
