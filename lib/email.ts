@@ -1213,13 +1213,31 @@ export function renderPreLaunchEmailHtml(params: {
   const { firstName, stats } = params;
   const portalUrl = `${siteUrl()}/lehumo/portal`;
 
-  // ZAR formatter — explicit so all three numbers (received, goal,
-  // and the subscribe-out copy) match exactly in shape.
+  // ZAR formatter for the contribution figures.
   const fmtZAR = (n: number) =>
     n.toLocaleString("en-ZA", { maximumFractionDigits: 0 });
-  const governancePct = Math.round(
-    (stats.governanceVolunteers / stats.governanceTarget) * 100,
-  );
+
+  // ── Kick-off meeting details. ⚠️ CONFIRM these before broadcasting. ──
+  // Update KICKOFF_TIME + the two ISO timestamps + the gcal UTC dates
+  // together if the start time changes (SAST = UTC+2, so 18:00 → 16:00Z).
+  const KICKOFF_DATE_LABEL = "Wednesday, 24 June 2026";
+  const KICKOFF_TIME = "18:00–19:30 SAST";
+  const KICKOFF_JOIN_URL = "https://meet.google.com/tkt-pfaa-zuk";
+  const KICKOFF_START_ISO = "2026-06-24T18:00:00+02:00";
+  const KICKOFF_END_ISO = "2026-06-24T19:30:00+02:00";
+  const KICKOFF_GCAL =
+    "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    "&text=" +
+    encodeURIComponent("Lehumo Kick-off General Meeting") +
+    "&dates=20260624T160000Z/20260624T173000Z" +
+    "&details=" +
+    encodeURIComponent(
+      "Lehumo Founding Bosses kick-off. Join: " +
+        KICKOFF_JOIN_URL +
+        " · Or dial (ZA) +27 10 823 1210, PIN 867 717 053#",
+    ) +
+    "&location=" +
+    encodeURIComponent(KICKOFF_JOIN_URL);
 
   // Subscribe-out mailto — pre-filled subject + body so opt-outs are
   // one click → type member number → send. Encoded for safe URL use.
@@ -1261,7 +1279,7 @@ export function renderPreLaunchEmailHtml(params: {
   {
     "@context": "http://schema.org",
     "@type": "EventReservation",
-    "reservationNumber": "lehumo-investor-brief-2026-05-31",
+    "reservationNumber": "lehumo-kickoff-2026-06-24",
     "reservationStatus": "http://schema.org/ReservationConfirmed",
     "underName": {
       "@type": "Person",
@@ -1269,17 +1287,17 @@ export function renderPreLaunchEmailHtml(params: {
     },
     "reservationFor": {
       "@type": "Event",
-      "name": "Lehumo Investor Brief: 1 Day to Launch",
-      "startDate": "2026-05-31T18:00:00+02:00",
-      "endDate": "2026-05-31T19:00:00+02:00",
+      "name": "Lehumo Kick-off General Meeting",
+      "startDate": "${KICKOFF_START_ISO}",
+      "endDate": "${KICKOFF_END_ISO}",
       "eventStatus": "http://schema.org/EventScheduled",
       "eventAttendanceMode": "http://schema.org/OnlineEventAttendanceMode",
       "location": {
         "@type": "VirtualLocation",
-        "url": "https://meet.google.com/pgk-vrpz-jrn"
+        "url": "${KICKOFF_JOIN_URL}"
       },
-      "url": "https://meet.google.com/pgk-vrpz-jrn",
-      "description": "Final cohort Q&A before Lehumo collections open Monday 1 June 2026. Bring questions about contributions, KYC, plans, or anything you'd like clarity on before launch.",
+      "url": "${KICKOFF_JOIN_URL}",
+      "description": "Lehumo Founding Bosses kick-off — the vision, the model, your protections, governance, and a live Q&A. Complete your registration before July to lock your founding seat.",
       "organizer": {
         "@type": "Organization",
         "name": "Lehumo Trust",
@@ -1300,33 +1318,33 @@ export function renderPreLaunchEmailHtml(params: {
         </td></tr>
 
         <tr><td style="padding:32px 32px 0;">
-          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">Lehumo Pre-launch updates &mdash; 1 Day to Go</h1>
+          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">Our kick-off is Wednesday &mdash; let&rsquo;s lock the founding cohort</h1>
           <p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 24px;">
-            Hi ${firstName}, here&rsquo;s where the cohort stands one day out from launch, plus a quick reminder about tonight&rsquo;s info session.
+            Hi ${firstName}, we&rsquo;re bringing the founding crew together on the 24th to launch Lehumo properly. Below: the meeting details, where the cohort stands, and the one thing to do before July &mdash; complete your registration so your founding seat is confirmed.
           </p>
         </td></tr>
 
         <tr><td style="padding:0 32px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(70,205,207,0.14) 0%,rgba(184,255,0,0.06) 100%);border:1.5px solid rgba(70,205,207,0.40);border-radius:18px;margin-bottom:24px;">
             <tr><td style="padding:22px 22px 24px;">
-              <p style="font-size:11px;font-weight:700;color:#46CDCF;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Reminder &middot; Info session tonight</p>
-              <h2 style="font-size:18px;font-weight:700;color:#ffffff;margin:0 0 6px;line-height:1.35;">Lehumo Investor Brief: 1 Day to Launch</h2>
+              <p style="font-size:11px;font-weight:700;color:#46CDCF;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">You&rsquo;re invited &middot; Kick-off meeting</p>
+              <h2 style="font-size:18px;font-weight:700;color:#ffffff;margin:0 0 6px;line-height:1.35;">Lehumo Kick-off &mdash; General Meeting</h2>
               <p style="font-size:13.5px;color:rgba(255,255,255,0.7);line-height:1.6;margin:0 0 14px;">
-                <strong style="color:#B8FF00;">Sunday, 31 May 2026 &middot; 18:00&ndash;19:00 SAST</strong><br/>
-                Final cohort Q&amp;A before collections open tomorrow. Bring questions about contributions, KYC, plans, anything you&rsquo;d like clarity on.
+                <strong style="color:#B8FF00;">${KICKOFF_DATE_LABEL} &middot; ${KICKOFF_TIME}</strong><br/>
+                Virtual &mdash; the vision, how the pool works, your protections, governance, and a live Q&amp;A. This is where we lock the founding cohort together.
               </p>
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;"><tr>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:6px;"><tr>
                 <td style="padding-right:8px;">
-                  <a href="https://meet.google.com/pgk-vrpz-jrn" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:13px;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:50px;">Join Google Meet &rarr;</a>
+                  <a href="${KICKOFF_JOIN_URL}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:13px;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:50px;">Join the meeting &rarr;</a>
                 </td>
                 <td>
-                  <a href="${siteUrl()}/api/lehumo/info-session.ics" style="display:inline-block;background:transparent;color:#46CDCF;font-size:13px;font-weight:700;text-decoration:none;padding:10px 20px;border:1.5px solid rgba(70,205,207,0.5);border-radius:50px;">Add to calendar &rarr;</a>
+                  <a href="${KICKOFF_GCAL}" style="display:inline-block;background:transparent;color:#46CDCF;font-size:13px;font-weight:700;text-decoration:none;padding:10px 20px;border:1.5px solid rgba(70,205,207,0.5);border-radius:50px;">Add to calendar &rarr;</a>
                 </td>
               </tr></table>
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.04);border-radius:10px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.04);border-radius:10px;margin-top:10px;">
                 <tr><td style="padding:10px 14px;font-size:11.5px;color:rgba(255,255,255,0.55);line-height:1.6;">
-                  Or dial in: <strong style="color:rgba(255,255,255,0.8);">(ZA) +27 10 823 0373</strong> &middot; PIN: <strong style="color:rgba(255,255,255,0.8);">237 950 787#</strong><br/>
-                  More phone numbers: <a href="https://tel.meet/pgk-vrpz-jrn?pin=6975153689050" style="color:#46CDCF;text-decoration:none;">tel.meet/pgk-vrpz-jrn</a>
+                  Or dial in: <strong style="color:rgba(255,255,255,0.8);">(ZA) +27 10 823 1210</strong> &middot; PIN: <strong style="color:rgba(255,255,255,0.8);">867 717 053#</strong><br/>
+                  More numbers: <a href="https://tel.meet/tkt-pfaa-zuk?pin=7478398472133" style="color:#46CDCF;text-decoration:none;">tel.meet/tkt-pfaa-zuk</a>
                 </td></tr>
               </table>
             </td></tr>
@@ -1349,29 +1367,16 @@ export function renderPreLaunchEmailHtml(params: {
             </td></tr>
           </table>
 
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(70,205,207,0.06);border:1px solid rgba(70,205,207,0.20);border-radius:14px;margin-bottom:12px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(70,205,207,0.06);border:1px solid rgba(70,205,207,0.20);border-radius:14px;margin-bottom:8px;">
             <tr><td style="padding:16px 20px;">
               <table width="100%" cellpadding="0" cellspacing="0"><tr>
-                <td style="font-size:12px;color:rgba(255,255,255,0.55);">June 2026 contribution goal</td>
+                <td style="font-size:12px;color:rgba(255,255,255,0.55);">Contributed this month</td>
                 <td style="font-size:13px;font-weight:700;color:#46CDCF;text-align:right;">R${fmtZAR(stats.juneReceived)} / R${fmtZAR(stats.juneGoal)}</td>
               </tr></table>
               <div style="margin-top:10px;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
                 <div style="height:6px;width:${stats.juneReceivedPct}%;background:linear-gradient(90deg,#46CDCF,#B8FF00);border-radius:99px;"></div>
               </div>
-              <p style="font-size:11.5px;color:rgba(255,255,255,0.45);margin:8px 0 0;">${stats.onboardedCount} onboarded &times; R1,000 &mdash; the full cohort target for June.</p>
-            </td></tr>
-          </table>
-
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.20);border-radius:14px;margin-bottom:8px;">
-            <tr><td style="padding:16px 20px;">
-              <table width="100%" cellpadding="0" cellspacing="0"><tr>
-                <td style="font-size:12px;color:rgba(255,255,255,0.55);">Governance committee volunteers</td>
-                <td style="font-size:13px;font-weight:700;color:#F59E0B;text-align:right;">${stats.governanceVolunteers} / ${stats.governanceTarget}</td>
-              </tr></table>
-              <div style="margin-top:10px;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
-                <div style="height:6px;width:${governancePct}%;background:linear-gradient(90deg,#F59E0B,#B8FF00);border-radius:99px;"></div>
-              </div>
-              <p style="font-size:11.5px;color:rgba(255,255,255,0.45);margin:8px 0 0;">${stats.governanceTarget - stats.governanceVolunteers} ${stats.governanceTarget - stats.governanceVolunteers === 1 ? "slot" : "slots"} still open. Reply to this email if you&rsquo;re keen to put your name forward &mdash; we&rsquo;ll add a portal flow for this soon.</p>
+              <p style="font-size:11.5px;color:rgba(255,255,255,0.45);margin:8px 0 0;">${stats.onboardedCount} founders onboarded &times; R1,000 &mdash; the cohort target for June.</p>
             </td></tr>
           </table>
         </td></tr>
@@ -1379,10 +1384,10 @@ export function renderPreLaunchEmailHtml(params: {
         <tr><td style="padding:28px 32px 0;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(184,255,0,0.12) 0%,rgba(70,205,207,0.06) 100%);border:1.5px solid rgba(184,255,0,0.35);border-radius:18px;margin-bottom:28px;">
             <tr><td style="padding:28px 24px;text-align:center;">
-              <p style="font-size:11px;font-weight:700;color:#B8FF00;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Final push to 30 Lehumo members</p>
-              <h2 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 10px;line-height:1.3;">Help us launch with a full house</h2>
+              <p style="font-size:11px;font-weight:700;color:#B8FF00;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Confirm your founding seat</p>
+              <h2 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 10px;line-height:1.3;">Lock your place before July</h2>
               <p style="font-size:14.5px;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 20px;">
-                We&rsquo;re <strong style="color:#B8FF00;">${stats.onboardedCount} of 30</strong> founders so far. If your registration is still in progress, please complete it before <strong style="color:#ffffff;">30 June</strong> so we lock the founding cohort at full strength.
+                We&rsquo;re <strong style="color:#B8FF00;">${stats.onboardedCount} of 30</strong> founders so far. If your registration or KYC is still in progress, please finish it <strong style="color:#ffffff;">before the kick-off</strong> so we head into July with the founding cohort locked at full strength.
               </p>
               <a href="${siteUrl()}/lehumo/onboard" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:15px;font-weight:700;text-decoration:none;padding:15px 32px;border-radius:50px;box-shadow:0 4px 12px rgba(184,255,0,0.25);">Complete your registration &rarr;</a>
             </td></tr>
@@ -1390,12 +1395,12 @@ export function renderPreLaunchEmailHtml(params: {
         </td></tr>
 
         <tr><td style="padding:0 32px;">
-          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">What&rsquo;s new in the portal</p>
+          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Before the kick-off &mdash; quick checklist</p>
           <ul style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;padding-left:20px;margin:0 0 24px;">
-            <li><strong style="color:#ffffff;">Optional password layer.</strong> You can now set a password on your portal account from the Security page (top right of your dashboard). Recommended for added protection.</li>
-            <li><strong style="color:#ffffff;">Standard plan fee is now 3.5%</strong> (R1,035/month total = R1,000 to the pool + R35 to cover the Paystack collection cost &mdash; no markup, no admin charge).</li>
-            <li><strong style="color:#ffffff;">KYC deadline: 15 August 2026.</strong> Plenty of runway, but the earlier the cleaner. The portal shows your deadline countdown.</li>
-            <li><strong style="color:#ffffff;">Live community tracker</strong> on the dashboard &mdash; see the full cohort&rsquo;s progress in real time, same numbers as above.</li>
+            <li><strong style="color:#ffffff;">Complete your registration.</strong> If you haven&rsquo;t finished signing up, that&rsquo;s the one thing that confirms your founding seat &mdash; the button above takes about 2 minutes.</li>
+            <li><strong style="color:#ffffff;">Upload your KYC documents</strong> (SA ID + proof of address). The deadline is 15 August 2026, but earlier is cleaner &mdash; your portal shows the countdown.</li>
+            <li><strong style="color:#ffffff;">Take the new risk-profile quiz</strong> in your portal &mdash; six quick scenarios that help us shape how the pool is invested around the community.</li>
+            <li><strong style="color:#ffffff;">Set a portal password</strong> (Security page, top-right of your dashboard) for added protection &mdash; optional but recommended.</li>
           </ul>
         </td></tr>
 
@@ -1403,9 +1408,9 @@ export function renderPreLaunchEmailHtml(params: {
           <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Important dates</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:24px;">
             <tr><td style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.85;">
-              <strong style="color:#B8FF00;">Monday, 1 June 2026</strong> &mdash; Collections officially open. First contributions become due.<br/>
-              <strong style="color:#B8FF00;">Throughout June</strong> &mdash; Pay any time that works for you (EFT or Paystack auto-debit).<br/>
-              <strong style="color:#B8FF00;">Tuesday, 30 June 2026</strong> &mdash; Final day to land your first contribution.<br/>
+              <strong style="color:#B8FF00;">Wednesday, 24 June 2026</strong> &mdash; Founding Bosses kick-off meeting (virtual &mdash; details above).<br/>
+              <strong style="color:#B8FF00;">Tuesday, 30 June 2026</strong> &mdash; Final day to land your June contribution &amp; confirm your seat.<br/>
+              <strong style="color:#B8FF00;">From 1 July 2026</strong> &mdash; July contributions due; the founding cohort moves forward together.<br/>
               <strong style="color:#46CDCF;">Saturday, 15 August 2026</strong> &mdash; KYC documentation deadline.
             </td></tr>
           </table>
@@ -1415,7 +1420,7 @@ export function renderPreLaunchEmailHtml(params: {
           <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Finalising the founding 30</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:14px;margin-bottom:24px;">
             <tr><td style="padding:20px;font-size:13.5px;color:rgba(255,255,255,0.75);line-height:1.7;">
-              We&rsquo;re locking the cohort this week. If you&rsquo;ve decided not to proceed, please <strong style="color:#F59E0B;">subscribe out by Friday, 5 June</strong> so we can release your slot to the waiting list &mdash; better than missing the first contribution and ending up in arrears.
+              We&rsquo;re locking the founding cohort around the kick-off. If you&rsquo;ve decided not to proceed, please <strong style="color:#F59E0B;">subscribe out before the 24th</strong> so we can release your seat to the waiting list &mdash; better than missing contributions and ending up in arrears.
               <br/><br/>
               <a href="${subscribeOutMailto}" style="display:inline-block;background:#F59E0B;color:#0B1933;font-size:13px;font-weight:700;text-decoration:none;padding:10px 22px;border-radius:50px;margin-top:6px;">Subscribe out &rarr;</a>
             </td></tr>
@@ -1453,8 +1458,7 @@ export async function sendPreLaunchEmail(params: {
     from: FROM_ADDRESS,
     to,
     bcc: ADMIN_BCC,
-    subject:
-      "Lehumo Pre-launch updates — 1 Day to Go (+ info session tonight 18:00)",
+    subject: "Lehumo kicks off Wednesday — lock your founding seat 🌱",
     html: renderPreLaunchEmailHtml({ firstName, stats }),
   });
 }
