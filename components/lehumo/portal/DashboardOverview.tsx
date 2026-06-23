@@ -287,7 +287,7 @@ export function DashboardOverview({
       {/* Action row — this month's contribution + the investor-profile
           quiz, packed two-up to cut vertical space. Stacks on mobile. The
           risk card saves to Airtable on confirm; admin sees it too. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {!needsPaymentSetup && (
           <ContributionReminderCard
             contributions={member.contributions}
@@ -333,7 +333,7 @@ export function DashboardOverview({
           tracked for every quarter. */}
       {/* Governance row — the QGM touchpoint + Steering Committee opt-in,
           two-up. Both are compact governance cards. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div id="qgm" className="scroll-mt-24">
           <QGMSummaryCard />
         </div>
@@ -429,7 +429,7 @@ export function DashboardOverview({
       {/* KYC documents + beneficiary — identity maintenance cards, two-up
           (next-of-kin is the natural follow-up to identity verification).
           Both stay mounted post-verification so members can re-find docs. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div
           id="kyc-docs"
           initial={{ opacity: 0, y: 20 }}

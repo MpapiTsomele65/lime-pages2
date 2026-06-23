@@ -173,7 +173,7 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
       className="scroll-mt-24"
       aria-labelledby="steering-card-title"
     >
-      <PortalCard className="p-6 md:p-7">
+      <PortalCard className="p-6 md:p-7 h-full">
         {/* Header */}
         <div className="flex items-start gap-4 mb-5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#B8FF00]/15 text-[#B8FF00]">

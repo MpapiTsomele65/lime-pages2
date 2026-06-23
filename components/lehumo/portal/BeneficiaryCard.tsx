@@ -162,7 +162,7 @@ export function BeneficiaryCard({ member }: BeneficiaryCardProps) {
   );
 
   return (
-    <div className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-6">
+    <div className="rounded-[24px] border border-white/[0.05] bg-gradient-to-b from-[#10224a] to-[#0F2040] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_32px_-8px_rgba(0,0,0,0.35)] p-6 h-full">
       <div className="flex items-start justify-between mb-1 gap-3">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-[#46CDCF]" />

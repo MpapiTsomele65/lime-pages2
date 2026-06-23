@@ -64,9 +64,10 @@ export function QGMSummaryCard() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+      className="h-full"
       aria-labelledby="qgm-card-title"
     >
-      <PortalCard className="p-6 md:p-7">
+      <PortalCard className="p-6 md:p-7 h-full">
         {/* Header row — icon + title + host chip. Eyebrow flips
             between "Kick-off · save the date" and "Quarterly General
             Meeting" so members know whether the upcoming meeting is
