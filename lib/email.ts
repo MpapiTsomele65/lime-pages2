@@ -1220,15 +1220,15 @@ export function renderPreLaunchEmailHtml(params: {
   // ── Kick-off meeting details. ⚠️ CONFIRM these before broadcasting. ──
   // Update KICKOFF_TIME + the two ISO timestamps + the gcal UTC dates
   // together if the start time changes (SAST = UTC+2, so 18:00 → 16:00Z).
-  const KICKOFF_DATE_LABEL = "Wednesday, 24 June 2026";
-  const KICKOFF_TIME = "18:00–19:30 SAST";
+  const KICKOFF_DATE_LABEL = "Today · Wednesday 24 June 2026";
+  const KICKOFF_TIME = "18h00–19h30 SAST";
   const KICKOFF_JOIN_URL = "https://meet.google.com/tkt-pfaa-zuk";
   const KICKOFF_START_ISO = "2026-06-24T18:00:00+02:00";
   const KICKOFF_END_ISO = "2026-06-24T19:30:00+02:00";
   const KICKOFF_GCAL =
     "https://calendar.google.com/calendar/render?action=TEMPLATE" +
     "&text=" +
-    encodeURIComponent("Lehumo Kick-off General Meeting") +
+    encodeURIComponent("Lehumo Kick-off — Quarterly General Meeting") +
     "&dates=20260624T160000Z/20260624T173000Z" +
     "&details=" +
     encodeURIComponent(
@@ -1287,7 +1287,7 @@ export function renderPreLaunchEmailHtml(params: {
     },
     "reservationFor": {
       "@type": "Event",
-      "name": "Lehumo Kick-off General Meeting",
+      "name": "Lehumo Kick-off — Quarterly General Meeting",
       "startDate": "${KICKOFF_START_ISO}",
       "endDate": "${KICKOFF_END_ISO}",
       "eventStatus": "http://schema.org/EventScheduled",
@@ -1318,20 +1318,20 @@ export function renderPreLaunchEmailHtml(params: {
         </td></tr>
 
         <tr><td style="padding:32px 32px 0;">
-          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">Our kick-off is Wednesday &mdash; let&rsquo;s lock the founding cohort</h1>
+          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 8px;line-height:1.25;">Reminder &mdash; the kick-off meeting is tonight at 18h00</h1>
           <p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7;margin:0 0 24px;">
-            Hi ${firstName}, we&rsquo;re bringing the founding crew together on the 24th to launch Lehumo properly. Below: the meeting details, where the cohort stands, and the one thing to do before July &mdash; complete your registration so your founding seat is confirmed.
+            Hi ${firstName}, a quick reminder that our <strong style="color:#ffffff;">Kick-off &amp; first Quarterly General Meeting</strong> is <strong style="color:#B8FF00;">tonight at 18h00</strong>. Tap the join link below to join us &mdash; we&rsquo;ll walk through the vision, how the pool works, your protections, governance, and take live questions. See you there.
           </p>
         </td></tr>
 
         <tr><td style="padding:0 32px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(70,205,207,0.14) 0%,rgba(184,255,0,0.06) 100%);border:1.5px solid rgba(70,205,207,0.40);border-radius:18px;margin-bottom:24px;">
             <tr><td style="padding:22px 22px 24px;">
-              <p style="font-size:11px;font-weight:700;color:#46CDCF;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">You&rsquo;re invited &middot; Kick-off meeting</p>
-              <h2 style="font-size:18px;font-weight:700;color:#ffffff;margin:0 0 6px;line-height:1.35;">Lehumo Kick-off &mdash; General Meeting</h2>
+              <p style="font-size:11px;font-weight:700;color:#46CDCF;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Tonight &middot; Starts 18h00 SAST</p>
+              <h2 style="font-size:18px;font-weight:700;color:#ffffff;margin:0 0 6px;line-height:1.35;">Lehumo Kick-off &mdash; Quarterly General Meeting</h2>
               <p style="font-size:13.5px;color:rgba(255,255,255,0.7);line-height:1.6;margin:0 0 14px;">
                 <strong style="color:#B8FF00;">${KICKOFF_DATE_LABEL} &middot; ${KICKOFF_TIME}</strong><br/>
-                Virtual &mdash; the vision, how the pool works, your protections, governance, and a live Q&amp;A. This is where we lock the founding cohort together.
+                Virtual &mdash; the vision, how the pool works, your protections, governance, and a live Q&amp;A. This is where we launch the founding cohort together.
               </p>
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:6px;"><tr>
                 <td style="padding-right:8px;">
@@ -1384,20 +1384,20 @@ export function renderPreLaunchEmailHtml(params: {
         <tr><td style="padding:28px 32px 0;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,rgba(184,255,0,0.12) 0%,rgba(70,205,207,0.06) 100%);border:1.5px solid rgba(184,255,0,0.35);border-radius:18px;margin-bottom:28px;">
             <tr><td style="padding:28px 24px;text-align:center;">
-              <p style="font-size:11px;font-weight:700;color:#B8FF00;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Confirm your founding seat</p>
-              <h2 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 10px;line-height:1.3;">Lock your place before July</h2>
+              <p style="font-size:11px;font-weight:700;color:#B8FF00;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Starts tonight &middot; 18h00 SAST</p>
+              <h2 style="font-size:22px;font-weight:700;color:#ffffff;margin:0 0 10px;line-height:1.3;">See you at 18h00</h2>
               <p style="font-size:14.5px;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 20px;">
-                We&rsquo;re <strong style="color:#B8FF00;">${stats.onboardedCount} of 30</strong> founders so far. If your registration or KYC is still in progress, please finish it <strong style="color:#ffffff;">before the kick-off</strong> so we head into July with the founding cohort locked at full strength.
+                We&rsquo;re <strong style="color:#B8FF00;">${stats.onboardedCount} of 30</strong> founders strong. Join from your phone or laptop &mdash; tap below at 18h00. If your registration or KYC is still open, you can finish it in your portal tonight too.
               </p>
-              <a href="${siteUrl()}/lehumo/onboard" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:15px;font-weight:700;text-decoration:none;padding:15px 32px;border-radius:50px;box-shadow:0 4px 12px rgba(184,255,0,0.25);">Complete your registration &rarr;</a>
+              <a href="${KICKOFF_JOIN_URL}" style="display:inline-block;background:#B8FF00;color:#0B1933;font-size:15px;font-weight:700;text-decoration:none;padding:15px 32px;border-radius:50px;box-shadow:0 4px 12px rgba(184,255,0,0.25);">Join the meeting &rarr;</a>
             </td></tr>
           </table>
         </td></tr>
 
         <tr><td style="padding:0 32px;">
-          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Before the kick-off &mdash; quick checklist</p>
+          <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Before you join tonight &mdash; quick checklist</p>
           <ul style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;padding-left:20px;margin:0 0 24px;">
-            <li><strong style="color:#ffffff;">Complete your registration.</strong> If you haven&rsquo;t finished signing up, that&rsquo;s the one thing that confirms your founding seat &mdash; the button above takes about 2 minutes.</li>
+            <li><strong style="color:#ffffff;">Complete your registration</strong> at <a href="${siteUrl()}/lehumo/onboard" style="color:#46CDCF;text-decoration:none;">limepages.co.za/lehumo/onboard</a> if you haven&rsquo;t yet &mdash; it confirms your founding seat and takes about 2 minutes.</li>
             <li><strong style="color:#ffffff;">Upload your KYC documents</strong> (SA ID + proof of address). The deadline is 15 August 2026, but earlier is cleaner &mdash; your portal shows the countdown.</li>
             <li><strong style="color:#ffffff;">Take the new risk-profile quiz</strong> in your portal &mdash; six quick scenarios that help us shape how the pool is invested around the community.</li>
             <li><strong style="color:#ffffff;">Set a portal password</strong> (Security page, top-right of your dashboard) for added protection &mdash; optional but recommended.</li>
@@ -1408,7 +1408,7 @@ export function renderPreLaunchEmailHtml(params: {
           <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Important dates</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:24px;">
             <tr><td style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.85;">
-              <strong style="color:#B8FF00;">Wednesday, 24 June 2026</strong> &mdash; Founding Bosses kick-off meeting (virtual &mdash; details above).<br/>
+              <strong style="color:#B8FF00;">Today, 24 June 2026 &middot; 18h00</strong> &mdash; Kick-off &amp; first Quarterly General Meeting (virtual &mdash; details above).<br/>
               <strong style="color:#B8FF00;">Tuesday, 30 June 2026</strong> &mdash; Final day to land your June contribution &amp; confirm your seat.<br/>
               <strong style="color:#B8FF00;">From 1 July 2026</strong> &mdash; July contributions due; the founding cohort moves forward together.<br/>
               <strong style="color:#46CDCF;">Saturday, 15 August 2026</strong> &mdash; KYC documentation deadline.
@@ -1420,7 +1420,7 @@ export function renderPreLaunchEmailHtml(params: {
           <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:1.5px;text-transform:uppercase;margin:0 0 12px;">Finalising the founding 30</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:14px;margin-bottom:24px;">
             <tr><td style="padding:20px;font-size:13.5px;color:rgba(255,255,255,0.75);line-height:1.7;">
-              We&rsquo;re locking the founding cohort around the kick-off. If you&rsquo;ve decided not to proceed, please <strong style="color:#F59E0B;">subscribe out before the 24th</strong> so we can release your seat to the waiting list &mdash; better than missing contributions and ending up in arrears.
+              We&rsquo;re locking the founding cohort now. If you&rsquo;ve decided not to proceed, please <strong style="color:#F59E0B;">subscribe out as soon as possible</strong> so we can release your seat to the waiting list &mdash; better than missing contributions and ending up in arrears.
               <br/><br/>
               <a href="${subscribeOutMailto}" style="display:inline-block;background:#F59E0B;color:#0B1933;font-size:13px;font-weight:700;text-decoration:none;padding:10px 22px;border-radius:50px;margin-top:6px;">Subscribe out &rarr;</a>
             </td></tr>
@@ -1447,6 +1447,85 @@ export function renderPreLaunchEmailHtml(params: {
 </html>`;
 }
 
+/**
+ * Build the kick-off meeting as an iCalendar (.ics) INVITE.
+ *
+ * METHOD:REQUEST + an ATTENDEE line for the recipient is what turns this
+ * from a plain attachment into a calendar invitation — Gmail shows the
+ * "Yes / Maybe / No" RSVP + add-to-calendar card, Apple Mail and Outlook
+ * surface the invite banner. RSVPs route back to the ORGANIZER inbox
+ * (lehumo@limepages.co.za). Complements the schema.org markup in the body
+ * (Gmail-only) and works in every client the markup doesn't.
+ *
+ * SAST is UTC+02:00 year-round (no DST) → 18:00 SAST = 16:00 UTC, so we
+ * encode times in UTC (Z) and skip the VTIMEZONE block.
+ */
+function buildKickoffInviteIcs(firstName: string, toEmail: string): string {
+  const MEET_LINK = "https://meet.google.com/tkt-pfaa-zuk";
+  const fmtUtc = (d: Date) =>
+    d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const start = new Date("2026-06-24T18:00:00+02:00");
+  const end = new Date("2026-06-24T19:30:00+02:00");
+  const dtstamp = fmtUtc(new Date());
+  // Stable UID so a re-send (or a later update) lands as the same event in
+  // the member's calendar rather than a duplicate.
+  const uid = "lehumo-kickoff-qgm-2026-06-24@limepages.co.za";
+
+  // RFC 5545 text escaping: backslash, semicolon, comma, newline.
+  const esc = (s: string) =>
+    s
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+
+  const description = esc(
+    [
+      "Lehumo Kick-off & first Quarterly General Meeting.",
+      "",
+      "We'll walk through the vision, how the pool works, your protections, governance, and take live questions.",
+      "",
+      `Google Meet: ${MEET_LINK}`,
+      "Dial in: (ZA) +27 10 823 1210, PIN: 867 717 053#",
+      "More phone numbers: https://tel.meet/tkt-pfaa-zuk?pin=7478398472133",
+    ].join("\n"),
+  );
+
+  // CN param value can't carry commas / semicolons / quotes unescaped.
+  const cn = (firstName || "Lehumo member").replace(/[\r\n,;:"\\]/g, " ").trim();
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Lime Pages//Lehumo Kick-off QGM//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART:${fmtUtc(start)}`,
+    `DTEND:${fmtUtc(end)}`,
+    "SEQUENCE:0",
+    "STATUS:CONFIRMED",
+    "TRANSP:OPAQUE",
+    `SUMMARY:${esc("Lehumo Kick-off — Quarterly General Meeting")}`,
+    `DESCRIPTION:${description}`,
+    `LOCATION:${esc(MEET_LINK)}`,
+    "ORGANIZER;CN=Lehumo Trust:MAILTO:lehumo@limepages.co.za",
+    `ATTENDEE;CN=${cn};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:MAILTO:${toEmail}`,
+    // 30-minute heads-up before the meeting starts.
+    "BEGIN:VALARM",
+    "TRIGGER:-PT30M",
+    "ACTION:DISPLAY",
+    "DESCRIPTION:Lehumo kick-off starts in 30 minutes",
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+
+  return lines.join("\r\n") + "\r\n";
+}
+
 export async function sendPreLaunchEmail(params: {
   to: string;
   firstName: string;
@@ -1458,8 +1537,18 @@ export async function sendPreLaunchEmail(params: {
     from: FROM_ADDRESS,
     to,
     bcc: ADMIN_BCC,
-    subject: "Lehumo kicks off Wednesday — lock your founding seat 🌱",
+    subject: "Reminder: Lehumo kick-off meeting is tonight at 18h00 🌱",
     html: renderPreLaunchEmailHtml({ firstName, stats }),
+    // Calendar invite — renders as an "add to calendar" / RSVP card in
+    // Gmail, Apple Mail, and Outlook. Per-recipient so each member is the
+    // named ATTENDEE on their own invite.
+    attachments: [
+      {
+        filename: "lehumo-kickoff.ics",
+        content: Buffer.from(buildKickoffInviteIcs(firstName, to), "utf-8"),
+        contentType: "text/calendar; charset=utf-8; method=REQUEST",
+      },
+    ],
   });
 }
 
