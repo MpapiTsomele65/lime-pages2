@@ -23,6 +23,7 @@ import {
   parseRecord,
 } from "./airtable";
 import {
+  ensureCanonicalMemberSchedule,
   getContributionByKey,
   listAllContributions,
   listContributionsForMember,
@@ -255,12 +256,34 @@ export async function logEftPayment(args: {
   plan: EftAllocationPlan;
   member: LehumoMember;
 }> {
-  const member = await getMemberByIdAdmin(args.memberRecordId);
+  let member = await getMemberByIdAdmin(args.memberRecordId);
   if (!member) throw new Error(`member ${args.memberRecordId} not found`);
   if (!member.contributionRows || member.contributionRows.length === 0) {
-    throw new Error(
-      `member ${args.memberRecordId} has no contribution rows — schedule not seeded`,
-    );
+    // Self-heal: a member added outside the onboarding flow can land here
+    // with no schedule, which used to dead-end a legitimate EFT log. Seed
+    // the canonical 60-month schedule (idempotent — only inserts missing
+    // periods) and re-fetch so the deposit can always be allocated.
+    const seed = await ensureCanonicalMemberSchedule({
+      memberId: member.id,
+      memberNumber: member.memberNumber,
+    });
+    if (!seed.ok) {
+      throw new Error(
+        `member ${args.memberRecordId} has no contribution rows and ` +
+          `auto-seed failed: ${seed.error}`,
+      );
+    }
+    member = await getMemberByIdAdmin(args.memberRecordId);
+    if (
+      !member ||
+      !member.contributionRows ||
+      member.contributionRows.length === 0
+    ) {
+      throw new Error(
+        `member ${args.memberRecordId} has no contribution rows — ` +
+          `schedule seed did not surface rows`,
+      );
+    }
   }
 
   const plan = allocateEftPayment(member.contributionRows, args.amount);
