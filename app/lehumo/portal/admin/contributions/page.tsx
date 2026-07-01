@@ -71,6 +71,13 @@ export default async function AdminContributionsPage() {
     (c) => c.status === CONTRIBUTION_STATUS.paid && !c.reconciled,
   ).length;
 
+  // Cumulative pool — total contributions received to date across every
+  // member and every month (all Paid rows, summed). The all-time
+  // counterpart to the current-period "Received" tile.
+  const totalPool = contributions
+    .filter((c) => c.status === CONTRIBUTION_STATUS.paid)
+    .reduce((sum, c) => sum + (c.amountReceived ?? 0), 0);
+
   return (
     <div className="space-y-8">
       <AdminPageHeader
@@ -80,8 +87,13 @@ export default async function AdminContributionsPage() {
         rightChip={email}
       />
 
-      {/* Summary tiles — current period at a glance */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      {/* Summary tiles — cumulative pool + current period at a glance */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+        <SummaryTile
+          label="Total Pool (all-time)"
+          value={`R${totalPool.toLocaleString("en-ZA")}`}
+          tone="pool"
+        />
         <SummaryTile
           label={`Received (${formatPeriodLong(currentPeriod)})`}
           value={`R${periodReceived.toLocaleString("en-ZA")}`}
@@ -120,11 +132,16 @@ function SummaryTile({
 }: {
   label: string;
   value: string;
-  tone?: "neutral" | "warn";
+  tone?: "neutral" | "warn" | "pool";
 }) {
+  const isPool = tone === "pool";
   return (
     <div
-      className="rounded-[20px] border border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD] p-4"
+      className={`rounded-[20px] border p-4 ${
+        isPool
+          ? "border-[#CDEB9E] bg-gradient-to-b from-[#F4FFE0] to-white"
+          : "border-[#EDEDED] bg-gradient-to-b from-white to-[#FCFCFD]"
+      }`}
       style={{
         boxShadow:
           "inset 0 1px 0 0 rgba(255, 255, 255, 0.6), " +
