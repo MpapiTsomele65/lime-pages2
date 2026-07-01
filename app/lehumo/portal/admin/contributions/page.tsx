@@ -78,6 +78,30 @@ export default async function AdminContributionsPage() {
     .filter((c) => c.status === CONTRIBUTION_STATUS.paid)
     .reduce((sum, c) => sum + (c.amountReceived ?? 0), 0);
 
+  // Monthly inflows ledger — received + running cumulative per month, so the
+  // final cumulative reconciles exactly to the Total Pool. Covers every
+  // elapsed month (launch → now, including any zero months) plus any month
+  // that has a Paid row (e.g. a prepayment), so no cash is hidden.
+  const paidPeriods = contributions
+    .filter((c) => c.status === CONTRIBUTION_STATUS.paid)
+    .map((c) => c.period);
+  const ledgerPeriods = Array.from(
+    new Set([
+      ...enumeratePeriods(LEHUMO_FIRST_DUE_PERIOD, currentPeriod),
+      ...paidPeriods,
+    ]),
+  ).sort();
+  let runningPool = 0;
+  const monthlyInflows = ledgerPeriods.map((period) => {
+    const paid = contributions.filter(
+      (c) => c.period === period && c.status === CONTRIBUTION_STATUS.paid,
+    );
+    const received = paid.reduce((s, c) => s + (c.amountReceived ?? 0), 0);
+    runningPool += received;
+    return { period, count: paid.length, received, cumulative: runningPool };
+  });
+  const totalContributions = monthlyInflows.reduce((s, r) => s + r.count, 0);
+
   return (
     <div className="space-y-8">
       <AdminPageHeader
@@ -113,6 +137,14 @@ export default async function AdminContributionsPage() {
           tone={reconciliationPending > 0 ? "warn" : "neutral"}
         />
       </div>
+
+      {/* Monthly inflows ledger — each month's tally + running cumulative,
+          reconciling up to the Total Pool. */}
+      <MonthlyInflowsTable
+        rows={monthlyInflows}
+        total={totalPool}
+        totalCount={totalContributions}
+      />
 
       <Suspense fallback={<div className="h-16" />}>
         <AdminContributionsClient
@@ -161,6 +193,107 @@ function SummaryTile({
       </p>
     </div>
   );
+}
+
+function MonthlyInflowsTable({
+  rows,
+  total,
+  totalCount,
+}: {
+  rows: {
+    period: string;
+    count: number;
+    received: number;
+    cumulative: number;
+  }[];
+  total: number;
+  totalCount: number;
+}) {
+  return (
+    <div
+      className="rounded-[20px] border border-[#EDEDED] bg-white p-4 md:p-5"
+      style={{
+        boxShadow:
+          "inset 0 1px 0 0 rgba(255, 255, 255, 0.6), " +
+          "0 1px 2px 0 rgba(0, 0, 0, 0.04), " +
+          "0 4px 16px -4px rgba(0, 0, 0, 0.05)",
+      }}
+    >
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6B7280]">
+          Monthly inflows
+        </h2>
+        <span className="text-[11px] text-[#9CA3AF]">
+          Cumulative reconciles to Total Pool ·{" "}
+          <span className="font-semibold text-[#5E7A00]">
+            R{total.toLocaleString("en-ZA")}
+          </span>
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[440px] text-[13px]">
+          <thead>
+            <tr className="border-b border-[#EDEDED] text-[10px] uppercase tracking-[0.1em] text-[#9CA3AF]">
+              <th className="py-2 text-left font-semibold">Month</th>
+              <th className="py-2 text-right font-semibold">Contributions</th>
+              <th className="py-2 text-right font-semibold">Received</th>
+              <th className="py-2 text-right font-semibold">Cumulative pool</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.period} className="border-b border-[#F3F4F6]">
+                <td className="py-2.5 font-medium text-[#0B1933]">
+                  {formatPeriodLong(r.period)}
+                </td>
+                <td className="py-2.5 text-right tabular-nums text-[#4B5563]">
+                  {r.count}
+                </td>
+                <td className="py-2.5 text-right tabular-nums text-[#0B1933]">
+                  R{r.received.toLocaleString("en-ZA")}
+                </td>
+                <td className="py-2.5 text-right font-semibold tabular-nums text-[#0B1933]">
+                  R{r.cumulative.toLocaleString("en-ZA")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-[#E5E7EB]">
+              <td className="pt-2.5 font-semibold text-[#0B1933]">All-time</td>
+              <td className="pt-2.5 text-right font-semibold tabular-nums text-[#0B1933]">
+                {totalCount}
+              </td>
+              <td className="pt-2.5 text-right font-semibold tabular-nums text-[#0B1933]">
+                R{total.toLocaleString("en-ZA")}
+              </td>
+              <td className="pt-2.5 text-right font-semibold tabular-nums text-[#5E7A00]">
+                R{total.toLocaleString("en-ZA")}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/** Enumerate YYYY-MM periods from `start` through `end`, inclusive. */
+function enumeratePeriods(start: string, end: string): string[] {
+  const [sy, sm] = start.split("-").map(Number);
+  const [ey, em] = end.split("-").map(Number);
+  const out: string[] = [];
+  let y = sy;
+  let m = sm;
+  while ((y < ey || (y === ey && m <= em)) && out.length < 240) {
+    out.push(`${y}-${String(m).padStart(2, "0")}`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return out;
 }
 
 function formatPeriodLong(period: string): string {
