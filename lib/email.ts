@@ -1572,6 +1572,50 @@ export async function sendPreLaunchEmail(params: {
  * outage doesn't break the password change itself. The user's
  * credential state is already persisted by the time we send.
  */
+/**
+ * Admin alert — fired by the orphan-scan cron when it finds contribution
+ * rows whose Member link is blank or mis-linked (invisible to the rollup,
+ * distorts pool totals). Plain-text so it's diagnosable at a glance.
+ */
+export async function sendOrphanScanAlert(scan: {
+  affected: {
+    memberNumber: number;
+    memberName: string;
+    blankCount: number;
+    mismatched: { period: string; linkedTo: string }[];
+  }[];
+  totalBlank: number;
+  totalMismatched: number;
+}) {
+  const resend = getResend();
+  const lines = scan.affected
+    .map((a) => {
+      const num = `Leh${String(a.memberNumber).padStart(2, "0")}`;
+      const parts = [`${a.blankCount} blank-link`];
+      if (a.mismatched.length) {
+        parts.push(
+          `${a.mismatched.length} mis-linked (${a.mismatched
+            .map((m) => m.period)
+            .join(", ")})`,
+        );
+      }
+      return `- ${num} ${a.memberName}: ${parts.join(", ")}`;
+    })
+    .join("\n");
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: ADMIN_BCC,
+    subject: `Lehumo: ${scan.affected.length} member(s) with orphaned contribution rows`,
+    text:
+      `The orphan-scan found contribution rows whose Member link is blank or ` +
+      `mis-linked. These are invisible to the admin rollup and distort the ` +
+      `pool totals.\n\n${lines}\n\nTotals: ${scan.totalBlank} blank, ` +
+      `${scan.totalMismatched} mis-linked.\n\nFix: run ` +
+      `scripts/repair-orphan-links.ts --execute (auto-fixes blanks; review ` +
+      `mis-links manually).`,
+  });
+}
+
 export async function sendPasswordChangedEmail(params: {
   to: string;
   fullName: string;

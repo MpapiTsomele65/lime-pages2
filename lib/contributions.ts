@@ -360,6 +360,30 @@ export interface CreateContributionInput {
  * Airtable accept a duplicate. Use `upsertContribution` if you want
  * insert-or-update semantics.
  */
+/**
+ * Guardrail: refuse to write a contribution row without a valid Member
+ * record link. A blank/undefined memberId — e.g. the Paystack webhook
+ * when it can't resolve the member (stale/deleted record → getMemberById
+ * returns null → memberBefore?.id is undefined), or any caller passing a
+ * stale id — would otherwise create an ORPHAN row: visible by member #
+ * but invisible to the admin rollup (which joins on the record link),
+ * silently corrupting the pool totals. Fail loud instead. Existing
+ * orphans are caught by the orphan-scan cron + scripts/repair-orphan-links.ts.
+ */
+function assertMemberLink(
+  memberId: string | undefined,
+  memberNumber: number,
+): void {
+  if (!memberId || !/^rec[A-Za-z0-9]{14,}$/.test(memberId)) {
+    throw new Error(
+      `Refusing to create a contribution row for member #${memberNumber} ` +
+        `with an invalid Member link (memberId="${memberId ?? ""}") — that ` +
+        `would create an orphan row invisible to the rollup. Resolve the ` +
+        `member record first.`,
+    );
+  }
+}
+
 export async function createContribution(
   input: CreateContributionInput,
 ): Promise<LehumoContribution> {
@@ -367,6 +391,7 @@ export async function createContribution(
   if (!period) {
     throw new Error(`Invalid period — expected YYYY-MM, got "${input.period}"`);
   }
+  assertMemberLink(input.memberId, input.memberNumber);
   const key = buildContributionKey(input.memberNumber, period);
 
   const existing = await getContributionByKey(key);
@@ -426,6 +451,7 @@ export async function createContributionsBatch(
         `Invalid period in batch — expected YYYY-MM, got "${input.period}"`,
       );
     }
+    assertMemberLink(input.memberId, input.memberNumber);
     const fields: Record<string, unknown> = {
       [CONTRIBUTION_FIELDS.contributionKey]: buildContributionKey(
         input.memberNumber,

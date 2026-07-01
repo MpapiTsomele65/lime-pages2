@@ -15,6 +15,10 @@
     {
       "path": "/api/lehumo/cron/contribution-reminder?kind=final",
       "schedule": "0 7 25 * *"
+    },
+    {
+      "path": "/api/lehumo/cron/orphan-scan",
+      "schedule": "0 5 * * *"
     }
   ]
 }
