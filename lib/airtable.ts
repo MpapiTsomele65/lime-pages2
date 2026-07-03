@@ -28,6 +28,7 @@ import {
   type KycStatus,
   type CommunityPoolStats,
   type PoolMonthPoint,
+  type PoolRecentMonth,
   type AirtableAttachment,
   type BeneficiaryRelationship,
   type ActiveLoanType,
@@ -1023,16 +1024,44 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
   // we get a consistent, accurate "net to pool" figure regardless
   // of which rail the contribution came through.
   let monthlyReceivedAmount = 0;
+  let recentMonths: PoolRecentMonth[] = [];
   try {
     const periodPaidRows = await listPaidContributions();
-    const paidThisPeriod = periodPaidRows.filter(
-      (c) => c.period === monthlyGoalPeriod,
-    );
-    monthlyReceivedAmount = paidThisPeriod.length * MONTHLY_CONTRIBUTION_ZAR;
+    monthlyReceivedAmount =
+      periodPaidRows.filter((c) => c.period === monthlyGoalPeriod).length *
+      MONTHLY_CONTRIBUTION_ZAR;
+
+    // Rolling recent-months series: the goal period + up to two prior,
+    // clamped to launch. Same paid-row source as monthlyReceivedAmount so
+    // every month stays consistent with the current bar and the pool.
+    const periods: string[] = [];
+    let ry = Number(goalYear);
+    let rm = Number(goalMonthNum);
+    for (let i = 0; i < 3; i += 1) {
+      const p = `${ry}-${String(rm).padStart(2, "0")}`;
+      if (p < LEHUMO_FIRST_DUE_PERIOD) break;
+      periods.unshift(p);
+      rm -= 1;
+      if (rm < 1) {
+        rm = 12;
+        ry -= 1;
+      }
+    }
+    recentMonths = periods.map((period) => {
+      const [py, pm] = period.split("-");
+      const label = `${new Date(2000, Number(pm) - 1, 1).toLocaleString("en-ZA", {
+        month: "long",
+      })} ${py}`;
+      const received =
+        periodPaidRows.filter((c) => c.period === period).length *
+        MONTHLY_CONTRIBUTION_ZAR;
+      return { period, label, received, goal: monthlyGoalAmount };
+    });
   } catch {
     // Same fallback as the cohort hydration above — the rest of the
     // dashboard renders fine even if this fetch hiccups.
     monthlyReceivedAmount = 0;
+    recentMonths = [];
   }
 
   return {
@@ -1051,5 +1080,6 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
     monthlyGoalLabel,
     monthlyGoalAmount,
     monthlyReceivedAmount,
+    recentMonths,
   };
 }

@@ -235,57 +235,65 @@ export function CommunityPoolCard({
         })}
       </div>
 
-      {/* ── Monthly goal progress bar ──────────────────────────────
-          Shows what the cohort would collect this period if every
-          onboarded member contributed (goal = onboarded × R1,000)
-          against what's actually been received so far. Pre-launch
-          this targets June 2026 (the launch month); post-launch it
-          rolls with the current SAST period. */}
-      {(() => {
-        const goal = stats.monthlyGoalAmount;
-        const received = stats.monthlyReceivedAmount;
-        const pct = goal > 0 ? Math.min(100, (received / goal) * 100) : 0;
-        const goalMonthOnly = stats.monthlyGoalLabel.split(" ")[0]; // "June"
-        return (
-          <div className="mt-5 pt-5 border-t border-white/[0.06]">
-            <div className="flex items-end justify-between gap-3 mb-2">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40 flex items-center gap-1.5">
-                  <Target className="w-3 h-3" />
-                  {goalMonthOnly} goal
-                </p>
-                <p className="mt-1 text-sm text-white/65">
-                  <span className="text-[#B8FF00] font-bold tabular-nums">
-                    {formatZAR(received)}
-                  </span>
-                  <span className="text-white/40"> of </span>
-                  <span className="text-white font-semibold tabular-nums">
-                    {formatZAR(goal)}
-                  </span>
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40">
-                  Progress
-                </p>
-                <p className="text-lg font-extrabold tabular-nums text-[#B8FF00] leading-none mt-1">
-                  {Math.round(pct)}%
-                </p>
-              </div>
-            </div>
-            <div className="relative h-3 rounded-full bg-white/[0.06] overflow-hidden">
-              <div
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#46CDCF] to-[#B8FF00] transition-all"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="mt-2 text-[11px] text-white/40">
-              {stats.membersOnboarded} onboarded members &times; R1,000 = full
-              cohort target for {stats.monthlyGoalLabel}.
-            </p>
+      {/* ── Rolling monthly goal bars ──────────────────────────────
+          The current collection period plus the prior month(s), so the
+          member sees the last few months side by side rather than just
+          this one. Each bar: net received (Paid rows × R1,000) vs the
+          cohort goal (onboarded × R1,000). Most-recent month on top. */}
+      {stats.recentMonths.length > 0 && (
+        <div className="mt-5 pt-5 border-t border-white/[0.06]">
+          <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40 flex items-center gap-1.5 mb-3">
+            <Target className="w-3 h-3" />
+            Monthly contributions
+          </p>
+          <div className="space-y-3">
+            {[...stats.recentMonths].reverse().map((m, i) => {
+              const pct =
+                m.goal > 0 ? Math.min(100, (m.received / m.goal) * 100) : 0;
+              const isCurrent = i === 0;
+              const monthOnly = m.label.split(" ")[0];
+              return (
+                <div key={m.period}>
+                  <div className="flex items-end justify-between gap-3 mb-1.5">
+                    <p className="text-sm">
+                      <span
+                        className={`font-semibold ${isCurrent ? "text-white" : "text-white/70"}`}
+                      >
+                        {monthOnly}
+                      </span>
+                      <span className="text-white/35"> &middot; </span>
+                      <span className="text-[#B8FF00] font-bold tabular-nums">
+                        {formatZAR(m.received)}
+                      </span>
+                      <span className="text-white/35"> of </span>
+                      <span className="text-white/70 tabular-nums">
+                        {formatZAR(m.goal)}
+                      </span>
+                    </p>
+                    <p
+                      className={`text-sm font-extrabold tabular-nums leading-none ${isCurrent ? "text-[#B8FF00]" : "text-white/50"}`}
+                    >
+                      {Math.round(pct)}%
+                    </p>
+                  </div>
+                  <div
+                    className={`relative rounded-full bg-white/[0.06] overflow-hidden ${isCurrent ? "h-3" : "h-2"}`}
+                  >
+                    <div
+                      className={`absolute top-0 left-0 h-full transition-all ${isCurrent ? "bg-gradient-to-r from-[#46CDCF] to-[#B8FF00]" : "bg-white/25"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })()}
+          <p className="mt-3 text-[11px] text-white/40">
+            {stats.membersOnboarded} onboarded members &times; R1,000 = full
+            cohort target each month.
+          </p>
+        </div>
+      )}
 
       {/* ── Cohort progress trackers ──────────────────────────────
           Sit below the money tiles as a separate row. Different

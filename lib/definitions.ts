@@ -1407,6 +1407,14 @@ export interface PoolMonthPoint {
   cumulativeBalance: number; // contributed + interest (running)
 }
 
+/** One month in the portal's rolling contribution view. */
+export interface PoolRecentMonth {
+  period: string; // YYYY-MM
+  label: string; // "June 2026"
+  received: number; // net R received (Paid rows × R1,000)
+  goal: number; // cohort goal (onboarded × R1,000)
+}
+
 /** Aggregate pool-wide stats for the member dashboard. */
 export interface CommunityPoolStats {
   totalFoundingSlots: number; // 30
@@ -1444,6 +1452,10 @@ export interface CommunityPoolStats {
    *  Period matches `monthlyGoalPeriod`. Could be zero pre-launch
    *  if no member has prepaid yet. */
   monthlyReceivedAmount: number;
+  /** Rolling recent-months series — the current collection period plus up
+   *  to two prior (never before launch), each with net received vs the same
+   *  cohort goal. Powers the multi-month goal bars in the portal. */
+  recentMonths: PoolRecentMonth[];
 }
 
 export interface SessionPayload {
