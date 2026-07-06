@@ -280,7 +280,7 @@ export function CommunityPoolCard({
                     className={`relative rounded-full bg-white/[0.06] overflow-hidden ${isCurrent ? "h-3" : "h-2"}`}
                   >
                     <div
-                      className={`absolute top-0 left-0 h-full transition-all ${isCurrent ? "bg-gradient-to-r from-[#46CDCF] to-[#B8FF00]" : "bg-white/25"}`}
+                      className="absolute top-0 left-0 h-full transition-all bg-gradient-to-r from-[#46CDCF] to-[#B8FF00]"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
