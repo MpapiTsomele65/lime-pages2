@@ -20,6 +20,7 @@ import { BeneficiaryCard } from "./BeneficiaryCard";
 import { PaymentCard } from "./PaymentCard";
 import { SetUpPaymentsCard } from "./SetUpPaymentsCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
+import { MilestonesCard } from "./MilestonesCard";
 import { WhereIsOurMoneyCard } from "./WhereIsOurMoneyCard";
 import { CompletenessMeter } from "./CompletenessMeter";
 import { BankDepositCard } from "./BankDepositCard";
@@ -301,6 +302,10 @@ export function DashboardOverview({
         )}
         <RiskProfileCard member={member} />
       </div>
+
+      {/* Milestones & streak — a reason to keep contributing across the
+          5-year lock-in (badges tied to the ToR vote tiers). */}
+      <MilestonesCard member={member} currentPeriod={currentPeriod} />
 
       {/* Community pool overview */}
       {communityStats && (
