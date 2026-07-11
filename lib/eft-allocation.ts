@@ -67,6 +67,12 @@ export interface EftAllocationPlan {
 export function allocateEftPayment(
   rows: LehumoContribution[],
   amount: number,
+  /** Pin the whole deposit to a specific period (`YYYY-MM`) instead of
+   *  the oldest-unpaid walk. Use when the admin needs to correct which
+   *  month a manual payment lands on — e.g. a July EFT that the auto-walk
+   *  would otherwise push to August because July's row was reset by a
+   *  failed Paystack attempt. */
+  targetPeriod?: string,
 ): EftAllocationPlan {
   if (!rows || rows.length === 0 || amount <= 0) {
     return { rows: [], totalApplied: 0, remainder: amount, hasOverpayment: amount > 0 };
@@ -75,6 +81,40 @@ export function allocateEftPayment(
   // Oldest scheduled unpaid first. Sort defensively even though the
   // server-side hydration paths return sorted rows.
   const sorted = [...rows].sort((a, b) => a.period.localeCompare(b.period));
+
+  // ── Targeted allocation ──
+  // The admin explicitly pinned a month: apply the deposit to that one
+  // period regardless of its current status (the choice overrides the
+  // oldest-unpaid walk). A row already covered to its expected amount is
+  // a no-op — the whole deposit surfaces as remainder so the admin sees
+  // it wasn't needed there.
+  if (targetPeriod) {
+    const row = sorted.find((r) => r.period === targetPeriod);
+    if (!row || row.period < LEHUMO_FIRST_DUE_PERIOD) {
+      return { rows: [], totalApplied: 0, remainder: amount, hasOverpayment: amount > 0 };
+    }
+    const expected = row.amountExpected ?? 1000;
+    const alreadyReceived = row.amountReceived ?? 0;
+    const shortfall = Math.max(0, expected - alreadyReceived);
+    if (shortfall <= 0) {
+      return { rows: [], totalApplied: 0, remainder: amount, hasOverpayment: amount > 0 };
+    }
+    const apply = Math.min(amount, shortfall);
+    return {
+      rows: [
+        {
+          period: row.period,
+          recordId: row.id,
+          newAmountReceived: alreadyReceived + apply,
+          amountApplied: apply,
+          status: apply >= shortfall ? "fully-covers" : "partial",
+        },
+      ],
+      totalApplied: apply,
+      remainder: amount - apply,
+      hasOverpayment: amount - apply > 0,
+    };
+  }
 
   const plan: EftAllocationRow[] = [];
   let remaining = amount;

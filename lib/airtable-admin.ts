@@ -252,25 +252,40 @@ export async function logEftPayment(args: {
   paymentReference: string;
   paymentDate?: string;
   notes?: string;
+  /** Pin the deposit to a specific period (`YYYY-MM`) instead of the
+   *  oldest-unpaid auto-walk. */
+  targetPeriod?: string;
 }): Promise<{
   plan: EftAllocationPlan;
   member: LehumoMember;
 }> {
   let member = await getMemberByIdAdmin(args.memberRecordId);
   if (!member) throw new Error(`member ${args.memberRecordId} not found`);
-  if (!member.contributionRows || member.contributionRows.length === 0) {
-    // Self-heal: a member added outside the onboarding flow can land here
-    // with no schedule, which used to dead-end a legitimate EFT log. Seed
-    // the canonical 60-month schedule (idempotent — only inserts missing
-    // periods) and re-fetch so the deposit can always be allocated.
+
+  // A pinned month whose row was deleted (e.g. cleaning up a failed
+  // Paystack attempt) can't be allocated to until it exists again.
+  const targetRowMissing =
+    !!args.targetPeriod &&
+    !(member.contributionRows ?? []).some(
+      (r) => r.period === args.targetPeriod,
+    );
+
+  if (
+    !member.contributionRows ||
+    member.contributionRows.length === 0 ||
+    targetRowMissing
+  ) {
+    // Self-heal: seed/backfill the canonical 60-month schedule (idempotent
+    // — only inserts missing periods). Covers a member with no schedule at
+    // all, AND the pinned-month-was-deleted case, so the deposit can always
+    // land on the chosen period.
     const seed = await ensureCanonicalMemberSchedule({
       memberId: member.id,
       memberNumber: member.memberNumber,
     });
     if (!seed.ok) {
       throw new Error(
-        `member ${args.memberRecordId} has no contribution rows and ` +
-          `auto-seed failed: ${seed.error}`,
+        `member ${args.memberRecordId} schedule seed/backfill failed: ${seed.error}`,
       );
     }
     member = await getMemberByIdAdmin(args.memberRecordId);
@@ -286,7 +301,11 @@ export async function logEftPayment(args: {
     }
   }
 
-  const plan = allocateEftPayment(member.contributionRows, args.amount);
+  const plan = allocateEftPayment(
+    member.contributionRows,
+    args.amount,
+    args.targetPeriod,
+  );
   if (plan.rows.length === 0) {
     // Nothing to allocate — every scheduled row is already covered.
     // Return the (empty) plan so the caller can show a "nothing to do"

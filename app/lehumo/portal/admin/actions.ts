@@ -106,6 +106,12 @@ const LogEftSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
     .optional(),
   notes: z.string().max(500).optional(),
+  /** Pin the deposit to a specific contribution month (`YYYY-MM`) rather
+   *  than the oldest-unpaid auto-walk. */
+  targetPeriod: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/, "Period must be YYYY-MM")
+    .optional(),
 });
 
 export type LogEftPaymentResult =
@@ -119,6 +125,7 @@ export async function logEftPayment(
     paymentReference: string;
     paymentDate?: string;
     notes?: string;
+    targetPeriod?: string;
   },
 ): Promise<LogEftPaymentResult> {
   const gate = await requireAdmin();
@@ -142,6 +149,7 @@ export async function logEftPayment(
       paymentReference: parsed.data.paymentReference,
       paymentDate: parsed.data.paymentDate,
       notes: parsed.data.notes,
+      targetPeriod: parsed.data.targetPeriod,
     });
 
     // Fire-and-forget receipt email — same template the Paystack
