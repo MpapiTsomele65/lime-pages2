@@ -6,9 +6,11 @@ import { listAllContributions } from "@/lib/contributions";
 import {
   CONTRIBUTION_STATUS,
   LEHUMO_FIRST_DUE_PERIOD,
+  formatMemberNumber,
 } from "@/lib/definitions";
 import { AdminPageHeader } from "@/components/lehumo/admin/AdminPageHeader";
 import { AdminContributionsClient } from "@/components/lehumo/admin/AdminContributionsClient";
+import { MonthlyInflowsTable } from "@/components/lehumo/admin/MonthlyInflowsTable";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +93,7 @@ export default async function AdminContributionsPage() {
       ...paidPeriods,
     ]),
   ).sort();
+  const membersById = new Map(members.map((m) => [m.id, m]));
   let runningPool = 0;
   const monthlyInflows = ledgerPeriods.map((period) => {
     const paid = contributions.filter(
@@ -98,7 +101,31 @@ export default async function AdminContributionsPage() {
     );
     const received = paid.reduce((s, c) => s + (c.amountReceived ?? 0), 0);
     runningPool += received;
-    return { period, count: paid.length, received, cumulative: runningPool };
+    // Who paid this month — resolve each Paid row to its member so the
+    // expandable row can show the roster behind the total.
+    const contributors = paid
+      .map((c) => {
+        const m = membersById.get(c.memberId);
+        return {
+          memberNumber: m
+            ? formatMemberNumber(m.memberNumber)
+            : c.contributionKey.split("-")[0] || "—",
+          name: m ? m.fullName : "Unknown member",
+          amount: c.amountReceived ?? 0,
+        };
+      })
+      .sort((a, b) =>
+        a.memberNumber.localeCompare(b.memberNumber, undefined, {
+          numeric: true,
+        }),
+      );
+    return {
+      period,
+      count: paid.length,
+      received,
+      cumulative: runningPool,
+      contributors,
+    };
   });
   const totalContributions = monthlyInflows.reduce((s, r) => s + r.count, 0);
 
@@ -191,89 +218,6 @@ function SummaryTile({
       >
         {value}
       </p>
-    </div>
-  );
-}
-
-function MonthlyInflowsTable({
-  rows,
-  total,
-  totalCount,
-}: {
-  rows: {
-    period: string;
-    count: number;
-    received: number;
-    cumulative: number;
-  }[];
-  total: number;
-  totalCount: number;
-}) {
-  return (
-    <div
-      className="rounded-[20px] border border-[#EDEDED] bg-white p-4 md:p-5"
-      style={{
-        boxShadow:
-          "inset 0 1px 0 0 rgba(255, 255, 255, 0.6), " +
-          "0 1px 2px 0 rgba(0, 0, 0, 0.04), " +
-          "0 4px 16px -4px rgba(0, 0, 0, 0.05)",
-      }}
-    >
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6B7280]">
-          Monthly inflows
-        </h2>
-        <span className="text-[11px] text-[#9CA3AF]">
-          Cumulative reconciles to Total Pool ·{" "}
-          <span className="font-semibold text-[#5E7A00]">
-            R{total.toLocaleString("en-ZA")}
-          </span>
-        </span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[440px] text-[13px]">
-          <thead>
-            <tr className="border-b border-[#EDEDED] text-[10px] uppercase tracking-[0.1em] text-[#9CA3AF]">
-              <th className="py-2 text-left font-semibold">Month</th>
-              <th className="py-2 text-right font-semibold">Contributions</th>
-              <th className="py-2 text-right font-semibold">Received</th>
-              <th className="py-2 text-right font-semibold">Cumulative pool</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.period} className="border-b border-[#F3F4F6]">
-                <td className="py-2.5 font-medium text-[#0B1933]">
-                  {formatPeriodLong(r.period)}
-                </td>
-                <td className="py-2.5 text-right tabular-nums text-[#4B5563]">
-                  {r.count}
-                </td>
-                <td className="py-2.5 text-right tabular-nums text-[#0B1933]">
-                  R{r.received.toLocaleString("en-ZA")}
-                </td>
-                <td className="py-2.5 text-right font-semibold tabular-nums text-[#0B1933]">
-                  R{r.cumulative.toLocaleString("en-ZA")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 border-[#E5E7EB]">
-              <td className="pt-2.5 font-semibold text-[#0B1933]">All-time</td>
-              <td className="pt-2.5 text-right font-semibold tabular-nums text-[#0B1933]">
-                {totalCount}
-              </td>
-              <td className="pt-2.5 text-right font-semibold tabular-nums text-[#0B1933]">
-                R{total.toLocaleString("en-ZA")}
-              </td>
-              <td className="pt-2.5 text-right font-semibold tabular-nums text-[#5E7A00]">
-                R{total.toLocaleString("en-ZA")}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
     </div>
   );
 }
