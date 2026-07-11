@@ -537,14 +537,16 @@ export async function updateContribution(
   if (patch.paymentReference !== undefined)
     fields[CONTRIBUTION_FIELDS.paymentReference] = patch.paymentReference;
   if (patch.paymentDate !== undefined)
-    fields[CONTRIBUTION_FIELDS.paymentDate] = patch.paymentDate;
+    // Airtable date fields reject "" — send null to clear the value.
+    fields[CONTRIBUTION_FIELDS.paymentDate] = patch.paymentDate || null;
   if (patch.plan !== undefined) fields[CONTRIBUTION_FIELDS.plan] = patch.plan;
   if (patch.reconciled !== undefined)
     fields[CONTRIBUTION_FIELDS.reconciled] = patch.reconciled;
   if (patch.reconciledBy !== undefined)
     fields[CONTRIBUTION_FIELDS.reconciledBy] = patch.reconciledBy;
   if (patch.reconciledAt !== undefined)
-    fields[CONTRIBUTION_FIELDS.reconciledAt] = patch.reconciledAt;
+    // Datetime field — same as paymentDate, "" must be sent as null.
+    fields[CONTRIBUTION_FIELDS.reconciledAt] = patch.reconciledAt || null;
   if (patch.notes !== undefined) fields[CONTRIBUTION_FIELDS.notes] = patch.notes;
 
   const res = await fetch(getContribUrl(recordId), {
