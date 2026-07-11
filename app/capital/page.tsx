@@ -14,11 +14,13 @@ import {
   Lightbulb,
   FileText,
   Gauge,
+  Layers,
 } from "lucide-react";
 import BondCalculator from "@/components/sections/capital/BondCalculator";
 import { ReadingProgressBar } from "@/components/ui/ReadingProgressBar";
 import FundComparison from "@/components/sections/capital/FundComparison";
 import RiskProfiler from "@/components/sections/capital/RiskProfiler";
+import StarterBaskets from "@/components/sections/capital/StarterBaskets";
 import InvestingGuide from "@/components/sections/capital/InvestingGuide";
 import AngelSyndicate from "@/components/sections/capital/AngelSyndicate";
 import LehumoTeaser from "@/components/sections/capital/LehumoTeaser";
@@ -235,6 +237,14 @@ export default function CapitalPage() {
         icon={Gauge}
       />
       <RiskProfiler />
+
+      {/* ═══ STARTER BASKETS ═══ */}
+      <SectionDivider
+        label="Starter Baskets"
+        id="starter-baskets"
+        icon={Layers}
+      />
+      <StarterBaskets />
 
       {/* ═══ HOME LOAN ACCELERATOR ═══ */}
       <SectionDivider

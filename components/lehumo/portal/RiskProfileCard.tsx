@@ -21,6 +21,7 @@ import {
   Gauge,
   ArrowRight,
   ArrowLeft,
+  ArrowUpRight,
   Check,
   RotateCcw,
   Loader2,
@@ -213,14 +214,29 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                         Last assessed {member.riskAssessed}
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={start}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.03] px-3.5 py-2 text-[12px] font-semibold text-white/70 hover:text-white hover:border-[#46CDCF]/40 transition-colors"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Retake
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Cross-sell into Lime Capital: lands on the Starter
+                          Baskets section pre-selected to this member's tier
+                          (?profile= deep link, new tab so the portal session
+                          stays put). */}
+                      <a
+                        href={`/capital${savedRisk ? `?profile=${savedRisk.id}` : ""}#starter-baskets`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#B8FF00]/25 bg-[#B8FF00]/[0.06] px-3.5 py-2 text-[12px] font-semibold text-[#B8FF00] hover:bg-[#B8FF00]/[0.12] transition-colors"
+                      >
+                        Explore your Lime Capital basket
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={start}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.03] px-3.5 py-2 text-[12px] font-semibold text-white/70 hover:text-white hover:border-[#46CDCF]/40 transition-colors"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Retake
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
