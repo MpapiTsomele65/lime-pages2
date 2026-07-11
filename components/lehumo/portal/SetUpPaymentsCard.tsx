@@ -216,7 +216,7 @@ export function SetUpPaymentsCard({
             <h2 className="text-lg font-semibold text-white mt-1">
               Set up your monthly contribution
             </h2>
-            <p className="text-xs text-white/50 mt-1.5 max-w-md leading-relaxed">
+            <p className="text-xs text-white/60 mt-1.5 max-w-md leading-relaxed">
               Your KYC is verified — last step is configuring your first
               contribution. Once this is done, payments run automatically.
             </p>
@@ -233,7 +233,7 @@ export function SetUpPaymentsCard({
           via{" "}
           <span className="text-white/80 font-semibold">{planInfo.payment}</span>
           {planInfo.fee ? (
-            <span className="text-white/40"> · {planInfo.fee}</span>
+            <span className="text-white/60"> · {planInfo.fee}</span>
           ) : null}
         </div>
       </div>
@@ -248,7 +248,7 @@ export function SetUpPaymentsCard({
                 <p className="text-sm font-bold text-[#B8FF00]">
                   EFT Bank Details
                 </p>
-                <p className="text-[11px] text-white/40 mt-0.5">
+                <p className="text-[11px] text-white/60 mt-0.5">
                   Transfer R1,000 to the account below on the 1st of each month
                 </p>
               </div>
@@ -268,7 +268,7 @@ export function SetUpPaymentsCard({
                     className="flex items-center justify-between"
                   >
                     <div>
-                      <p className="text-[10px] text-white/35 font-medium uppercase tracking-wide">
+                      <p className="text-[10px] text-white/60 font-medium uppercase tracking-wide">
                         {row.label}
                       </p>
                       <p className="text-sm text-white font-semibold">
@@ -318,7 +318,7 @@ export function SetUpPaymentsCard({
                       )}
                     </button>
                   </div>
-                  <p className="text-[10px] text-white/35 mt-1">
+                  <p className="text-[10px] text-white/60 mt-1">
                     Always use this reference so we can match your payment
                     to your account. Without it, reconciliation can take
                     several days.
@@ -326,7 +326,7 @@ export function SetUpPaymentsCard({
                 </div>
               </div>
             </div>
-            <p className="text-xs text-white/45 leading-relaxed">
+            <p className="text-xs text-white/60 leading-relaxed">
               Once your transfer reflects, an admin will mark it received
               within 24 hours and your member status flips to{" "}
               <span className="text-white/70 font-semibold">Active</span>.
@@ -347,7 +347,7 @@ export function SetUpPaymentsCard({
                     <p className="text-sm font-bold text-[#46CDCF]">
                       Paystack debit order
                     </p>
-                    <p className="text-[11px] text-white/40 mt-0.5">
+                    <p className="text-[11px] text-white/60 mt-0.5">
                       Set it once — auto-debit R1,035 every month
                     </p>
                   </div>
@@ -444,7 +444,7 @@ export function SetUpPaymentsCard({
                   <p className="text-sm font-bold text-[#A855F7]">
                     VIP plan — coming soon
                   </p>
-                  <p className="text-[11px] text-white/40 mt-0.5">
+                  <p className="text-[11px] text-white/60 mt-0.5">
                     Inner-circle launch in a few weeks
                   </p>
                 </div>
@@ -470,7 +470,7 @@ export function SetUpPaymentsCard({
             blocks switches once the first contribution lands and
             surfaces an email-the-admin path. */}
         <div className="pt-2 border-t border-white/[0.06] flex flex-col gap-2">
-          <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold flex items-center gap-1.5">
+          <p className="text-[11px] uppercase tracking-wider text-white/60 font-semibold flex items-center gap-1.5">
             <ArrowRightLeft className="w-3 h-3" />
             Changed your mind?
           </p>
@@ -499,7 +499,7 @@ export function SetUpPaymentsCard({
           {switchError && (
             <p className="text-xs text-red-400 mt-1">{switchError}</p>
           )}
-          <p className="text-[10px] text-white/35 leading-relaxed">
+          <p className="text-[10px] text-white/60 leading-relaxed">
             You can switch tiers any time before your first
             contribution. After that, plan changes go through admin
             (email{" "}

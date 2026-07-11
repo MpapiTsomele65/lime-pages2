@@ -183,7 +183,7 @@ export function ContributionGrid({
         </div>
 
         <div className="mt-6 flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3">
-          <span className="text-sm text-white/50">Total Contributed</span>
+          <span className="text-sm text-white/60">Total Contributed</span>
           <span className="text-sm font-semibold text-[#B8FF00]">
             R{totalContributed.toLocaleString()}
           </span>
@@ -333,7 +333,7 @@ export function ContributionGrid({
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
         {!isLifetime && selectedYearPaidCount !== null && (
           <div className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3">
-            <span className="text-xs text-white/50">
+            <span className="text-xs text-white/60">
               {yearMode} ({selectedYearPaidCount}/12)
             </span>
             <span className="text-sm font-semibold text-white">

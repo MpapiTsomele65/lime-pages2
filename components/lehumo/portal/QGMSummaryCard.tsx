@@ -77,7 +77,7 @@ export function QGMSummaryCard() {
             <Users className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-1">
               {next.kind === "kick-off"
                 ? "Kick-off QGM · launch event"
                 : "Quarterly General Meeting"}
@@ -111,7 +111,7 @@ export function QGMSummaryCard() {
               ? "Launch celebration, steering committee introduction, first-contribution reminder, Q&A"
               : "Investment update, governance committee report, member Q&A"}
           </p>
-          <p className="mt-3 text-[11px] text-white/40">
+          <p className="mt-3 text-[11px] text-white/60">
             Hosted by{" "}
             <a
               href={`mailto:${QGM_HOST_EMAIL}`}
@@ -161,7 +161,7 @@ export function QGMSummaryCard() {
         {/* Upcoming list — quietly subordinate to the headline date.
             Helps members planning ahead see the cadence at a glance. */}
         <div className="pt-5 border-t border-white/[0.06]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35 mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-3">
             Upcoming meetings
           </p>
           <ul className="space-y-2">

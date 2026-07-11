@@ -132,7 +132,7 @@ export function CommunityPoolCard({
           </h2>
         </div>
         <div className="text-right">
-          <p className="text-[11px] font-semibold tracking-[1px] uppercase text-white/40">
+          <p className="text-[11px] font-semibold tracking-[1px] uppercase text-white/60">
             Total pool today
           </p>
           <p className="text-2xl md:text-3xl font-extrabold text-[#B8FF00] tabular-nums leading-none mt-1">
@@ -199,7 +199,7 @@ export function CommunityPoolCard({
         </svg>
 
         {/* Month axis */}
-        <div className="mt-1 grid grid-cols-12 gap-1 px-1 text-[10px] font-medium text-white/35">
+        <div className="mt-1 grid grid-cols-12 gap-1 px-1 text-[10px] font-medium text-white/60">
           {timeline.map((pt) => (
             <span
               key={pt.month}
@@ -222,14 +222,14 @@ export function CommunityPoolCard({
             >
               <div className="flex items-center gap-2">
                 <Icon className={`w-4 h-4 ${tile.color}`} />
-                <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/45">
+                <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/60">
                   {tile.label}
                 </span>
               </div>
               <div className={`text-xl font-extrabold tabular-nums ${tile.color}`}>
                 {tile.value}
               </div>
-              <div className="text-[11px] text-white/40">{tile.sub}</div>
+              <div className="text-[11px] text-white/60">{tile.sub}</div>
             </div>
           );
         })}
@@ -242,7 +242,7 @@ export function CommunityPoolCard({
           cohort goal (onboarded × R1,000). Most-recent month on top. */}
       {stats.recentMonths.length > 0 && (
         <div className="mt-5 pt-5 border-t border-white/[0.06]">
-          <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40 flex items-center gap-1.5 mb-3">
+          <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/60 flex items-center gap-1.5 mb-3">
             <Target className="w-3 h-3" />
             Monthly contributions
           </p>
@@ -261,17 +261,17 @@ export function CommunityPoolCard({
                       >
                         {monthOnly}
                       </span>
-                      <span className="text-white/35"> &middot; </span>
+                      <span className="text-white/60"> &middot; </span>
                       <span className="text-[#B8FF00] font-bold tabular-nums">
                         {formatZAR(m.received)}
                       </span>
-                      <span className="text-white/35"> of </span>
+                      <span className="text-white/60"> of </span>
                       <span className="text-white/70 tabular-nums">
                         {formatZAR(m.goal)}
                       </span>
                     </p>
                     <p
-                      className={`text-sm font-extrabold tabular-nums leading-none ${isCurrent ? "text-[#B8FF00]" : "text-white/50"}`}
+                      className={`text-sm font-extrabold tabular-nums leading-none ${isCurrent ? "text-[#B8FF00]" : "text-white/60"}`}
                     >
                       {Math.round(pct)}%
                     </p>
@@ -288,7 +288,7 @@ export function CommunityPoolCard({
               );
             })}
           </div>
-          <p className="mt-3 text-[11px] text-white/40">
+          <p className="mt-3 text-[11px] text-white/60">
             {stats.membersOnboarded} onboarded members &times; R1,000 = full
             cohort target each month.
           </p>
@@ -302,21 +302,21 @@ export function CommunityPoolCard({
           eyebrow label. Two tiles wide on mobile, side by side on
           desktop. */}
       <div className="mt-5 pt-5 border-t border-white/[0.06]">
-        <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40 mb-3">
+        <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/60 mb-3">
           Cohort progress
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-2 rounded-xl border border-[#46CDCF]/20 bg-[#46CDCF]/[0.06] p-3.5">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#46CDCF]" />
-              <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/45">
+              <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/60">
                 Onboarded
               </span>
             </div>
             <div className="text-xl font-extrabold tabular-nums text-[#46CDCF]">
               {stats.membersOnboarded} / {stats.totalFoundingSlots}
             </div>
-            <div className="text-[11px] text-white/40">
+            <div className="text-[11px] text-white/60">
               Completed registration end-to-end
             </div>
           </div>
@@ -324,14 +324,14 @@ export function CommunityPoolCard({
           <div className="flex flex-col gap-2 rounded-xl border border-[#B8FF00]/20 bg-[#B8FF00]/[0.06] p-3.5">
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-[#B8FF00]" />
-              <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/45">
+              <span className="text-[10px] font-semibold tracking-[1px] uppercase text-white/60">
                 Profile updated
               </span>
             </div>
             <div className="text-xl font-extrabold tabular-nums text-[#B8FF00]">
               {stats.membersProfileUpdated} / {stats.totalFoundingSlots}
             </div>
-            <div className="text-[11px] text-white/40">
+            <div className="text-[11px] text-white/60">
               Address or beneficiary set
             </div>
           </div>

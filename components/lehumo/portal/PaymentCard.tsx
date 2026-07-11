@@ -153,7 +153,7 @@ export function PaymentCard({
           <h3 className="text-lg font-semibold text-white">
             Goal reached!
           </h3>
-          <p className="text-sm text-white/50 mt-1">
+          <p className="text-sm text-white/60 mt-1">
             You&rsquo;ve completed your{" "}
             {ledger ? formatZAR(ledger.lifetimeGoal) : "R60,000"} contribution
             commitment to the trust. Thank you.
@@ -170,7 +170,7 @@ export function PaymentCard({
               <span className="text-3xl font-bold text-[#B8FF00]">
                 {formatZAR(ledger.lifetimeReceived)}
               </span>
-              <span className="text-white/40 text-sm">
+              <span className="text-white/60 text-sm">
                 of {formatZAR(ledger.lifetimeGoal)} goal
               </span>
             </div>
@@ -179,12 +179,12 @@ export function PaymentCard({
           {/* Running target — what should be paid by end of `monthsDue`.
               Hidden pre-first-month so we don't flash "Target so far: R0". */}
           {ledger.monthsDue > 0 && (
-            <p className="mt-1 text-xs text-white/50">
+            <p className="mt-1 text-xs text-white/60">
               Target so far:{" "}
               <span className="text-[#46CDCF] font-medium">
                 {formatZAR(ledger.cumulativeExpected)}
               </span>
-              <span className="text-white/35">
+              <span className="text-white/60">
                 {" "}
                 · {ledger.monthsDue}/{ledger.totalMonths} months due
               </span>
@@ -264,7 +264,7 @@ export function PaymentCard({
                 <span className="text-xl font-bold text-white">
                   {formatZAR(ledger.outstanding)}
                 </span>
-                <span className="text-xs text-white/45">
+                <span className="text-xs text-white/60">
                   · {ledger.monthsOutstanding} month
                   {ledger.monthsOutstanding === 1 ? "" : "s"} behind
                 </span>
@@ -294,15 +294,15 @@ export function PaymentCard({
               </p>
             )}
             {ledger.lastPaidPeriod && (
-              <p className="text-xs text-white/35">
+              <p className="text-xs text-white/60">
                 Last paid:{" "}
-                <span className="text-white/50">
+                <span className="text-white/60">
                   {formatPeriodShort(ledger.lastPaidPeriod)}
                 </span>
                 {ledger.lastPaidAmount !== null && ledger.lastPaidAmount > 0 && (
                   <>
                     {" · "}
-                    <span className="text-white/50">
+                    <span className="text-white/60">
                       {formatZAR(ledger.lastPaidAmount)}
                     </span>
                   </>
@@ -406,10 +406,10 @@ export function PaymentCard({
         <div className="flex-1 flex flex-col">
           <div className="flex items-baseline gap-1 mb-1">
             <span className="text-3xl font-bold text-white">R1,000</span>
-            <span className="text-white/40 text-sm">/month</span>
+            <span className="text-white/60 text-sm">/month</span>
           </div>
           {legacyNextUnpaidMonth && (
-            <p className="text-sm text-white/50 mb-6">
+            <p className="text-sm text-white/60 mb-6">
               Next due:{" "}
               <span className="text-[#46CDCF] font-medium">
                 {legacyNextUnpaidMonth}
@@ -417,7 +417,7 @@ export function PaymentCard({
             </p>
           )}
           <div className="mb-6">
-            <div className="flex items-center justify-between text-xs text-white/40 mb-2">
+            <div className="flex items-center justify-between text-xs text-white/60 mb-2">
               <span>Progress</span>
               <span>{legacyPaidCount}/12 months</span>
             </div>

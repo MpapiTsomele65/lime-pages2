@@ -133,7 +133,7 @@ export function PaymentMethodDialog({
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="text-white/40 hover:text-white disabled:opacity-40 transition-colors"
+                className="text-white/60 hover:text-white disabled:opacity-40 transition-colors"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -302,7 +302,7 @@ function MiniRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-[11px] uppercase tracking-wider text-white/40">
+      <dt className="text-[11px] uppercase tracking-wider text-white/60">
         {label}
       </dt>
       <dd className="flex items-center gap-2 min-w-0">

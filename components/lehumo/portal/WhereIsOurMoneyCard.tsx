@@ -82,7 +82,7 @@ export function WhereIsOurMoneyCard({
         </div>
         {asAtLabel && (
           <div className="text-right">
-            <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40">
+            <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/60">
               Current as at
             </p>
             <p className="text-sm font-semibold text-white/80 tabular-nums mt-0.5">
@@ -133,7 +133,7 @@ export function WhereIsOurMoneyCard({
       {/* Strategy narrative */}
       {strategyNote.trim() && (
         <div className="mt-6 pt-5 border-t border-white/[0.06]">
-          <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/40 mb-2">
+          <p className="text-[10px] font-semibold tracking-[1px] uppercase text-white/60 mb-2">
             Investment strategy
           </p>
           <p className="text-[13px] text-white/65 leading-relaxed whitespace-pre-line">
@@ -213,7 +213,7 @@ function AllocationView({
             aria-label={`${eyebrow} allocation donut`}
           />
           <div className="absolute inset-0 m-[20px] rounded-full bg-[#0F2040] border border-white/[0.06] flex flex-col items-center justify-center text-center px-1">
-            <span className="text-[8px] font-semibold uppercase tracking-[0.5px] text-white/40 leading-tight">
+            <span className="text-[8px] font-semibold uppercase tracking-[0.5px] text-white/60 leading-tight">
               {centerLabel}
             </span>
             <span
@@ -246,7 +246,7 @@ function AllocationView({
                 </span>
               </div>
               {showRand && totalPool > 0 && (
-                <p className="ml-[18px] text-[11px] text-white/40 tabular-nums">
+                <p className="ml-[18px] text-[11px] text-white/60 tabular-nums">
                   {formatZAR(slice.randValue)}
                 </p>
               )}
@@ -255,7 +255,7 @@ function AllocationView({
         </ul>
       </div>
 
-      <p className="mt-3 text-[11px] text-white/40 leading-snug">{note}</p>
+      <p className="mt-3 text-[11px] text-white/60 leading-snug">{note}</p>
     </div>
   );
 }

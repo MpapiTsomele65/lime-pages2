@@ -66,7 +66,7 @@ export function SecurityCard({ hasPassword, memberNumber }: SecurityCardProps) {
               <h2 className="text-base font-semibold text-white">
                 Portal password
               </h2>
-              <p className="mt-0.5 text-[12.5px] font-medium uppercase tracking-[0.12em] text-white/35">
+              <p className="mt-0.5 text-[12.5px] font-medium uppercase tracking-[0.12em] text-white/60">
                 Not set
               </p>
             </div>
@@ -312,7 +312,7 @@ function PasswordForm({
               <button
                 type="button"
                 onClick={() => setShowNext((v) => !v)}
-                className="text-[11px] text-white/40 hover:text-white/70 transition-colors inline-flex items-center gap-1"
+                className="text-[11px] text-white/60 hover:text-white/70 transition-colors inline-flex items-center gap-1"
                 aria-label={showNext ? "Hide password" : "Show password"}
               >
                 {showNext ? (
@@ -337,7 +337,7 @@ function PasswordForm({
               maxLength={200}
               className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/50 focus:ring-1 focus:ring-[#B8FF00]/30 transition-colors"
             />
-            <p className="mt-1.5 text-[11px] text-white/40 leading-relaxed">
+            <p className="mt-1.5 text-[11px] text-white/60 leading-relaxed">
               At least 8 characters. Don&rsquo;t use your member number
               or an all-digits PIN.
             </p>

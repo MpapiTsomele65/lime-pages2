@@ -296,7 +296,7 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
               </span>
             </div>
             {firstFile && (
-              <p className="truncate text-xs text-white/50">
+              <p className="truncate text-xs text-white/60">
                 {firstFile.filename}
               </p>
             )}
@@ -334,7 +334,7 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
               </span>
             </div>
             {firstFile && (
-              <p className="truncate text-xs text-white/50">
+              <p className="truncate text-xs text-white/60">
                 {firstFile.filename}
               </p>
             )}
@@ -375,7 +375,7 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
                   className="h-full bg-[#B8FF00] transition-all duration-150 ease-out"
                   style={{ width: `${progress}%` }}
                 />
-                <p className="mt-1 text-[10px] text-white/40">
+                <p className="mt-1 text-[10px] text-white/60">
                   {fmtMb(uploadedBytes)} of {fmtMb(totalBytes)}
                 </p>
               </div>
@@ -408,7 +408,7 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
       aria-label={`Upload ${slot.label}`}
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-white/50">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-white/60">
           {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -419,7 +419,7 @@ function SlotCard({ slot, isVerified, onUploaded }: SlotCardProps) {
           <p className="text-sm font-semibold text-white mb-0.5">
             {slot.label}
           </p>
-          <p className="text-xs text-white/50">
+          <p className="text-xs text-white/60">
             {busy
               ? progress !== null
                 ? `Uploading ${progress}% · ${fmtMb(uploadedBytes)} of ${fmtMb(totalBytes)}`
@@ -520,7 +520,7 @@ export function KycDocumentsCard({ member }: KycDocumentsCardProps) {
           </span>
         )}
       </div>
-      <p className="text-xs text-white/50 mb-5">
+      <p className="text-xs text-white/60 mb-5">
         {isVerified
           ? "Your documents have been verified. Nothing more to do here."
           : allSubmitted

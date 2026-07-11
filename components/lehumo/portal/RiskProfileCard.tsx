@@ -131,7 +131,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
             <Gauge className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-1">
               Your investor profile
             </p>
             <h2
@@ -196,13 +196,13 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                         {member.wealthPreference || "—"}
                       </p>
                       {savedWealth && (
-                        <p className="mt-0.5 text-[11.5px] text-white/45">
+                        <p className="mt-0.5 text-[11.5px] text-white/60">
                           {savedWealth.tagline}
                         </p>
                       )}
                       {member.preferredAssetClass && (
                         <p className="mt-1 inline-flex items-center gap-1.5 text-[11.5px] text-white/55">
-                          <Coins className="h-3.5 w-3.5 text-white/40" />
+                          <Coins className="h-3.5 w-3.5 text-white/60" />
                           Drawn to {member.preferredAssetClass}
                         </p>
                       )}
@@ -210,7 +210,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3 flex-wrap border-t border-white/[0.06] pt-3">
                     {member.riskAssessed && (
-                      <span className="text-[11px] text-white/35">
+                      <span className="text-[11px] text-white/60">
                         Last assessed {member.riskAssessed}
                       </span>
                     )}
@@ -262,14 +262,14 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white/40">
+                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white/60">
                   Question {step + 1} of {PORTAL_QUESTIONS.length}
                 </span>
                 {step > 0 && (
                   <button
                     type="button"
                     onClick={back}
-                    className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white/45 hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white/60 hover:text-white transition-colors"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" /> Back
                   </button>
@@ -279,7 +279,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                 {PORTAL_QUESTIONS[step].prompt}
               </h3>
               {PORTAL_QUESTIONS[step].helper && (
-                <p className="mt-1.5 text-[12.5px] text-white/45 leading-relaxed">
+                <p className="mt-1.5 text-[12.5px] text-white/60 leading-relaxed">
                   {PORTAL_QUESTIONS[step].helper}
                 </p>
               )}
@@ -302,7 +302,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10.5px] font-bold transition-colors ${
                           active
                             ? "border-[#46CDCF] bg-[#46CDCF] text-[#06223a]"
-                            : "border-white/20 text-white/45 group-hover:border-[#46CDCF]/50"
+                            : "border-white/20 text-white/60 group-hover:border-[#46CDCF]/50"
                         }`}
                       >
                         {active ? (
@@ -345,7 +345,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                   {result.riskTier.blurb}
                 </p>
                 <div className="mt-4">
-                  <div className="flex justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-1.5">
+                  <div className="flex justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60 mb-1.5">
                     <span>Protect the pool</span>
                     <span>Grow the pool</span>
                   </div>
@@ -372,7 +372,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                         className={`flex-1 text-center rounded-full border px-2 py-1.5 text-[12px] font-semibold transition-colors ${
                           on
                             ? "border-[#B8FF00]/40 bg-[#B8FF00]/[0.12] text-[#B8FF00]"
-                            : "border-white/[0.08] text-white/40"
+                            : "border-white/[0.08] text-white/60"
                         }`}
                       >
                         {w.name}
@@ -429,7 +429,7 @@ export function RiskProfileCard({ member }: { member: LehumoMember }) {
                 </div>
               )}
 
-              <p className="mt-4 flex items-start gap-1.5 text-[11px] text-white/35 leading-relaxed">
+              <p className="mt-4 flex items-start gap-1.5 text-[11px] text-white/60 leading-relaxed">
                 <Info className="h-3 w-3 mt-0.5 shrink-0" />
                 Educational only — this isn&rsquo;t financial advice. It helps the
                 trust shape how the pool is invested around the community.

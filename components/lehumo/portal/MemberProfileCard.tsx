@@ -92,11 +92,11 @@ function ProfileRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/40">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/60">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-xs text-white/40">{label}</p>
+        <p className="text-xs text-white/60">{label}</p>
         <p className="text-sm font-medium text-white truncate">{children}</p>
       </div>
     </div>

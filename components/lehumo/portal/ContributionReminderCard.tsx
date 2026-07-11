@@ -268,7 +268,7 @@ function BankRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <dt className="text-white/45 shrink-0">{label}</dt>
+      <dt className="text-white/60 shrink-0">{label}</dt>
       <dd
         className={`flex items-center gap-1.5 min-w-0 text-right ${mono ? "font-mono" : ""} text-white/85`}
       >
@@ -280,7 +280,7 @@ function BankRow({
             className={`inline-flex shrink-0 items-center justify-center rounded-full border w-5 h-5 transition-colors ${
               copied
                 ? "border-[#B8FF00]/40 bg-[#B8FF00]/[0.12] text-[#B8FF00]"
-                : "border-white/[0.1] bg-white/[0.04] text-white/50 hover:bg-white/[0.08]"
+                : "border-white/[0.1] bg-white/[0.04] text-white/60 hover:bg-white/[0.08]"
             }`}
             aria-label={copied ? "Copied" : "Copy"}
           >
@@ -430,7 +430,7 @@ export function ContributionReminderCard({
             <p className="mt-0.5 text-sm font-semibold text-white">
               Due {periodToLong(firstDue)} · R1,000
             </p>
-            <p className="mt-1 text-xs text-white/50">
+            <p className="mt-1 text-xs text-white/60">
               {hasPaidYet
                 ? "You're ahead of schedule — we'll send a reminder closer to the date."
                 : "No action needed yet — we'll send a reminder closer to the date."}
@@ -533,7 +533,7 @@ export function ContributionReminderCard({
               {monthFull} contribution received
             </p>
             {nextDueLabel && (
-              <p className="mt-0.5 text-xs text-white/50">
+              <p className="mt-0.5 text-xs text-white/60">
                 Next due:{" "}
                 <span className="text-[#46CDCF] font-medium">
                   {nextDueLabel}

@@ -63,7 +63,7 @@ export function BankDepositCard({ member }: BankDepositCardProps) {
             <Landmark className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-1">
               Pay by bank deposit
             </p>
             <h2
@@ -116,8 +116,8 @@ export function BankDepositCard({ member }: BankDepositCardProps) {
             number, branch code, SWIFT). */}
         <div className="rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-4">
           <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/[0.06]">
-            <Building2 className="h-4 w-4 text-white/40 shrink-0" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+            <Building2 className="h-4 w-4 text-white/60 shrink-0" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
               Account details
             </span>
           </div>
@@ -159,7 +159,7 @@ export function BankDepositCard({ member }: BankDepositCardProps) {
         {/* Light footer — sets expectations on timing + how the row
             updates. Members get jittery when an EFT doesn't reflect
             instantly; this preempts the support email. */}
-        <p className="mt-4 text-[11.5px] text-white/40 leading-relaxed">
+        <p className="mt-4 text-[11.5px] text-white/60 leading-relaxed">
           EFTs typically reflect within 1 business day. Once reconciled,
           your portal updates automatically and you&rsquo;ll see the
           month(s) light up below.
@@ -193,7 +193,7 @@ function Row({
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        <dt className="text-[11px] uppercase tracking-wider text-white/40 mb-0.5">
+        <dt className="text-[11px] uppercase tracking-wider text-white/60 mb-0.5">
           {label}
         </dt>
         <dd
@@ -202,7 +202,7 @@ function Row({
           {value}
         </dd>
         {hint && (
-          <p className="mt-0.5 text-[10.5px] text-white/35">{hint}</p>
+          <p className="mt-0.5 text-[10.5px] text-white/60">{hint}</p>
         )}
       </div>
       {copyable && onCopy && (

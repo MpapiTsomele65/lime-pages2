@@ -121,7 +121,7 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
             <Lock className="h-4 w-4" />
           </div>
           <div className="flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">
               Emergency Access
             </p>
             <p className="mt-0.5 text-sm font-semibold text-white">
@@ -205,7 +205,7 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
             <CalendarClock className="h-4 w-4" />
           </div>
           <div className="flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">
               Active Loan ·{" "}
               <span className={accent.chipText}>
                 {access.loanType === "P2P" ? "P2P advance" : "Self-loan"}
@@ -223,7 +223,7 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
 
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">
+            <p className="text-[10px] uppercase tracking-wider text-white/60">
               Outstanding
             </p>
             <p className="mt-1 text-2xl font-bold text-white leading-none tabular-nums">
@@ -231,13 +231,13 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
             </p>
           </div>
           <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">
+            <p className="text-[10px] uppercase tracking-wider text-white/60">
               Due
             </p>
             <p className="mt-1 text-sm font-semibold text-white">
               {formatDate(access.dueAt)}
             </p>
-            <p className="text-[11px] text-white/50">
+            <p className="text-[11px] text-white/60">
               Issued {formatDate(access.issuedAt)}
             </p>
           </div>
@@ -339,7 +339,7 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
           <Wallet className="h-4 w-4" />
         </div>
         <div className="flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">
             Emergency Access · Available
           </p>
           <p className="mt-0.5 text-sm font-semibold text-white">
@@ -349,7 +349,7 @@ export function EmergencyAccessCard({ member }: EmergencyAccessCardProps) {
       </div>
 
       <div className="mb-4">
-        <p className="text-[10px] uppercase tracking-wider text-white/40">
+        <p className="text-[10px] uppercase tracking-wider text-white/60">
           Available to draw
         </p>
         <p className="mt-1 text-3xl md:text-4xl font-bold text-[#B8FF00] leading-none tabular-nums">

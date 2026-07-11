@@ -158,7 +158,7 @@ export function PlanManagementCard({ member }: PlanManagementCardProps) {
             <Settings2 className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-1">
               Plan management
             </p>
             <h2
@@ -316,15 +316,15 @@ function PlanOption({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {label === "Basic" ? (
-            <Wallet className="h-3.5 w-3.5 text-white/45 shrink-0" />
+            <Wallet className="h-3.5 w-3.5 text-white/60 shrink-0" />
           ) : (
-            <CreditCard className="h-3.5 w-3.5 text-white/45 shrink-0" />
+            <CreditCard className="h-3.5 w-3.5 text-white/60 shrink-0" />
           )}
           <span className="text-[13.5px] font-semibold text-white">
             {label}
           </span>
           {badge && (
-            <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/[0.1] px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-white/50">
+            <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/[0.1] px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-white/60">
               {badge}
             </span>
           )}
@@ -334,12 +334,12 @@ function PlanOption({
             </span>
           )}
         </div>
-        <p className="mt-1 text-[11.5px] text-white/50 leading-relaxed">
+        <p className="mt-1 text-[11.5px] text-white/60 leading-relaxed">
           {description}
         </p>
       </div>
       {!current && !disabled && (
-        <ArrowRight className="h-4 w-4 text-white/40 shrink-0 group-hover:text-[#46CDCF] group-hover:translate-x-0.5 transition-all" />
+        <ArrowRight className="h-4 w-4 text-white/60 shrink-0 group-hover:text-[#46CDCF] group-hover:translate-x-0.5 transition-all" />
       )}
     </button>
   );

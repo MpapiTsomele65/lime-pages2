@@ -178,7 +178,7 @@ export function BeneficiaryCard({ member }: BeneficiaryCardProps) {
           </span>
         ) : null}
       </div>
-      <p className="text-xs text-white/50 mb-5">
+      <p className="text-xs text-white/60 mb-5">
         {hasBeneficiary
           ? "We use these details to contact your next of kin if anything happens to you."
           : "Add a beneficiary so we know who to contact if anything happens to you. You can update this any time."}
@@ -230,14 +230,14 @@ function ViewMode({ member, hasBeneficiary, onEdit }: ViewModeProps) {
         className="w-full rounded-[14px] border border-dashed border-white/15 bg-[#0B1933]/40 p-5 text-left transition-colors hover:border-[#B8FF00]/40 hover:bg-[#B8FF00]/[0.03] cursor-pointer"
       >
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-white/50">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-white/60">
             <HeartHandshake className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-white mb-0.5">
               Add your beneficiary
             </p>
-            <p className="text-xs text-white/50">
+            <p className="text-xs text-white/60">
               Name, surname, relationship, plus at least one way to reach them.
             </p>
           </div>
@@ -250,7 +250,7 @@ function ViewMode({ member, hasBeneficiary, onEdit }: ViewModeProps) {
     <div className="rounded-[14px] border border-white/[0.08] bg-[#0B1933]/40 p-5">
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-white/40 mb-0.5">Name</p>
+          <p className="text-xs text-white/60 mb-0.5">Name</p>
           <p className="text-sm font-medium text-white">
             {member.beneficiaryFirstName} {member.beneficiarySurname}
             {member.beneficiaryRelationship ? (
@@ -286,7 +286,7 @@ function ViewMode({ member, hasBeneficiary, onEdit }: ViewModeProps) {
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-3">
-        <p className="text-[11px] text-white/40">
+        <p className="text-[11px] text-white/60">
           {member.beneficiaryUpdatedAt
             ? `Last updated ${formatUpdatedAt(member.beneficiaryUpdatedAt)}`
             : "Not yet updated"}
@@ -313,11 +313,11 @@ interface ContactRowProps {
 function ContactRow({ icon, label, value, multiline = false }: ContactRowProps) {
   return (
     <div className="flex items-start gap-2">
-      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-white/40">
+      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-white/60">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-wide text-white/40">
+        <p className="text-[10px] uppercase tracking-wide text-white/60">
           {label}
         </p>
         <p
@@ -380,7 +380,7 @@ function EditForm({
 
       {/* Relationship */}
       <div>
-        <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-white/50">
+        <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-white/60">
           Relationship <span className="text-[#B8FF00]">*</span>
         </label>
         <select
@@ -407,7 +407,7 @@ function EditForm({
 
       {/* Contact details — at-least-one-of */}
       <div className="space-y-3 rounded-lg border border-white/[0.06] bg-[#0B1933]/40 p-3">
-        <p className="text-[11px] text-white/50">
+        <p className="text-[11px] text-white/60">
           Provide at least one — phone, email, or address.
         </p>
         <Field
@@ -497,7 +497,7 @@ function Field({
 
   return (
     <div>
-      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-white/50">
+      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-white/60">
         {label} {required && <span className="text-[#B8FF00]">*</span>}
       </label>
       {multiline ? (

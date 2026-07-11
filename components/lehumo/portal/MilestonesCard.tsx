@@ -94,7 +94,7 @@ export function MilestonesCard({ member, currentPeriod }: MilestonesCardProps) {
         </p>
       )}
 
-      <p className="mt-5 text-[11px] text-white/35">
+      <p className="mt-5 text-[11px] text-white/60">
         {formatZAR(p.totalContributed)} contributed to the pool so far.
       </p>
     </motion.section>

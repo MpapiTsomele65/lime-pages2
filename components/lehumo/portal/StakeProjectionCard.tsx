@@ -127,18 +127,18 @@ export function StakeProjectionCard({
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
         <div className="flex items-end justify-between gap-3 mb-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/60">
               Shares &amp; votes earned
             </p>
             <p className="mt-1 text-[26px] font-extrabold tracking-tight text-white tabular-nums leading-none">
               {p.earnedVotes}{" "}
-              <span className="text-[15px] font-semibold text-white/40">
+              <span className="text-[15px] font-semibold text-white/60">
                 of {MAX_VOTES}
               </span>
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[11px] text-white/40">On this pace by 2031</p>
+            <p className="text-[11px] text-white/60">On this pace by 2031</p>
             <p className="mt-0.5 text-[15px] font-bold tabular-nums text-[#B8FF00]">
               {p.projectedVotes > 0
                 ? `${p.projectedVotes} vote${p.projectedVotes > 1 ? "s" : ""}`
@@ -163,7 +163,7 @@ export function StakeProjectionCard({
               </div>
               <p
                 className={`mt-1.5 text-center text-[10px] font-semibold leading-none ${
-                  s.earnedFull ? "text-[#B8FF00]" : "text-white/35"
+                  s.earnedFull ? "text-[#B8FF00]" : "text-white/60"
                 }`}
               >
                 R{s.threshold / 1000}k
@@ -178,17 +178,17 @@ export function StakeProjectionCard({
         {/* Legend + progress hint */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-[10px] text-white/45">
+            <span className="inline-flex items-center gap-1.5 text-[10px] text-white/60">
               <span className="h-2 w-3.5 rounded-sm bg-gradient-to-r from-[#46CDCF] to-[#B8FF00]" />
               earned
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[10px] text-white/45">
+            <span className="inline-flex items-center gap-1.5 text-[10px] text-white/60">
               <span className="h-2 w-3.5 rounded-sm bg-[#B8FF00]/20" />
               on track by 2031
             </span>
           </div>
           {p.toNextVote > 0 && (
-            <p className="text-[10.5px] text-white/45">
+            <p className="text-[10.5px] text-white/60">
               <span className="font-semibold text-white/70">
                 {formatZAR(p.toNextVote)}
               </span>{" "}
@@ -196,7 +196,7 @@ export function StakeProjectionCard({
             </p>
           )}
         </div>
-        <p className="mt-2 text-[11px] text-white/35">
+        <p className="mt-2 text-[11px] text-white/60">
           Every {formatZAR(VOTE_STEP_ZAR)} earns 1 share &amp; 1 vote · reach{" "}
           {formatZAR(FLOOR_ZAR)} by year 5 to convert · {MAX_VOTES} max
         </p>
@@ -204,20 +204,20 @@ export function StakeProjectionCard({
 
       {/* Total contributed by 2031 */}
       <div className="mt-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/60">
           Total contributed by 2031
         </p>
         <p className="mt-1.5 text-[26px] font-extrabold tracking-tight text-white tabular-nums">
           {formatZAR(p.projectedContributions)}
         </p>
-        <p className="mt-1 text-[12px] text-white/45">
+        <p className="mt-1 text-[12px] text-white/60">
           {formatZAR(p.contributedToDate)} banked so far · {formatZAR(p.pace)}/mo
         </p>
       </div>
 
       {/* Illustrative value at year 5 */}
       <div className="mt-3 rounded-2xl border border-[#46CDCF]/15 bg-gradient-to-br from-[#46CDCF]/[0.06] to-transparent p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/60">
           Illustrative value at year 5
         </p>
         <p className="mt-1.5 text-[28px] font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#46CDCF] to-[#B8FF00] tabular-nums">
@@ -225,9 +225,9 @@ export function StakeProjectionCard({
             ? formatZAR(p.illustrativeLow)
             : `${formatZAR(p.illustrativeLow)} – ${formatZAR(p.illustrativeHigh)}`}
         </p>
-        <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+        <p className="mt-2 text-[11px] leading-relaxed text-white/60">
           Illustration at the strategy&rsquo;s 15–17% target net return — a
-          projection of the plan, <span className="text-white/50">not a
+          projection of the plan, <span className="text-white/60">not a
           guarantee or a promise of returns</span>. Past performance never
           guarantees future results. Lime Pages is not an FSP and this is not
           financial advice.
