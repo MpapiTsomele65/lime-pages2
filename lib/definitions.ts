@@ -1415,6 +1415,38 @@ export interface PoolRecentMonth {
   goal: number; // cohort goal (onboarded × R1,000)
 }
 
+/** One row on the anonymised contribution leaderboard. */
+export interface LeaderboardEntry {
+  /** Anonymised handle — the member-number prefix of the contribution
+   *  key (e.g. "Leh17"). Never a name or email. */
+  memberNumber: string;
+  /** Competition ranking within the period — earliest paymentDate first;
+   *  same-day payments share a rank (1, 2, 2, 4…). */
+  rank: number;
+  /** YYYY-MM-DD the period's contribution was paid — the ranking basis
+   *  (earliest first). Not shown on the card; null if no date on file. */
+  paymentDate: string | null;
+  /** The furthest contribution month this member has paid for (YYYY-MM) —
+   *  usually the board period, later if they've prepaid ahead. Shown as
+   *  the "last month paid for" lead. */
+  lastPaidPeriod: string;
+  /** How many of the months DUE since launch this member has paid — the
+   *  numerator of the kept-up score (denominator is board.monthsDue).
+   *  Caps at monthsDue; prepaid future months don't inflate it. */
+  keptCount: number;
+}
+
+/** Anonymised "who contributed first this month" leaderboard, derived
+ *  from Paid contribution rows only (see lib/lehumo-leaderboard.ts). */
+export interface ContributionLeaderboard {
+  period: string; // YYYY-MM the board ranks
+  entries: LeaderboardEntry[]; // sorted by rank
+  paidCount: number; // = entries.length
+  /** Months due since launch through `period`, inclusive — the shared
+   *  denominator of every entry's kept-up score (July → 2, Aug → 3…). */
+  monthsDue: number;
+}
+
 /** Aggregate pool-wide stats for the member dashboard. */
 export interface CommunityPoolStats {
   totalFoundingSlots: number; // 30
@@ -1456,6 +1488,9 @@ export interface CommunityPoolStats {
    *  to two prior (never before launch), each with net received vs the same
    *  cohort goal. Powers the multi-month goal bars in the portal. */
   recentMonths: PoolRecentMonth[];
+  /** Anonymised who-paid-first leaderboard for `monthlyGoalPeriod`.
+   *  Null when the Paid-rows fetch failed — the card is suppressed. */
+  leaderboard: ContributionLeaderboard | null;
 }
 
 export interface SessionPayload {

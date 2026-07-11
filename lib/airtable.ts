@@ -46,6 +46,7 @@ import {
   groupContributionsByMemberPrefix,
   projectToLegacyContributions,
 } from "./member-contributions-view";
+import { computeLeaderboard } from "./lehumo-leaderboard";
 
 // ─── Config ─────────────────────────────────────────────────────────
 // Exported (alongside resolveSelect + parseRecord further down) so
@@ -1025,6 +1026,7 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
   // of which rail the contribution came through.
   let monthlyReceivedAmount = 0;
   let recentMonths: PoolRecentMonth[] = [];
+  let leaderboard: ReturnType<typeof computeLeaderboard> | null = null;
   try {
     const periodPaidRows = await listPaidContributions();
     monthlyReceivedAmount =
@@ -1057,11 +1059,17 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
         MONTHLY_CONTRIBUTION_ZAR;
       return { period, label, received, goal: monthlyGoalAmount };
     });
+
+    // Anonymised who-paid-first board for the same goal period —
+    // derived from the identical Paid-rows read so the board, the goal
+    // bar and the pool total always agree.
+    leaderboard = computeLeaderboard(periodPaidRows, monthlyGoalPeriod);
   } catch {
     // Same fallback as the cohort hydration above — the rest of the
     // dashboard renders fine even if this fetch hiccups.
     monthlyReceivedAmount = 0;
     recentMonths = [];
+    leaderboard = null;
   }
 
   return {
@@ -1081,5 +1089,6 @@ export async function getCommunityPoolStats(): Promise<CommunityPoolStats> {
     monthlyGoalAmount,
     monthlyReceivedAmount,
     recentMonths,
+    leaderboard,
   };
 }

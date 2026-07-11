@@ -20,6 +20,7 @@ import { BeneficiaryCard } from "./BeneficiaryCard";
 import { PaymentCard } from "./PaymentCard";
 import { SetUpPaymentsCard } from "./SetUpPaymentsCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
+import { LeaderboardCard } from "./LeaderboardCard";
 import { MilestonesCard } from "./MilestonesCard";
 import { StakeProjectionCard } from "./StakeProjectionCard";
 import { LearnCard } from "./LearnCard";
@@ -323,6 +324,19 @@ export function DashboardOverview({
           stats={communityStats}
           myContributed={myContributed}
           beforeLaunch={beforeLaunch}
+        />
+      )}
+
+      {/* Contribution leaderboard — anonymised (member numbers only)
+          who-paid-first board for the current collection period. Sits
+          under the pool overview: the group's total, then who's already
+          in this month. Derived from the same Paid-rows read as the
+          pool stats, so the two never disagree. */}
+      {communityStats?.leaderboard && (
+        <LeaderboardCard
+          leaderboard={communityStats.leaderboard}
+          viewerNumber={formatMemberNumber(member.memberNumber)}
+          activeMembers={communityStats.activeMembers}
         />
       )}
 
