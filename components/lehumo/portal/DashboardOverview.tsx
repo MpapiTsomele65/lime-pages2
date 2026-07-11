@@ -22,6 +22,7 @@ import { SetUpPaymentsCard } from "./SetUpPaymentsCard";
 import { CommunityPoolCard } from "./CommunityPoolCard";
 import { MilestonesCard } from "./MilestonesCard";
 import { StakeProjectionCard } from "./StakeProjectionCard";
+import { LearnCard } from "./LearnCard";
 import { WhereIsOurMoneyCard } from "./WhereIsOurMoneyCard";
 import { CompletenessMeter } from "./CompletenessMeter";
 import { BankDepositCard } from "./BankDepositCard";
@@ -312,7 +313,9 @@ export function DashboardOverview({
           value at year 5 from the member's pace, with a "lever up" toggle.
           Sits under Milestones so the flow reads: where you are now → where
           this gets you by conversion. */}
-      <StakeProjectionCard member={member} currentPeriod={currentPeriod} />
+      <div id="stake" className="scroll-mt-24">
+        <StakeProjectionCard member={member} currentPeriod={currentPeriod} />
+      </div>
 
       {/* Community pool overview */}
       {communityStats && (
@@ -328,13 +331,22 @@ export function DashboardOverview({
           how much is pooled, then where it's invested. totalPool comes
           from the same community stats. */}
       {fundPortfolio && (
-        <WhereIsOurMoneyCard
-          allocation={fundPortfolio.allocation}
-          strategyNote={fundPortfolio.strategyNote}
-          asAt={fundPortfolio.asAt}
-          totalPool={communityStats?.totalPool ?? 0}
-        />
+        <div id="portfolio" className="scroll-mt-24">
+          <WhereIsOurMoneyCard
+            allocation={fundPortfolio.allocation}
+            strategyNote={fundPortfolio.strategyNote}
+            asAt={fundPortfolio.asAt}
+            totalPool={communityStats?.totalPool ?? 0}
+          />
+        </div>
       )}
+
+      {/* Learn — bite-sized explainers so the portal teaches, not just
+          transacts. Sits after the allocation so the flow reads: pool →
+          where the money is → how it all works → governance. Rows deep-link
+          back up to the stake + allocation cards and out to Lime Capital
+          and the public FAQ. */}
+      <LearnCard />
 
       {/* Quarterly General Meeting — community-cadence touchpoint. Sits
           between the pool overview (community money state) and the
