@@ -6,7 +6,9 @@ import { getAdminSession } from "@/lib/admin-auth";
 import {
   adminUpdateMember,
   logEftPayment as logEftPaymentAdmin,
+  reallocateContribution as reallocateContributionAdmin,
   setMonthPayment,
+  voidContribution as voidContributionAdmin,
 } from "@/lib/airtable-admin";
 import { disableSubscription } from "@/lib/paystack";
 import type { EftAllocationPlan } from "@/lib/eft-allocation";
@@ -773,6 +775,78 @@ export async function adminReconcileContribution(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Reconcile failed",
+    };
+  }
+}
+
+// ── Void / reallocate a contribution payment ──────────────────────
+//
+// Void: reset a row back to Pending (clears received / reference / date
+// / reconciliation) so a mis-booked month re-opens. Reallocate: move a
+// payment onto another month's row for the same member and void the
+// source — used when a payment landed on the wrong month (e.g. an EFT
+// meant for July that auto-allocated to August).
+
+export async function adminVoidContribution(
+  recordId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getAdminSession();
+  if (!session) return { ok: false, error: "Forbidden" };
+
+  const idOk = IdSchema.safeParse(recordId);
+  if (!idOk.success) return { ok: false, error: "Invalid record id" };
+
+  try {
+    await voidContributionAdmin(recordId);
+    return { ok: true };
+  } catch (err) {
+    console.error("adminVoidContribution error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Void failed",
+    };
+  }
+}
+
+const ReallocateSchema = z.object({
+  recordId: z.string().startsWith("rec"),
+  memberRecordId: z.string().startsWith("rec"),
+  targetPeriod: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Period must be YYYY-MM"),
+});
+
+export async function adminReallocateContribution(input: {
+  recordId: string;
+  memberRecordId: string;
+  targetPeriod: string;
+}): Promise<
+  | { ok: true; targetPeriod: string; amount: number }
+  | { ok: false; error: string }
+> {
+  const session = await getAdminSession();
+  if (!session) return { ok: false, error: "Forbidden" };
+
+  const parsed = ReallocateSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  try {
+    const res = await reallocateContributionAdmin({
+      sourceRecordId: parsed.data.recordId,
+      memberRecordId: parsed.data.memberRecordId,
+      targetPeriod: parsed.data.targetPeriod,
+    });
+    return { ok: true, targetPeriod: res.targetPeriod, amount: res.amount };
+  } catch (err) {
+    console.error("adminReallocateContribution error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Reallocation failed",
     };
   }
 }

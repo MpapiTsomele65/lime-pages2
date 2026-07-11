@@ -7,6 +7,7 @@ import {
   buildContributionKey,
   formatMemberNumber,
   parseContributionPeriod,
+  type LehumoContribution,
   type LehumoMember,
 } from "./definitions";
 import {
@@ -337,4 +338,104 @@ export async function logEftPayment(args: {
   const updated = await getMemberByIdAdmin(args.memberRecordId);
   if (!updated) throw new Error(`member ${args.memberRecordId} disappeared after EFT log`);
   return { plan, member: updated };
+}
+
+/**
+ * Reset a contribution row's payment — the "undo this payment" action.
+ * Flips it back to Pending, clears received / reference / date and any
+ * reconciliation, leaving the scheduled row itself (period + expected)
+ * intact so the month is simply open again. Used to reverse a payment
+ * that landed on the wrong month (the money can then be re-logged, or
+ * moved with `reallocateContribution`).
+ */
+export async function voidContribution(
+  recordId: string,
+): Promise<LehumoContribution> {
+  return updateContribution(recordId, {
+    status: CONTRIBUTION_STATUS.pending,
+    amountReceived: 0,
+    paymentReference: "",
+    paymentDate: "",
+    reconciled: false,
+    reconciledBy: "",
+    reconciledAt: "",
+  });
+}
+
+/**
+ * Move a payment from one month to another for the SAME member.
+ *
+ * Unlike `reassignContribution` (which changes a row's period and
+ * collides when the destination month already has a row), this copies
+ * the payment fields onto the target month's existing row (backfilling
+ * it if it was deleted) and then voids the source row. The net effect:
+ * the payment shows on the correct month and the source month re-opens.
+ */
+export async function reallocateContribution(args: {
+  sourceRecordId: string;
+  memberRecordId: string;
+  targetPeriod: string;
+}): Promise<{ member: LehumoMember; targetPeriod: string; amount: number }> {
+  let member = await getMemberByIdAdmin(args.memberRecordId);
+  if (!member) throw new Error(`member ${args.memberRecordId} not found`);
+
+  const source = (member.contributionRows ?? []).find(
+    (r) => r.id === args.sourceRecordId,
+  );
+  if (!source) {
+    throw new Error(
+      `contribution ${args.sourceRecordId} not found on this member`,
+    );
+  }
+  if (source.period === args.targetPeriod) {
+    throw new Error("Source and target month are the same.");
+  }
+
+  // Ensure the target month's row exists (recreate if it was deleted).
+  let target = (member.contributionRows ?? []).find(
+    (r) => r.period === args.targetPeriod,
+  );
+  if (!target) {
+    const seed = await ensureCanonicalMemberSchedule({
+      memberId: member.id,
+      memberNumber: member.memberNumber,
+    });
+    if (!seed.ok) {
+      throw new Error(`target month backfill failed: ${seed.error}`);
+    }
+    member = await getMemberByIdAdmin(args.memberRecordId);
+    target = (member?.contributionRows ?? []).find(
+      (r) => r.period === args.targetPeriod,
+    );
+    if (!member || !target) {
+      throw new Error(
+        `target month ${args.targetPeriod} row could not be created`,
+      );
+    }
+  }
+
+  const amount = source.amountReceived ?? 0;
+
+  // Copy the payment onto the target row…
+  await updateContribution(target.id, {
+    status: source.status,
+    amountReceived: amount,
+    paymentReference: source.paymentReference || "",
+    ...(source.source ? { source: source.source } : {}),
+    ...(source.paymentDate ? { paymentDate: source.paymentDate } : {}),
+  });
+  // …then re-open the source month.
+  await updateContribution(source.id, {
+    status: CONTRIBUTION_STATUS.pending,
+    amountReceived: 0,
+    paymentReference: "",
+    paymentDate: "",
+    reconciled: false,
+    reconciledBy: "",
+    reconciledAt: "",
+  });
+
+  const refreshed = await getMemberByIdAdmin(args.memberRecordId);
+  if (!refreshed) throw new Error("member disappeared after reallocation");
+  return { member: refreshed, targetPeriod: args.targetPeriod, amount };
 }

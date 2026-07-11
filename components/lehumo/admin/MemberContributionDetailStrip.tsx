@@ -36,6 +36,7 @@ interface MemberContributionDetailStripProps {
   onStatusChange: (row: LehumoContribution, next: ContributionStatus) => void;
   onReconcile: (row: LehumoContribution) => void;
   onOpenEdit: (row: LehumoContribution) => void;
+  onOpenReallocate: (row: LehumoContribution) => void;
 }
 
 export function MemberContributionDetailStrip({
@@ -45,6 +46,7 @@ export function MemberContributionDetailStrip({
   onStatusChange,
   onReconcile,
   onOpenEdit,
+  onOpenReallocate,
 }: MemberContributionDetailStripProps) {
   return (
     <AnimatePresence initial={false}>
@@ -64,6 +66,7 @@ export function MemberContributionDetailStrip({
             onStatusChange={onStatusChange}
             onReconcile={onReconcile}
             onOpenEdit={onOpenEdit}
+            onOpenReallocate={onOpenReallocate}
           />
         </motion.div>
       )}
@@ -78,6 +81,7 @@ function DetailStripBody({
   onStatusChange,
   onReconcile,
   onOpenEdit,
+  onOpenReallocate,
 }: {
   rows: LehumoContribution[];
   member: LehumoMember;
@@ -85,6 +89,7 @@ function DetailStripBody({
   onStatusChange: (row: LehumoContribution, next: ContributionStatus) => void;
   onReconcile: (row: LehumoContribution) => void;
   onOpenEdit: (row: LehumoContribution) => void;
+  onOpenReallocate: (row: LehumoContribution) => void;
 }) {
   // Sort chronologically — oldest period first. Admins reading a
   // member's history naturally scan from launch (June 2026) forward.
@@ -128,6 +133,7 @@ function DetailStripBody({
             onStatusChange={onStatusChange}
             onReconcile={onReconcile}
             onOpenEdit={onOpenEdit}
+            onOpenReallocate={onOpenReallocate}
             showMemberCol={false}
           />
         ))}

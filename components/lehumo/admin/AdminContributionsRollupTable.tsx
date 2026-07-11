@@ -33,9 +33,11 @@ import {
 } from "@/lib/definitions";
 import {
   adminBackfillMemberSchedule,
+  adminReallocateContribution,
   adminReconcileContribution,
   adminUpdateContribution,
   adminUpdateContributionStatus,
+  adminVoidContribution,
   type AdminUpdateContributionInput,
 } from "@/app/lehumo/portal/admin/actions";
 import {
@@ -50,6 +52,7 @@ import {
 } from "@/lib/contribution-periods";
 
 import { EditContributionDialog } from "./EditContributionDialog";
+import { ReallocateDialog } from "./ReallocateDialog";
 import { MemberContributionDetailStrip } from "./MemberContributionDetailStrip";
 
 interface AdminContributionsRollupTableProps {
@@ -100,6 +103,10 @@ export function AdminContributionsRollupTable({
   const [editingRow, setEditingRow] = useState<LehumoContribution | null>(
     null,
   );
+
+  // Move-or-void dialog target row. null = closed.
+  const [reallocatingRow, setReallocatingRow] =
+    useState<LehumoContribution | null>(null);
 
   // Schedule backfill in-flight tracker — keyed by memberId so the
   // spinner shows on the right row while other rows stay clickable.
@@ -217,6 +224,42 @@ export function AdminContributionsRollupTable({
   const handleOpenEdit = useCallback((row: LehumoContribution) => {
     setEditingRow(row);
   }, []);
+
+  const handleOpenReallocate = useCallback((row: LehumoContribution) => {
+    setReallocatingRow(row);
+  }, []);
+
+  // Move a payment onto another month + void the source, then refresh
+  // (two rows change — a server round-trip is simpler than reconciling
+  // both in local state).
+  const handleReallocate = useCallback(
+    async (
+      targetPeriod: string,
+    ): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!reallocatingRow) return { ok: false, error: "No row selected" };
+      const res = await adminReallocateContribution({
+        recordId: reallocatingRow.id,
+        memberRecordId: reallocatingRow.memberId,
+        targetPeriod,
+      });
+      if (!res.ok) return { ok: false, error: res.error };
+      setReallocatingRow(null);
+      router.refresh();
+      return { ok: true };
+    },
+    [reallocatingRow, router],
+  );
+
+  const handleVoid = useCallback(async (): Promise<
+    { ok: true } | { ok: false; error: string }
+  > => {
+    if (!reallocatingRow) return { ok: false, error: "No row selected" };
+    const res = await adminVoidContribution(reallocatingRow.id);
+    if (!res.ok) return { ok: false, error: res.error };
+    setReallocatingRow(null);
+    router.refresh();
+    return { ok: true };
+  }, [reallocatingRow, router]);
 
   // Regenerate the missing schedule rows for a member. Idempotent on
   // the server (only inserts gaps, never overwrites existing rows),
@@ -428,6 +471,7 @@ export function AdminContributionsRollupTable({
                 onStatusChange={handleStatusChange}
                 onReconcile={handleReconcile}
                 onOpenEdit={handleOpenEdit}
+                onOpenReallocate={handleOpenReallocate}
               />
             </div>
           );
@@ -442,6 +486,23 @@ export function AdminContributionsRollupTable({
         members={members}
         onSubmit={handleEditSubmit}
         onCancel={() => setEditingRow(null)}
+      />
+
+      <ReallocateDialog
+        contribution={reallocatingRow}
+        member={
+          reallocatingRow
+            ? (members.find((m) => m.id === reallocatingRow.memberId) ?? null)
+            : null
+        }
+        memberRows={
+          reallocatingRow
+            ? allRows.filter((r) => r.memberId === reallocatingRow.memberId)
+            : []
+        }
+        onReallocate={handleReallocate}
+        onVoid={handleVoid}
+        onCancel={() => setReallocatingRow(null)}
       />
     </section>
   );

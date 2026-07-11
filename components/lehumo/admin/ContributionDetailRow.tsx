@@ -16,7 +16,7 @@
  * callers to wrap in tables.
  */
 
-import { Check, Loader2, Pencil, ShieldCheck } from "lucide-react";
+import { ArrowLeftRight, Check, Loader2, Pencil, ShieldCheck } from "lucide-react";
 
 import {
   CONTRIBUTION_STATUS,
@@ -37,6 +37,9 @@ interface ContributionDetailRowProps {
   onStatusChange: (row: LehumoContribution, next: ContributionStatus) => void;
   onReconcile: (row: LehumoContribution) => void;
   onOpenEdit: (row: LehumoContribution) => void;
+  /** Open the move-or-void dialog for a row that carries a payment.
+   *  Omitted in the orphan banner (orphans get reassigned, not moved). */
+  onOpenReallocate?: (row: LehumoContribution) => void;
   /** When true, the Member identity column renders. Use in the orphan
    *  banner. The expanded strip hides this column because the rollup
    *  row above already identifies the member. */
@@ -54,8 +57,11 @@ export function ContributionDetailRow({
   onStatusChange,
   onReconcile,
   onOpenEdit,
+  onOpenReallocate,
   showMemberCol = false,
 }: ContributionDetailRowProps) {
+  const hasPayment =
+    row.status === CONTRIBUTION_STATUS.paid || (row.amountReceived ?? 0) > 0;
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 text-sm border-t border-[#E5E7EB] hover:bg-[#F8F9FA]/60">
       {/* Member identity — only in orphan banner. The expanded strip
@@ -168,8 +174,20 @@ export function ContributionDetailRow({
         )}
       </div>
 
-      {/* Edit pencil */}
-      <div className="w-[36px] shrink-0 flex justify-center">
+      {/* Row actions — move/void (only for rows with a payment) + edit */}
+      <div className="w-[72px] shrink-0 flex justify-end gap-1">
+        {onOpenReallocate && hasPayment && (
+          <button
+            type="button"
+            onClick={() => onOpenReallocate(row)}
+            disabled={isBusy}
+            className="inline-flex items-center justify-center rounded-md border border-[#E5E7EB] bg-white h-7 w-7 text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] hover:bg-[#F8F9FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Move or void this payment"
+            aria-label="Move or void this payment"
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onOpenEdit(row)}
