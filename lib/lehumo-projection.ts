@@ -38,8 +38,11 @@ export const STANDARD_ZAR = 60000;
 export const NET_RETURN_LOW = 0.15;
 export const NET_RETURN_HIGH = 0.17;
 
-const VOTE_STEP_ZAR = 20000; // every R20,000 = 1 more share & 1 more vote
-const MAX_VOTES = 5; // lever-up cap (5 shares & votes, reached at R100,000)
+export const VOTE_STEP_ZAR = 20000; // every R20,000 = 1 more share & 1 more vote
+export const MAX_VOTES = 5; // lever-up cap (5 shares & votes, reached at R100,000)
+/** Contribution at which the vote cap is reached (R100,000) — the full length
+ *  of the shares & votes bar. */
+export const MAX_STAKE_ZAR = MAX_VOTES * VOTE_STEP_ZAR;
 
 export type StakeTier = "below" | "floor" | "standard" | "levered";
 
@@ -57,6 +60,12 @@ export interface StakeProjection {
   projectedContributions: number;
   /** Shares/votes secured at the projected total (0 if below the floor). */
   projectedVotes: number;
+  /** Shares/votes EARNED from contributions banked so far — one per R20,000,
+   *  capped at 5. The member's real current progress (0 until the first R20k),
+   *  as opposed to the projected year-5 total. */
+  earnedVotes: number;
+  /** R still needed to earn the next share & vote (0 once at the R100k cap). */
+  toNextVote: number;
   /** Which conversion tier the projected total lands in. */
   tier: StakeTier;
   /** R still short of the R40k floor (0 once cleared). */
@@ -164,6 +173,11 @@ export function computeStakeProjection(
     monthsRemaining,
     projectedContributions,
     projectedVotes: votesForTotal(projectedContributions),
+    earnedVotes: Math.min(MAX_VOTES, Math.floor(contributedToDate / VOTE_STEP_ZAR)),
+    toNextVote:
+      contributedToDate >= MAX_STAKE_ZAR
+        ? 0
+        : VOTE_STEP_ZAR - (contributedToDate % VOTE_STEP_ZAR),
     tier: tierFor(projectedContributions),
     toFloor: Math.max(0, FLOOR_ZAR - projectedContributions),
     illustrativeLow: roundTo100(
