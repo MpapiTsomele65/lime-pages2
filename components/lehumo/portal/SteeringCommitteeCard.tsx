@@ -180,7 +180,7 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
             <Users className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40 mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-1">
               Governance
             </p>
             <h2
@@ -226,13 +226,13 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
               </div>
             </div>
             <Link
-              href="/lehumo/portal#payment"
+              href="/lehumo/portal/contributions#payment"
               className="inline-flex items-center gap-1.5 rounded-full bg-[#B8FF00] px-4 py-2 text-[12.5px] font-semibold text-[#0B1933] hover:bg-[#a8ef00] transition-colors"
             >
               Complete next step
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-            <p className="mt-3 text-[11px] text-white/35 leading-relaxed">
+            <p className="mt-3 text-[11px] text-white/60 leading-relaxed">
               Already submitted KYC? It usually takes us under 24 hours
               to verify. Once approved + your first contribution lands,
               this card unlocks automatically.
@@ -258,7 +258,7 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60 mb-1">
                   Expertise you bring
                 </p>
                 <p className="text-[13.5px] text-white/85 leading-relaxed whitespace-pre-wrap">
@@ -267,7 +267,7 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
               </div>
               {existing?.motivation && (
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60 mb-1">
                     Why you want to serve
                   </p>
                   <p className="text-[13.5px] text-white/85 leading-relaxed whitespace-pre-wrap">
@@ -316,7 +316,7 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
         {showForm && (
           <div className="rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-5">
             <label className="block mb-4">
-              <span className="block text-[11px] uppercase tracking-wider text-white/50 mb-1.5">
+              <span className="block text-[11px] uppercase tracking-wider text-white/60 mb-1.5">
                 Key expertise you bring <span className="text-[#B8FF00]">*</span>
               </span>
               <textarea
@@ -327,13 +327,13 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
                 maxLength={1000}
                 className="w-full rounded-lg bg-white/[0.04] border border-white/[0.1] px-3 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/50 focus:ring-1 focus:ring-[#B8FF00]/20 transition-colors resize-y"
               />
-              <span className="block text-[10.5px] text-white/35 mt-1">
+              <span className="block text-[10.5px] text-white/60 mt-1">
                 {expertise.length}/1000
               </span>
             </label>
             <label className="block mb-4">
-              <span className="block text-[11px] uppercase tracking-wider text-white/50 mb-1.5">
-                Why you want to serve <span className="text-white/35">(optional)</span>
+              <span className="block text-[11px] uppercase tracking-wider text-white/60 mb-1.5">
+                Why you want to serve <span className="text-white/60">(optional)</span>
               </span>
               <textarea
                 value={motivation}
@@ -343,7 +343,7 @@ export function SteeringCommitteeCard({ member }: SteeringCommitteeCardProps) {
                 maxLength={2000}
                 className="w-full rounded-lg bg-white/[0.04] border border-white/[0.1] px-3 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#B8FF00]/50 focus:ring-1 focus:ring-[#B8FF00]/20 transition-colors resize-y"
               />
-              <span className="block text-[10.5px] text-white/35 mt-1">
+              <span className="block text-[10.5px] text-white/60 mt-1">
                 {motivation.length}/2000
               </span>
             </label>

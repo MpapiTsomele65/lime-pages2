@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
 
@@ -37,19 +38,19 @@ export function CompletenessMeter({ member }: CompletenessMeterProps) {
       key: "kyc",
       label: "Verify your identity",
       done: member.kycStatus === "Complete",
-      href: "#kyc-docs",
+      href: "/lehumo/portal/kyc#kyc-docs",
     },
     {
       key: "beneficiary",
       label: "Add next of kin",
       done: hasBeneficiary(member),
-      href: "#beneficiary",
+      href: "/lehumo/portal/profile#beneficiary",
     },
     {
       key: "contribution",
       label: "Make first contribution",
       done: Object.values(member.contributions).some(Boolean),
-      href: "#payment",
+      href: "/lehumo/portal/contributions#payment",
     },
   ] as const;
 
@@ -77,7 +78,7 @@ export function CompletenessMeter({ member }: CompletenessMeterProps) {
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">
               Set up your account
             </p>
             <p className="mt-0.5 text-sm font-semibold text-white">
@@ -118,7 +119,7 @@ export function CompletenessMeter({ member }: CompletenessMeterProps) {
               <span className="truncate">{task.label}</span>
             </div>
           ) : (
-            <a
+            <Link
               key={task.key}
               href={task.href}
               className="group flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-white/70 transition-colors hover:border-[#46CDCF]/40 hover:bg-[#46CDCF]/[0.06] hover:text-white"
@@ -126,7 +127,7 @@ export function CompletenessMeter({ member }: CompletenessMeterProps) {
               <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-white/30" />
               <span className="truncate">{task.label}</span>
               <ArrowRight className="h-3 w-3 shrink-0 ml-auto opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-            </a>
+            </Link>
           ),
         )}
       </div>

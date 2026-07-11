@@ -34,7 +34,7 @@ function rankBadgeClass(rank: number): string {
   if (rank === 1) return "bg-[#F5C542]/20 text-[#F5C542] border-[#F5C542]/30";
   if (rank === 2) return "bg-[#C0C7D1]/15 text-[#C0C7D1] border-[#C0C7D1]/25";
   if (rank === 3) return "bg-[#CD7F32]/20 text-[#D9915B] border-[#CD7F32]/30";
-  return "bg-white/[0.05] text-white/45 border-white/[0.08]";
+  return "bg-white/[0.05] text-white/60 border-white/[0.08]";
 }
 
 /** Rows shown before the board truncates (the viewer's row is always
@@ -76,7 +76,7 @@ function LeaderRow({
       </span>
       <span className="text-right">
         <span className="block text-[12.5px] font-semibold tabular-nums text-white/75">
-          <span className="font-medium text-white/40">Paid for </span>
+          <span className="font-medium text-white/60">Paid for </span>
           {periodShort(entry.lastPaidPeriod)}
         </span>
         <span
@@ -141,7 +141,7 @@ export function LeaderboardCard({
           {label}
         </span>
       </div>
-      <p className="text-[12.5px] text-white/45 mb-5">
+      <p className="text-[12.5px] text-white/60 mb-5">
         First in for {monthOnly} — anonymised by member number. Same-day
         payments share a rank.
       </p>
@@ -153,7 +153,7 @@ export function LeaderboardCard({
             open. 🥇
           </p>
           <a
-            href="#payment"
+            href="/lehumo/portal/contributions#payment"
             className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#B8FF00] hover:text-[#C1FF72] transition-colors"
           >
             Make your contribution
@@ -194,7 +194,7 @@ export function LeaderboardCard({
 
           {!viewerOnBoard && (
             <a
-              href="#payment"
+              href="/lehumo/portal/contributions#payment"
               className="group mt-3 flex items-center justify-between gap-3 rounded-2xl border border-[#B8FF00]/15 bg-[#B8FF00]/[0.04] px-4 py-3 transition-colors hover:bg-[#B8FF00]/[0.08]"
             >
               <span className="text-[12.5px] text-white/70">
@@ -209,7 +209,7 @@ export function LeaderboardCard({
         </>
       )}
 
-      <p className="mt-4 text-[11px] text-white/35">
+      <p className="mt-4 text-[11px] text-white/60">
         {paidCount} of {activeMembers} members in for {monthOnly} · the{" "}
         <span className="text-white/55">{monthsDue > 1 ? `x/${monthsDue}` : "x/1"}</span>{" "}
         score is months kept up since launch.

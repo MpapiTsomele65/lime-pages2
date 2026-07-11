@@ -46,7 +46,7 @@ const TOPICS: Topic[] = [
     title: "What levering up means",
     teaser: "Contribute more, earn more shares & votes.",
     body: "Every R20,000 you contribute earns you 1 more share and 1 more vote at conversion — R40k = 2, R60k = 3, up to 5 votes at R100,000. “Levering up” simply means contributing above the standard so you hold a bigger share and more say when Lehumo becomes a company. It's voluntary, and you can move your tier up or down during the term.",
-    href: "#stake",
+    href: "/lehumo/portal/contributions#stake",
     linkLabel: "See your projection",
   },
   {
@@ -55,7 +55,7 @@ const TOPICS: Topic[] = [
     title: "How the pool is invested",
     teaser: "Where your money actually sits.",
     body: "Contributions pool in a dedicated LimePages account, then deploy across three buckets: about 40% held as reserves and liquidity (for loans and emergencies), about 40% through Sum1 Investments (a registered FSP focused on SME lending), and 10–20% with a second manager. Around 10% is a member-influenced “sandbox” the group votes on. Every third-party manager is FSCA-regulated.",
-    href: "#portfolio",
+    href: "/lehumo/portal/community#portfolio",
     linkLabel: "See the live allocation",
   },
   {
@@ -88,10 +88,10 @@ function LearnRow({
   onToggle: () => void;
 }) {
   const Icon = topic.icon;
-  // In-page anchors (#stake, #portfolio) scroll within the dashboard, so
-  // they stay a plain same-tab <a>; route links open in a new tab so the
-  // member's portal session stays put.
-  const isAnchor = topic.href.startsWith("#");
+  // Links into other portal sections (stake, allocation) navigate in the
+  // same tab; external pages (Lime Capital, the public FAQ) open in a new
+  // tab so the member's portal session stays put.
+  const isPortalInternal = topic.href.startsWith("/lehumo/portal");
   const linkClass = `mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold ${TONE_LINK[topic.tone]} transition-all hover:gap-1.5`;
 
   return (
@@ -111,7 +111,7 @@ function LearnRow({
           <span className="block text-[14.5px] font-bold text-white">
             {topic.title}
           </span>
-          <span className="mt-0.5 block text-[12.5px] text-white/50">
+          <span className="mt-0.5 block text-[12.5px] text-white/60">
             {topic.teaser}
           </span>
         </span>
@@ -121,7 +121,7 @@ function LearnRow({
           className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors ${
             open
               ? "border-white/20 text-white"
-              : "border-white/10 text-white/40 group-hover:border-white/25 group-hover:text-white/70"
+              : "border-white/10 text-white/60 group-hover:border-white/25 group-hover:text-white/70"
           }`}
         >
           <Plus className="h-4 w-4" />
@@ -142,11 +142,11 @@ function LearnRow({
               <p className="text-[13px] leading-relaxed text-white/65">
                 {topic.body}
               </p>
-              {isAnchor ? (
-                <a href={topic.href} className={linkClass}>
+              {isPortalInternal ? (
+                <Link href={topic.href} className={linkClass}>
                   {topic.linkLabel}
                   <ArrowRight className="h-3.5 w-3.5" />
-                </a>
+                </Link>
               ) : (
                 <Link
                   href={topic.href}
