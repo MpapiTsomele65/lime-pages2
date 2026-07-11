@@ -470,7 +470,7 @@ function LoginPageInner() {
                       href="/lehumo/portal/forgot"
                       className="text-xs text-teal/70 hover:text-teal transition-colors"
                     >
-                      Forgot your ID?
+                      Forgot ID or password?
                     </Link>
                   </div>
                   <input
@@ -505,10 +505,10 @@ function LoginPageInner() {
                       Password
                     </label>
                     <Link
-                      href="/lehumo/portal/login/forgot-password"
+                      href="/lehumo/portal/forgot"
                       className="text-xs text-teal/70 hover:text-teal transition-colors"
                     >
-                      Forgot password?
+                      Forgot ID or password?
                     </Link>
                   </div>
                   <input

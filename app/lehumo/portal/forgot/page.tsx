@@ -164,6 +164,20 @@ export default function ForgotMemberNumberPage() {
                   )}
                 </button>
               </form>
+
+              {/* Password reset path — this page is the single "can't get
+                  in" entry point ("Forgot ID or password?" on login), so
+                  members who know their ID but forgot their password can
+                  jump straight to the reset flow. */}
+              <p className="mt-5 text-center text-xs text-white/60">
+                Know your Member ID but forgot your password?{" "}
+                <Link
+                  href="/lehumo/portal/login/forgot-password"
+                  className="font-medium text-[#46CDCF] hover:text-[#46CDCF]/80 transition-colors"
+                >
+                  Reset your password
+                </Link>
+              </p>
             </>
           )}
         </div>
