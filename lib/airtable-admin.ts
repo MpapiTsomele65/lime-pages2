@@ -256,6 +256,9 @@ export async function logEftPayment(args: {
   /** Pin the deposit to a specific period (`YYYY-MM`) instead of the
    *  oldest-unpaid auto-walk. */
   targetPeriod?: string;
+  /** Months locked by the monthly close — allocation must not touch
+   *  them (caller fetches via getClosedPeriods). */
+  closedPeriods?: string[];
 }): Promise<{
   plan: EftAllocationPlan;
   member: LehumoMember;
@@ -307,6 +310,19 @@ export async function logEftPayment(args: {
     args.amount,
     args.targetPeriod,
   );
+
+  // Monthly-close guard — reject BEFORE any write if the allocation
+  // would touch a locked month (reconciled history must not drift).
+  if (args.closedPeriods && args.closedPeriods.length > 0) {
+    const closed = new Set(args.closedPeriods);
+    const hit = plan.rows.find((r) => closed.has(r.period));
+    if (hit) {
+      throw new Error(
+        `${hit.period} is closed (locked after reconciliation) — reopen it ` +
+          `under Monthly inflows before logging deposits into it.`,
+      );
+    }
+  }
   if (plan.rows.length === 0) {
     // Nothing to allocate — every scheduled row is already covered.
     // Return the (empty) plan so the caller can show a "nothing to do"
@@ -375,7 +391,12 @@ export async function reallocateContribution(args: {
   sourceRecordId: string;
   memberRecordId: string;
   targetPeriod: string;
-}): Promise<{ member: LehumoMember; targetPeriod: string; amount: number }> {
+}): Promise<{
+  member: LehumoMember;
+  sourcePeriod: string;
+  targetPeriod: string;
+  amount: number;
+}> {
   let member = await getMemberByIdAdmin(args.memberRecordId);
   if (!member) throw new Error(`member ${args.memberRecordId} not found`);
 
@@ -437,5 +458,10 @@ export async function reallocateContribution(args: {
 
   const refreshed = await getMemberByIdAdmin(args.memberRecordId);
   if (!refreshed) throw new Error("member disappeared after reallocation");
-  return { member: refreshed, targetPeriod: args.targetPeriod, amount };
+  return {
+    member: refreshed,
+    sourcePeriod: source.period,
+    targetPeriod: args.targetPeriod,
+    amount,
+  };
 }

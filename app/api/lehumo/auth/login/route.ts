@@ -7,6 +7,8 @@ import {
 import { createSession } from "@/lib/session";
 import { LoginFormSchema } from "@/lib/definitions";
 import { verifyPassword } from "@/lib/password";
+import { isAdminEmail } from "@/lib/admin-auth";
+import { sendAdminSignInAlert } from "@/lib/email";
 import {
   checkRateLimit,
   clearFailures,
@@ -137,6 +139,15 @@ export async function POST(request: NextRequest) {
         member.memberNumber,
         member.fullName,
       );
+      // Admin accounts can edit money records — alert on every sign-in
+      // (fire-and-forget; never blocks the login response).
+      if (isAdminEmail(member.email)) {
+        sendAdminSignInAlert({
+          email: member.email,
+          fullName: member.fullName,
+          method: "password",
+        }).catch((err) => console.error("admin sign-in alert failed:", err));
+      }
       return NextResponse.json({
         name: member.fullName,
         memberNumber: member.memberNumber,
@@ -185,6 +196,15 @@ export async function POST(request: NextRequest) {
       member.memberNumber,
       member.fullName,
     );
+    // Admin sign-in via the passwordless path — alert AND nudge toward
+    // setting a password (which auto-retires this path once set).
+    if (isAdminEmail(member.email)) {
+      sendAdminSignInAlert({
+        email: member.email,
+        fullName: member.fullName,
+        method: "member-number",
+      }).catch((err) => console.error("admin sign-in alert failed:", err));
+    }
     return NextResponse.json({
       name: member.fullName,
       memberNumber: member.memberNumber,

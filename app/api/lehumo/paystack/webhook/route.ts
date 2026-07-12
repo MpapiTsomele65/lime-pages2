@@ -4,6 +4,7 @@ import { splitContribution, validateWebhookSignature } from "@/lib/paystack";
 import {
   checkMonthPayment,
   setMemberActive,
+  findMemberByEmail,
   getMemberById,
   updateMember,
 } from "@/lib/airtable";
@@ -11,6 +12,7 @@ import { getContributionByKey } from "@/lib/contributions";
 import {
   sendPaymentSuccessEmail,
   sendContributionReceiptEmail,
+  sendUnmatchedPaymentAlert,
 } from "@/lib/email";
 import {
   AIRTABLE_FIELDS,
@@ -51,13 +53,54 @@ export async function POST(request: NextRequest) {
     const payload = JSON.parse(rawBody);
 
     if (payload.event === "charge.success") {
-      const memberRecordId = payload.data?.metadata?.memberRecordId as string;
+      let memberRecordId = payload.data?.metadata?.memberRecordId as
+        | string
+        | undefined;
       const amount = (payload.data?.amount as number) ?? 0;
       const paystackRef = (payload.data?.reference as string) ?? "";
       // `paid_at` is ISO 8601 from Paystack, e.g. "2026-06-01T08:13:42.000Z".
       const paidAtIso = (payload.data?.paid_at as string) ?? "";
+      const customerEmail = (
+        payload.data?.customer?.email as string | undefined
+      )
+        ?.toLowerCase()
+        .trim();
 
-      if (memberRecordId) {
+      // Recurring subscription charges can arrive without our metadata —
+      // fall back to resolving the member by the Paystack customer email
+      // before giving up on attribution.
+      if (!memberRecordId && customerEmail) {
+        const byEmail = await findMemberByEmail(customerEmail).catch(
+          () => null,
+        );
+        if (byEmail) memberRecordId = byEmail.id;
+      }
+
+      // Quarantine: the money has been collected but we can't attribute
+      // it to a member. Alert admin for manual allocation (Log manual
+      // deposit, traceable via the reference) rather than silently
+      // dropping the event — the original orphan-row bug started life
+      // as exactly this kind of silent fall-through.
+      if (!memberRecordId) {
+        console.warn(
+          `[paystack webhook] UNMATCHED payment ref=${paystackRef} email=${customerEmail ?? "?"} — alerting admin`,
+        );
+        sendUnmatchedPaymentAlert({
+          reference: paystackRef,
+          amountZar: amount / 100,
+          customerEmail,
+          reason:
+            "No memberRecordId in metadata and no member matches the customer email",
+        }).catch((err) =>
+          console.error(
+            "[paystack webhook] unmatched-payment alert failed:",
+            err,
+          ),
+        );
+        return NextResponse.json({ received: true, unmatched: true });
+      }
+
+      {
         // Pre-launch payments are credited to June 2026 (the official
         // first collection month) — no May 2026 ghost contributions
         // for recon to chase. Post-launch this falls through to the
@@ -73,8 +116,30 @@ export async function POST(request: NextRequest) {
         // the wasPeriodAlreadyPaid gate make the payment write +
         // email send safely idempotent across both routes.
         const memberBefore = await getMemberById(memberRecordId);
-        const wasAlreadyActive = memberBefore?.status === "Active";
-        const memberNumber = memberBefore?.memberNumber;
+
+        // The id came from metadata but no longer resolves (member record
+        // deleted/recreated — the classic orphan trigger). Quarantine
+        // instead of writing a row with a dangling link.
+        if (!memberBefore) {
+          console.warn(
+            `[paystack webhook] payment ref=${paystackRef} for unresolvable member=${memberRecordId} — alerting admin`,
+          );
+          sendUnmatchedPaymentAlert({
+            reference: paystackRef,
+            amountZar: amount / 100,
+            customerEmail,
+            reason: `memberRecordId ${memberRecordId} no longer resolves to a member record`,
+          }).catch((err) =>
+            console.error(
+              "[paystack webhook] unmatched-payment alert failed:",
+              err,
+            ),
+          );
+          return NextResponse.json({ received: true, unmatched: true });
+        }
+
+        const wasAlreadyActive = memberBefore.status === "Active";
+        const memberNumber = memberBefore.memberNumber;
 
         let wasPeriodAlreadyPaid = false;
         if (memberNumber !== undefined) {

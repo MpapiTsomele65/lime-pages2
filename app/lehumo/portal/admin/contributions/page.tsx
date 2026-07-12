@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getAdminSession } from "@/lib/admin-auth";
 import { listAllMembers } from "@/lib/airtable-admin";
 import { listAllContributions } from "@/lib/contributions";
+import { getClosedPeriods } from "@/lib/fund-settings";
 import {
   CONTRIBUTION_STATUS,
   LEHUMO_FIRST_DUE_PERIOD,
@@ -35,7 +36,7 @@ export default async function AdminContributionsPage() {
   const session = await getAdminSession();
   const email = session?.email ?? "Admin";
 
-  const [contributions, members] = await Promise.all([
+  const [contributions, members, closedPeriods] = await Promise.all([
     listAllContributions().catch((err) => {
       console.error("Admin Contributions: failed to list contributions", err);
       return [];
@@ -44,6 +45,9 @@ export default async function AdminContributionsPage() {
       console.error("Admin Contributions: failed to list members", err);
       return [];
     }),
+    // Fail-open: a read hiccup shows months unlocked rather than
+    // blocking the page (the server actions re-check on every write).
+    getClosedPeriods(),
   ]);
 
   // Current period for the summary tiles: SAST "now" rounded to YYYY-MM,
@@ -171,6 +175,7 @@ export default async function AdminContributionsPage() {
         rows={monthlyInflows}
         total={totalPool}
         totalCount={totalContributions}
+        closedPeriods={closedPeriods}
       />
 
       <Suspense fallback={<div className="h-16" />}>

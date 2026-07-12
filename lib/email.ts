@@ -1616,6 +1616,246 @@ export async function sendOrphanScanAlert(scan: {
   });
 }
 
+/**
+ * Admin sign-in alert — fired whenever an account on the admin allowlist
+ * starts a portal session. Admins can edit money records, so every
+ * sign-in is worth a heads-up; an alert you didn't cause = act fast.
+ */
+export async function sendAdminSignInAlert(params: {
+  email: string;
+  fullName: string;
+  /** Which credential path was used. */
+  method: "password" | "member-number" | "google";
+}) {
+  const resend = getResend();
+  const when = new Date().toLocaleString("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const weakPath = params.method === "member-number";
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: ADMIN_BCC,
+    subject: `Lehumo admin sign-in · ${params.email} · ${when} SAST`,
+    text:
+      `An admin account just signed in to the portal.\n\n` +
+      `- Account: ${params.fullName} <${params.email}>\n` +
+      `- Time: ${when} (SAST)\n` +
+      `- Method: ${params.method}\n\n` +
+      (weakPath
+        ? `⚠ This admin account has NO password set — it signed in with the ` +
+          `email + member-number pair, which is guessable. Set a password at ` +
+          `https://www.limepages.co.za/lehumo/portal/security to retire the ` +
+          `weak path (once set, it's enforced automatically).\n\n`
+        : "") +
+      `If this wasn't you or another admin, reset the account password ` +
+      `immediately and check the Admin Activity Log table in Airtable for ` +
+      `unexpected changes.`,
+  });
+}
+
+/** "2026-07" → "Jul 2026" for member-facing adjustment copy. */
+function formatPeriodHuman(period: string): string {
+  const [y, m] = period.split("-");
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  return `${months[Number(m) - 1] ?? m} ${y}`;
+}
+
+/**
+ * Member notification — an admin corrected their payment record (moved a
+ * payment to the right month, or voided a mis-booked one). Without this
+ * the member just sees their record silently change; the email turns a
+ * confusing flip into transparency.
+ */
+export async function sendPaymentAdjustedEmail(params: {
+  to: string;
+  fullName: string;
+  memberNumber: number;
+  kind: "moved" | "voided";
+  amountZar: number;
+  fromPeriod: string;
+  toPeriod?: string;
+}) {
+  const resend = getResend();
+  const firstName = params.fullName.split(" ")[0];
+  const amount = `R${params.amountZar.toLocaleString("en-ZA")}`;
+  const from = formatPeriodHuman(params.fromPeriod);
+  const to = params.toPeriod ? formatPeriodHuman(params.toPeriod) : "";
+
+  const summary =
+    params.kind === "moved"
+      ? `We've corrected which month your ${amount} contribution counts toward: it is now recorded for ${to} (previously ${from}). ${from} is open again on your schedule.`
+      : `Your ${amount} payment recorded for ${from} has been reversed by an admin, and ${from} now shows as open on your schedule. This is usually part of correcting a booking — if you weren't expecting it, just reply to this email.`;
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: params.to,
+    bcc: ADMIN_BCC,
+    subject:
+      params.kind === "moved"
+        ? `Lehumo: your contribution record was corrected (${from} → ${to})`
+        : `Lehumo: a payment on your record was adjusted (${from})`,
+    text:
+      `Hi ${firstName},\n\n${summary}\n\n` +
+      `Your up-to-date record is always in the portal:\n` +
+      `https://www.limepages.co.za/lehumo/portal/contributions\n\n` +
+      `Questions? Just reply — this inbox is monitored.\n\n` +
+      `— Lehumo (${`Leh${String(params.memberNumber).padStart(2, "0")}`})`,
+  });
+}
+
+/**
+ * Admin alert — a Paystack payment arrived that we could NOT match to a
+ * member (no metadata and no email match, or the member record is gone).
+ * Without this the money would only exist in Paystack's dashboard; the
+ * alert turns a silent drop into a same-day manual reconciliation.
+ */
+export async function sendUnmatchedPaymentAlert(params: {
+  reference: string;
+  amountZar: number;
+  customerEmail?: string;
+  reason: string;
+}) {
+  const resend = getResend();
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: ADMIN_BCC,
+    subject: `Lehumo: unmatched Paystack payment R${params.amountZar.toLocaleString("en-ZA")} — needs manual allocation`,
+    text:
+      `A Paystack payment came in that couldn't be applied to a member:\n\n` +
+      `- Amount: R${params.amountZar.toLocaleString("en-ZA")}\n` +
+      `- Reference: ${params.reference}\n` +
+      `- Customer email: ${params.customerEmail || "(none on payload)"}\n` +
+      `- Why it failed: ${params.reason}\n\n` +
+      `The money HAS been collected by Paystack but is NOT recorded on any ` +
+      `contribution row. Find the member and log it via Admin → ` +
+      `Contributions → Log manual deposit (source stays traceable through ` +
+      `the reference above).`,
+  });
+}
+
+/**
+ * Weekly backup email — CSV snapshots of the Members + Contributions
+ * tables, attached. Airtable is the system of record for the trust's
+ * money; this is the disaster-recovery copy (fired by the backup cron).
+ */
+export async function sendBackupEmail(params: {
+  membersCsv: string;
+  contributionsCsv: string;
+  memberCount: number;
+  contributionCount: number;
+}) {
+  const resend = getResend();
+  const stamp = new Date()
+    .toLocaleDateString("en-CA", { timeZone: "Africa/Johannesburg" });
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: ADMIN_BCC,
+    subject: `Lehumo weekly backup · ${stamp} · ${params.memberCount} members, ${params.contributionCount} contribution rows`,
+    text:
+      `Weekly Airtable snapshot attached.\n\n` +
+      `- members-${stamp}.csv (${params.memberCount} records)\n` +
+      `- contributions-${stamp}.csv (${params.contributionCount} records)\n\n` +
+      `Keep a copy somewhere safe (Drive/iCloud). If the base is ever ` +
+      `damaged, these files restore the trust's financial record.`,
+    attachments: [
+      {
+        filename: `members-${stamp}.csv`,
+        content: Buffer.from(params.membersCsv, "utf8"),
+      },
+      {
+        filename: `contributions-${stamp}.csv`,
+        content: Buffer.from(params.contributionsCsv, "utf8"),
+      },
+    ],
+  });
+}
+
+/**
+ * Admin alert — fired by the nightly integrity sweep when it finds ANY
+ * data-quality issue: orphaned member links, duplicate months, Paid rows
+ * missing reference/date/amount, or underpaid rows marked Paid. Plain
+ * text, grouped by issue type, so it's diagnosable at a glance.
+ */
+export async function sendIntegrityAlert(sweep: {
+  scannedMembers: number;
+  links: {
+    affected: {
+      memberNumber: number;
+      memberName: string;
+      blankCount: number;
+      mismatched: { period: string; linkedTo: string }[];
+    }[];
+    totalBlank: number;
+    totalMismatched: number;
+  };
+  findings: {
+    memberNumber: number;
+    memberName: string;
+    kind: string;
+    period: string;
+    detail: string;
+  }[];
+  totalIssues: number;
+}) {
+  const resend = getResend();
+  const num = (n: number) => `Leh${String(n).padStart(2, "0")}`;
+
+  const sections: string[] = [];
+
+  if (sweep.links.affected.length > 0) {
+    const lines = sweep.links.affected
+      .map((a) => {
+        const parts = [`${a.blankCount} blank-link`];
+        if (a.mismatched.length) {
+          parts.push(
+            `${a.mismatched.length} mis-linked (${a.mismatched.map((m) => m.period).join(", ")})`,
+          );
+        }
+        return `- ${num(a.memberNumber)} ${a.memberName}: ${parts.join(", ")}`;
+      })
+      .join("\n");
+    sections.push(
+      `MEMBER-LINK ISSUES (invisible to the rollup — fix with ` +
+        `scripts/repair-orphan-links.ts):\n${lines}`,
+    );
+  }
+
+  if (sweep.findings.length > 0) {
+    const byKind = new Map<string, typeof sweep.findings>();
+    for (const f of sweep.findings) {
+      const arr = byKind.get(f.kind) ?? [];
+      arr.push(f);
+      byKind.set(f.kind, arr);
+    }
+    for (const [kind, items] of byKind) {
+      const lines = items
+        .map(
+          (f) =>
+            `- ${num(f.memberNumber)} ${f.memberName} · ${f.period}: ${f.detail}`,
+        )
+        .join("\n");
+      sections.push(`${kind.toUpperCase()} (${items.length}):\n${lines}`);
+    }
+  }
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: ADMIN_BCC,
+    subject: `Lehumo integrity sweep: ${sweep.totalIssues} issue(s) need attention`,
+    text:
+      `The nightly integrity sweep scanned ${sweep.scannedMembers} members ` +
+      `and found ${sweep.totalIssues} issue(s).\n\n` +
+      sections.join("\n\n") +
+      `\n\nReview in Admin → Contributions (most fixes are one click: ` +
+      `edit / move-or-void / backfill).`,
+  });
+}
+
 export async function sendPasswordChangedEmail(params: {
   to: string;
   fullName: string;

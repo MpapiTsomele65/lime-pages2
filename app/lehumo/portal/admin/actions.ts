@@ -11,7 +11,11 @@ import {
   voidContribution as voidContributionAdmin,
 } from "@/lib/airtable-admin";
 import { disableSubscription } from "@/lib/paystack";
-import type { EftAllocationPlan } from "@/lib/eft-allocation";
+import { logAdminAction } from "@/lib/audit-log";
+import {
+  summarizeEftAllocation,
+  type EftAllocationPlan,
+} from "@/lib/eft-allocation";
 import {
   splicePasswordHashIntoNotes,
   spliceSubscriptionIntoNotes,
@@ -20,6 +24,7 @@ import {
   createMember,
   findMemberByEmail,
   getMemberById,
+  getMemberByIdLite,
   getNextMemberNumber,
   setMemberBeneficiary,
   updateMember,
@@ -27,6 +32,7 @@ import {
 import {
   sendContributionReceiptEmail,
   sendKycVerifiedEmail,
+  sendPaymentAdjustedEmail,
   sendWelcomeEmail,
 } from "@/lib/email";
 import {
@@ -53,7 +59,12 @@ import {
   type KycStatus,
   type BeneficiaryFormData,
 } from "@/lib/definitions";
-import { upsertFundInterest, upsertFundPortfolio } from "@/lib/fund-settings";
+import {
+  getClosedPeriods,
+  setPeriodClosed,
+  upsertFundInterest,
+  upsertFundPortfolio,
+} from "@/lib/fund-settings";
 import {
   ensureCanonicalMemberSchedule,
   getContributionById,
@@ -72,10 +83,27 @@ export type AdminActionResult =
   | { ok: true; member: LehumoMember }
   | { ok: false; error: string };
 
-async function requireAdmin(): Promise<{ ok: true } | AdminActionResult> {
+async function requireAdmin(): Promise<
+  { ok: true; email: string } | { ok: false; error: string }
+> {
   const session = await getAdminSession();
   if (!session) return { ok: false, error: "Forbidden" };
-  return { ok: true };
+  return { ok: true, email: session.email };
+}
+
+/**
+ * Monthly-close guard. Returns an error message when any of the given
+ * periods has been locked after reconciliation, else null. Applied to
+ * every money-mutating contribution action so reconciled history can't
+ * drift under later fixes — reopening is an explicit, audited action.
+ */
+async function closedPeriodError(periods: string[]): Promise<string | null> {
+  if (periods.length === 0) return null;
+  const closed = new Set(await getClosedPeriods());
+  const hit = periods.find((p) => closed.has(p));
+  return hit
+    ? `${hit} is closed (locked after reconciliation). Reopen it under Admin → Contributions → Monthly inflows before making changes.`
+    : null;
 }
 
 /**
@@ -152,7 +180,22 @@ export async function logEftPayment(
       paymentDate: parsed.data.paymentDate,
       notes: parsed.data.notes,
       targetPeriod: parsed.data.targetPeriod,
+      closedPeriods: await getClosedPeriods(),
     });
+
+    if (plan.rows.length > 0 && plan.totalApplied > 0) {
+      logAdminAction({
+        actor: gate.email,
+        action: "log-eft",
+        target: formatMemberNumber(member.memberNumber),
+        details:
+          `R${plan.totalApplied.toLocaleString("en-ZA")} · ` +
+          `${summarizeEftAllocation(plan)} · ref ${parsed.data.paymentReference}` +
+          (parsed.data.targetPeriod
+            ? ` · pinned to ${parsed.data.targetPeriod}`
+            : ""),
+      });
+    }
 
     // Fire-and-forget receipt email — same template the Paystack
     // webhook uses for ongoing contributions. Multi-month EFTs
@@ -739,8 +782,20 @@ export async function adminUpdateContributionStatus(
   if (!statusOk.success) return { ok: false, error: "Invalid status" };
 
   try {
+    const existing = await getContributionById(recordId);
+    if (existing) {
+      const lockErr = await closedPeriodError([existing.period]);
+      if (lockErr) return { ok: false, error: lockErr };
+    }
+
     const contribution = await updateContribution(recordId, {
       status: statusOk.data as ContributionStatus,
+    });
+    logAdminAction({
+      actor: gate.email,
+      action: "status-change",
+      target: contribution.contributionKey,
+      details: `status → ${statusOk.data}`,
     });
     return { ok: true, contribution };
   } catch (err) {
@@ -769,6 +824,12 @@ export async function adminReconcileContribution(
 
   try {
     const contribution = await reconcileContribution(recordId, session.email);
+    logAdminAction({
+      actor: session.email,
+      action: "reconcile",
+      target: contribution.contributionKey,
+      details: `marked reconciled (R${(contribution.amountReceived ?? 0).toLocaleString("en-ZA")})`,
+    });
     return { ok: true, contribution };
   } catch (err) {
     console.error("adminReconcileContribution error:", err);
@@ -797,7 +858,41 @@ export async function adminVoidContribution(
   if (!idOk.success) return { ok: false, error: "Invalid record id" };
 
   try {
-    await voidContributionAdmin(recordId);
+    // Capture the pre-void state — the amount + member link vanish from
+    // the row once cleared, and both the audit entry and the member's
+    // notification email need them.
+    const before = await getContributionById(recordId);
+    if (before) {
+      const lockErr = await closedPeriodError([before.period]);
+      if (lockErr) return { ok: false, error: lockErr };
+    }
+    const row = await voidContributionAdmin(recordId);
+    const voidedAmount = before?.amountReceived ?? 0;
+    logAdminAction({
+      actor: session.email,
+      action: "void",
+      target: row.contributionKey,
+      details: `payment of R${voidedAmount.toLocaleString("en-ZA")} voided — row re-opened as Pending; received/reference/date/reconciliation cleared`,
+    });
+
+    // Tell the member their record changed (fire-and-forget).
+    if (before?.memberId && voidedAmount > 0) {
+      void getMemberByIdLite(before.memberId)
+        .then((m) => {
+          if (!m?.email) return;
+          return sendPaymentAdjustedEmail({
+            to: m.email,
+            fullName: m.fullName,
+            memberNumber: m.memberNumber,
+            kind: "voided",
+            amountZar: voidedAmount,
+            fromPeriod: row.period,
+          });
+        })
+        .catch((err) =>
+          console.error("sendPaymentAdjustedEmail (void) failed:", err),
+        );
+    }
     return { ok: true };
   } catch (err) {
     console.error("adminVoidContribution error:", err);
@@ -836,17 +931,83 @@ export async function adminReallocateContribution(input: {
   }
 
   try {
+    const sourceRow = await getContributionById(parsed.data.recordId);
+    const lockErr = await closedPeriodError([
+      ...(sourceRow ? [sourceRow.period] : []),
+      parsed.data.targetPeriod,
+    ]);
+    if (lockErr) return { ok: false, error: lockErr };
+
     const res = await reallocateContributionAdmin({
       sourceRecordId: parsed.data.recordId,
       memberRecordId: parsed.data.memberRecordId,
       targetPeriod: parsed.data.targetPeriod,
     });
+    logAdminAction({
+      actor: session.email,
+      action: "reallocate",
+      target: formatMemberNumber(res.member.memberNumber),
+      details: `moved R${res.amount.toLocaleString("en-ZA")} from ${res.sourcePeriod} to ${res.targetPeriod}; source re-opened as Pending`,
+    });
+
+    // Tell the member their record changed (fire-and-forget).
+    if (res.member.email && res.amount > 0) {
+      sendPaymentAdjustedEmail({
+        to: res.member.email,
+        fullName: res.member.fullName,
+        memberNumber: res.member.memberNumber,
+        kind: "moved",
+        amountZar: res.amount,
+        fromPeriod: res.sourcePeriod,
+        toPeriod: res.targetPeriod,
+      }).catch((err) =>
+        console.error("sendPaymentAdjustedEmail (reallocate) failed:", err),
+      );
+    }
     return { ok: true, targetPeriod: res.targetPeriod, amount: res.amount };
   } catch (err) {
     console.error("adminReallocateContribution error:", err);
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Reallocation failed",
+    };
+  }
+}
+
+// ── Monthly close / lock ──────────────────────────────────────────
+
+const PeriodSchema = z
+  .string()
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Period must be YYYY-MM");
+
+export async function adminSetMonthClosed(
+  period: string,
+  closed: boolean,
+): Promise<
+  { ok: true; closedPeriods: string[] } | { ok: false; error: string }
+> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+
+  const pOk = PeriodSchema.safeParse(period);
+  if (!pOk.success) return { ok: false, error: "Invalid period" };
+
+  try {
+    const closedPeriods = await setPeriodClosed(pOk.data, closed, gate.email);
+    logAdminAction({
+      actor: gate.email,
+      action: closed ? "month-close" : "month-reopen",
+      target: pOk.data,
+      details: closed
+        ? "month locked — money-mutating edits now rejected until reopened"
+        : "month reopened for edits",
+    });
+    return { ok: true, closedPeriods };
+  } catch (err) {
+    console.error("adminSetMonthClosed error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Update failed",
     };
   }
 }
@@ -927,6 +1088,12 @@ export async function adminUpdateContribution(
     const current = await getContributionById(recordId);
     if (!current) return { ok: false, error: "Contribution not found" };
 
+    const lockErr = await closedPeriodError([
+      current.period,
+      ...(input.period ? [input.period] : []),
+    ]);
+    if (lockErr) return { ok: false, error: lockErr };
+
     const memberChanged =
       input.memberId !== undefined && input.memberId !== current.memberId;
     const periodChanged =
@@ -991,6 +1158,12 @@ export async function adminUpdateContribution(
       row = await updateContribution(recordId, fieldPatch);
     }
 
+    logAdminAction({
+      actor: gate.email,
+      action: needsReassign ? "reassign" : "edit",
+      target: row.contributionKey,
+      details: `patch: ${JSON.stringify(input)}`,
+    });
     return { ok: true, contribution: row };
   } catch (err) {
     console.error("adminUpdateContribution error:", err);
@@ -1092,6 +1265,12 @@ export async function adminBackfillMemberSchedule(
       memberNumber: member.memberNumber,
     });
     if (!res.ok) return { ok: false, error: res.error };
+    logAdminAction({
+      actor: gate.email,
+      action: "backfill-schedule",
+      target: formatMemberNumber(member.memberNumber),
+      details: `generated ${res.generated} missing schedule row(s)`,
+    });
     return { ok: true, generated: res.generated };
   } catch (err) {
     console.error("adminBackfillMemberSchedule error:", err);

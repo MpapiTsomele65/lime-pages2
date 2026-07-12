@@ -209,6 +209,57 @@ export async function upsertFundInterest(
   return writeSettings({ "Interest Earned": interestEarned }, adminEmail);
 }
 
+// ── Monthly close / lock ─────────────────────────────────────────────
+//
+// Closed contribution months (YYYY-MM), stored as a JSON array on the
+// same singleton row ("Closed Periods" field). Once an admin has
+// reconciled a month and locked it, money-mutating actions against rows
+// in that period are rejected until it's explicitly reopened — so
+// reconciled history can't drift under later fixes. Lock/unlock both
+// land in the Admin Activity Log.
+
+function parseClosedPeriods(raw: unknown): string[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (p): p is string => typeof p === "string" && /^\d{4}-\d{2}$/.test(p),
+    );
+  } catch {
+    return [];
+  }
+}
+
+/** The closed months, sorted. Empty on any read hiccup (fail-open so a
+ *  transient Airtable error can't block legitimate admin work). */
+export async function getClosedPeriods(): Promise<string[]> {
+  try {
+    const record = await fetchPortfolioRecord();
+    return parseClosedPeriods(record?.fields["Closed Periods"]).sort();
+  } catch (err) {
+    console.error("[getClosedPeriods] read failed:", err);
+    return [];
+  }
+}
+
+/** Lock or unlock one month. Returns the updated closed list. */
+export async function setPeriodClosed(
+  period: string,
+  closed: boolean,
+  adminEmail: string,
+): Promise<string[]> {
+  if (!/^\d{4}-\d{2}$/.test(period)) {
+    throw new Error(`Invalid period "${period}" — expected YYYY-MM`);
+  }
+  const current = new Set(await getClosedPeriods());
+  if (closed) current.add(period);
+  else current.delete(period);
+  const next = [...current].sort();
+  await writeSettings({ "Closed Periods": JSON.stringify(next) }, adminEmail);
+  return next;
+}
+
 /**
  * Interest config for getCommunityPoolStats — mirrors the legacy
  * env-based loadInterestConfig shape ({ total, monthly[] }) but sourced

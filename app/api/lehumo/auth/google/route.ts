@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findMemberByEmail } from "@/lib/airtable";
 import { createSession } from "@/lib/session";
+import { isAdminEmail } from "@/lib/admin-auth";
+import { sendAdminSignInAlert } from "@/lib/email";
 
 /**
  * Google Sign-In callback.
@@ -61,6 +63,16 @@ export async function POST(request: NextRequest) {
       member.memberNumber,
       member.fullName,
     );
+
+    // Admin accounts can edit money records — alert on every sign-in
+    // (fire-and-forget; never blocks the login response).
+    if (isAdminEmail(member.email)) {
+      sendAdminSignInAlert({
+        email: member.email,
+        fullName: member.fullName,
+        method: "google",
+      }).catch((err) => console.error("admin sign-in alert failed:", err));
+    }
 
     return NextResponse.json({
       action: "login",
