@@ -10,6 +10,10 @@ import { AdminSidebar } from "./AdminSidebar";
 
 interface AdminShellProps {
   memberName: string;
+  /** True for regular (non-super) admins — they can view every admin
+   *  surface but money-mutating actions are rejected server-side. The
+   *  shell surfaces the tier so the state is never a surprise. */
+  readOnly?: boolean;
   children: React.ReactNode;
 }
 
@@ -29,7 +33,11 @@ interface AdminShellProps {
  * state to the header's hamburger requires shared state that lives
  * in this component.
  */
-export function AdminShell({ memberName, children }: AdminShellProps) {
+export function AdminShell({
+  memberName,
+  readOnly = false,
+  children,
+}: AdminShellProps) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -101,6 +109,15 @@ export function AdminShell({ memberName, children }: AdminShellProps) {
                 </span>
               </div>
             </Link>
+
+            {readOnly && (
+              <span
+                className="inline-flex items-center rounded-full border border-[#F59E0B]/40 bg-[#FEF3C7]/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#92400E]"
+                title="You can review every admin surface; only the super user can change contributions or money settings."
+              >
+                Read-only
+              </span>
+            )}
           </div>
 
           {/* Right: Member name + Logout */}

@@ -29,6 +29,39 @@ export function isAdminEmail(email: string | null | undefined): boolean {
 }
 
 /**
+ * Super-admin tier — the only accounts allowed to MUTATE money records
+ * (contributions, month locks, fund settings). Every other admin gets
+ * read-only access to the admin views. Role-based, deliberately without
+ * extra password prompts — the tier IS the friction.
+ *
+ * Configured via LEHUMO_SUPERADMIN_EMAILS (comma-separated). When unset
+ * it defaults to the founding owner, so adding new emails to
+ * LEHUMO_ADMIN_EMAILS can never silently grant write access to money.
+ */
+const DEFAULT_SUPERADMIN_EMAILS = "papi.tsomele@gmail.com";
+
+function getSuperAdminEmails(): Set<string> {
+  const raw =
+    process.env.LEHUMO_SUPERADMIN_EMAILS ?? DEFAULT_SUPERADMIN_EMAILS;
+  return new Set(
+    raw
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+export function isSuperAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  // Super is a subset of admin — an email dropped from the admin list
+  // loses super rights with it.
+  return (
+    isAdminEmail(email) &&
+    getSuperAdminEmails().has(email.trim().toLowerCase())
+  );
+}
+
+/**
  * Returns the session if (and only if) the caller is signed in AND their
  * email is in LEHUMO_ADMIN_EMAILS. Returns null otherwise — callers decide
  * whether to redirect (UI) or return 401/403 (API).

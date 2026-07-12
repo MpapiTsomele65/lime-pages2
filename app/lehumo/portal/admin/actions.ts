@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { getAdminSession } from "@/lib/admin-auth";
+import { getAdminSession, isSuperAdminEmail } from "@/lib/admin-auth";
 import {
   adminUpdateMember,
   logEftPayment as logEftPaymentAdmin,
@@ -106,6 +106,26 @@ async function closedPeriodError(periods: string[]): Promise<string | null> {
     : null;
 }
 
+const READ_ONLY_ERROR =
+  "Read-only admin — only the super user can change contributions or money settings.";
+
+/**
+ * Write-tier gate. Regular admins can VIEW every admin surface; only
+ * super-admin accounts (lib/admin-auth isSuperAdminEmail) may mutate
+ * contributions, month locks, or fund settings. Role-based — no extra
+ * password prompts.
+ */
+async function requireSuperAdmin(): Promise<
+  { ok: true; email: string } | { ok: false; error: string }
+> {
+  const session = await getAdminSession();
+  if (!session) return { ok: false, error: "Forbidden" };
+  if (!isSuperAdminEmail(session.email)) {
+    return { ok: false, error: READ_ONLY_ERROR };
+  }
+  return { ok: true, email: session.email };
+}
+
 /**
  * Toggle a single month's paid state for one member. Called from the
  * admin member table row by row — the client updates local state
@@ -158,7 +178,7 @@ export async function logEftPayment(
     targetPeriod?: string;
   },
 ): Promise<LogEftPaymentResult> {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (!gate.ok) return gate as LogEftPaymentResult;
 
   const idOk = IdSchema.safeParse(recordId);
@@ -374,7 +394,7 @@ export async function toggleMonthPayment(
   month: string,
   paid: boolean,
 ): Promise<AdminActionResult> {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (!gate.ok) return gate as AdminActionResult;
 
   const idOk = IdSchema.safeParse(recordId);
@@ -772,7 +792,7 @@ export async function adminUpdateContributionStatus(
   recordId: string,
   status: ContributionStatus,
 ): Promise<ContributionActionResult> {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (!gate.ok) return gate as ContributionActionResult;
 
   const idOk = IdSchema.safeParse(recordId);
@@ -818,6 +838,9 @@ export async function adminReconcileContribution(
 ): Promise<ContributionActionResult> {
   const session = await getAdminSession();
   if (!session) return { ok: false, error: "Forbidden" };
+  if (!isSuperAdminEmail(session.email)) {
+    return { ok: false, error: READ_ONLY_ERROR };
+  }
 
   const idOk = IdSchema.safeParse(recordId);
   if (!idOk.success) return { ok: false, error: "Invalid record id" };
@@ -853,6 +876,9 @@ export async function adminVoidContribution(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const session = await getAdminSession();
   if (!session) return { ok: false, error: "Forbidden" };
+  if (!isSuperAdminEmail(session.email)) {
+    return { ok: false, error: READ_ONLY_ERROR };
+  }
 
   const idOk = IdSchema.safeParse(recordId);
   if (!idOk.success) return { ok: false, error: "Invalid record id" };
@@ -921,6 +947,9 @@ export async function adminReallocateContribution(input: {
 > {
   const session = await getAdminSession();
   if (!session) return { ok: false, error: "Forbidden" };
+  if (!isSuperAdminEmail(session.email)) {
+    return { ok: false, error: READ_ONLY_ERROR };
+  }
 
   const parsed = ReallocateSchema.safeParse(input);
   if (!parsed.success) {
@@ -986,7 +1015,7 @@ export async function adminSetMonthClosed(
 ): Promise<
   { ok: true; closedPeriods: string[] } | { ok: false; error: string }
 > {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (!gate.ok) return gate;
 
   const pOk = PeriodSchema.safeParse(period);
@@ -1066,7 +1095,7 @@ export async function adminUpdateContribution(
   recordId: string,
   patch: AdminUpdateContributionInput,
 ): Promise<ContributionActionResult> {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (!gate.ok) return gate as ContributionActionResult;
 
   const idOk = IdSchema.safeParse(recordId);
@@ -1250,7 +1279,7 @@ export type AdminBackfillScheduleResult =
 export async function adminBackfillMemberSchedule(
   memberId: string,
 ): Promise<AdminBackfillScheduleResult> {
-  const gate = await requireAdmin();
+  const gate = await requireSuperAdmin();
   if (!gate.ok) return gate as AdminBackfillScheduleResult;
 
   const idOk = IdSchema.safeParse(memberId);
@@ -1299,6 +1328,9 @@ export async function adminUpdateFundPortfolio(
 ): Promise<FundPortfolioActionResult> {
   const session = await getAdminSession();
   if (!session) return { ok: false, error: "Forbidden" };
+  if (!isSuperAdminEmail(session.email)) {
+    return { ok: false, error: READ_ONLY_ERROR };
+  }
 
   const parsed = FundPortfolioSchema.safeParse(input);
   if (!parsed.success) {
@@ -1334,6 +1366,9 @@ export async function adminUpdateFundInterest(
 ): Promise<FundPortfolioActionResult> {
   const session = await getAdminSession();
   if (!session) return { ok: false, error: "Forbidden" };
+  if (!isSuperAdminEmail(session.email)) {
+    return { ok: false, error: READ_ONLY_ERROR };
+  }
 
   const parsed = FundInterestSchema.safeParse(input);
   if (!parsed.success) {

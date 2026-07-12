@@ -40,6 +40,10 @@ interface ContributionDetailRowProps {
   /** Open the move-or-void dialog for a row that carries a payment.
    *  Omitted in the orphan banner (orphans get reassigned, not moved). */
   onOpenReallocate?: (row: LehumoContribution) => void;
+  /** Read-only admin — hide the mutating controls (status select,
+   *  reconcile, edit, move/void). Server actions reject anyway; this
+   *  keeps the UI honest. */
+  readOnly?: boolean;
   /** When true, the Member identity column renders. Use in the orphan
    *  banner. The expanded strip hides this column because the rollup
    *  row above already identifies the member. */
@@ -58,6 +62,7 @@ export function ContributionDetailRow({
   onReconcile,
   onOpenEdit,
   onOpenReallocate,
+  readOnly = false,
   showMemberCol = false,
 }: ContributionDetailRowProps) {
   const hasPayment =
@@ -92,7 +97,7 @@ export function ContributionDetailRow({
         <div className="inline-flex items-center gap-1.5">
           <select
             value={row.status}
-            disabled={isBusy}
+            disabled={isBusy || readOnly}
             onChange={(e) =>
               onStatusChange(row, e.target.value as ContributionStatus)
             }
@@ -155,7 +160,7 @@ export function ContributionDetailRow({
             <Check className="h-3 w-3" />
             Reconciled
           </span>
-        ) : row.status === CONTRIBUTION_STATUS.paid ? (
+        ) : row.status === CONTRIBUTION_STATUS.paid && !readOnly ? (
           <button
             type="button"
             onClick={() => onReconcile(row)}
@@ -174,9 +179,10 @@ export function ContributionDetailRow({
         )}
       </div>
 
-      {/* Row actions — move/void (only for rows with a payment) + edit */}
+      {/* Row actions — move/void (only for rows with a payment) + edit.
+          Hidden entirely for read-only admins. */}
       <div className="w-[72px] shrink-0 flex justify-end gap-1">
-        {onOpenReallocate && hasPayment && (
+        {!readOnly && onOpenReallocate && hasPayment && (
           <button
             type="button"
             onClick={() => onOpenReallocate(row)}
@@ -188,16 +194,18 @@ export function ContributionDetailRow({
             <ArrowLeftRight className="h-3.5 w-3.5" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => onOpenEdit(row)}
-          disabled={isBusy}
-          className="inline-flex items-center justify-center rounded-md border border-[#E5E7EB] bg-white h-7 w-7 text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] hover:bg-[#F8F9FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Edit contribution"
-          aria-label="Edit contribution"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => onOpenEdit(row)}
+            disabled={isBusy}
+            className="inline-flex items-center justify-center rounded-md border border-[#E5E7EB] bg-white h-7 w-7 text-[#6B7280] hover:border-[#0B1933]/30 hover:text-[#0B1933] hover:bg-[#F8F9FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Edit contribution"
+            aria-label="Edit contribution"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -74,6 +74,9 @@ interface AdminContributionsRollupTableProps {
    *  without gutting each shown member's totals. */
   visibleMemberIds: Set<string> | null;
   onContributionUpdate: (updated: LehumoContribution) => void;
+  /** Super-admin write tier — read-only admins get the same view with
+   *  the mutating controls hidden. */
+  canEdit: boolean;
 }
 
 export function AdminContributionsRollupTable({
@@ -82,6 +85,7 @@ export function AdminContributionsRollupTable({
   activePeriodSet,
   visibleMemberIds,
   onContributionUpdate,
+  canEdit,
 }: AdminContributionsRollupTableProps) {
   // Single-open accordion. Clicking the open row's chevron closes it;
   // clicking another row's chevron closes the prior + opens the new
@@ -367,7 +371,7 @@ export function AdminContributionsRollupTable({
                     also toggle the row's expand state. */}
                 <div className="flex items-center gap-1.5">
                   <RollupStatusPill status={rollup.rollupStatus} />
-                  {rollup.canonicalMissingCount > 0 && (
+                  {canEdit && rollup.canonicalMissingCount > 0 && (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -472,6 +476,7 @@ export function AdminContributionsRollupTable({
                 onReconcile={handleReconcile}
                 onOpenEdit={handleOpenEdit}
                 onOpenReallocate={handleOpenReallocate}
+                readOnly={!canEdit}
               />
             </div>
           );

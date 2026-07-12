@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getAdminSession } from "@/lib/admin-auth";
+import { getAdminSession, isSuperAdminEmail } from "@/lib/admin-auth";
 import { AdminShell } from "@/components/lehumo/admin/AdminShell";
 
 /**
@@ -31,6 +31,11 @@ export default async function AdminLayout({
   }
 
   return (
-    <AdminShell memberName={session.fullName || "Admin"}>{children}</AdminShell>
+    <AdminShell
+      memberName={session.fullName || "Admin"}
+      readOnly={!isSuperAdminEmail(session.email)}
+    >
+      {children}
+    </AdminShell>
   );
 }

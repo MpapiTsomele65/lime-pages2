@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { getAdminSession } from "@/lib/admin-auth";
+import { getAdminSession, isSuperAdminEmail } from "@/lib/admin-auth";
 import { listAllMembers } from "@/lib/airtable-admin";
 import { listAllContributions } from "@/lib/contributions";
 import { getClosedPeriods } from "@/lib/fund-settings";
@@ -35,6 +35,9 @@ export const dynamic = "force-dynamic";
 export default async function AdminContributionsPage() {
   const session = await getAdminSession();
   const email = session?.email ?? "Admin";
+  // Write tier: read-only admins get the full view with mutating
+  // controls hidden (server actions reject them regardless).
+  const canEdit = isSuperAdminEmail(session?.email);
 
   const [contributions, members, closedPeriods] = await Promise.all([
     listAllContributions().catch((err) => {
@@ -176,6 +179,7 @@ export default async function AdminContributionsPage() {
         total={totalPool}
         totalCount={totalContributions}
         closedPeriods={closedPeriods}
+        canEdit={canEdit}
       />
 
       <Suspense fallback={<div className="h-16" />}>
@@ -183,6 +187,7 @@ export default async function AdminContributionsPage() {
           key={`contribs-${contributions.length}`}
           initialContributions={contributions}
           members={members}
+          canEdit={canEdit}
         />
       </Suspense>
     </div>

@@ -55,6 +55,9 @@ import { LogManualDepositCard } from "./LogManualDepositCard";
 interface AdminContributionsClientProps {
   initialContributions: LehumoContribution[];
   members: LehumoMember[];
+  /** Super-admin write tier. Read-only admins see everything but the
+   *  mutating controls are hidden (and rejected server-side anyway). */
+  canEdit: boolean;
 }
 
 const STATUS_VALUES = Object.values(CONTRIBUTION_STATUS);
@@ -102,6 +105,7 @@ function resolvePeriodSet(periodRange: string): Set<string> | null {
 export function AdminContributionsClient({
   initialContributions,
   members,
+  canEdit,
 }: AdminContributionsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -255,11 +259,18 @@ export function AdminContributionsClient({
 
   return (
     <div className="space-y-8">
-      <LogManualDepositCard
-        members={members}
-        contributions={contributions}
-        onLogged={onLogged}
-      />
+      {canEdit ? (
+        <LogManualDepositCard
+          members={members}
+          contributions={contributions}
+          onLogged={onLogged}
+        />
+      ) : (
+        <div className="rounded-xl border border-[#F59E0B]/30 bg-[#FEF3C7]/40 px-4 py-3 text-[13px] text-[#92400E]">
+          Read-only admin — you can review everything on this page, but only
+          the super user can log deposits or edit contribution rows.
+        </div>
+      )}
 
       {/* Filter bar */}
       <section className="rounded-[20px] border border-[#EDEDED] bg-white p-4 md:p-5">
@@ -366,6 +377,7 @@ export function AdminContributionsClient({
         activePeriodSet={activePeriodSet}
         visibleMemberIds={visibleMemberIds}
         onContributionUpdate={onContributionUpdate}
+        canEdit={canEdit}
       />
 
       {/* Orphan banner pinned to the bottom — the rollup view is the

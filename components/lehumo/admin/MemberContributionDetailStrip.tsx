@@ -37,6 +37,8 @@ interface MemberContributionDetailStripProps {
   onReconcile: (row: LehumoContribution) => void;
   onOpenEdit: (row: LehumoContribution) => void;
   onOpenReallocate: (row: LehumoContribution) => void;
+  /** Read-only admin — hide/disable the mutating controls. */
+  readOnly?: boolean;
 }
 
 export function MemberContributionDetailStrip({
@@ -47,6 +49,7 @@ export function MemberContributionDetailStrip({
   onReconcile,
   onOpenEdit,
   onOpenReallocate,
+  readOnly = false,
 }: MemberContributionDetailStripProps) {
   return (
     <AnimatePresence initial={false}>
@@ -67,6 +70,7 @@ export function MemberContributionDetailStrip({
             onReconcile={onReconcile}
             onOpenEdit={onOpenEdit}
             onOpenReallocate={onOpenReallocate}
+            readOnly={readOnly}
           />
         </motion.div>
       )}
@@ -82,6 +86,7 @@ function DetailStripBody({
   onReconcile,
   onOpenEdit,
   onOpenReallocate,
+  readOnly,
 }: {
   rows: LehumoContribution[];
   member: LehumoMember;
@@ -90,6 +95,7 @@ function DetailStripBody({
   onReconcile: (row: LehumoContribution) => void;
   onOpenEdit: (row: LehumoContribution) => void;
   onOpenReallocate: (row: LehumoContribution) => void;
+  readOnly: boolean;
 }) {
   // Sort chronologically — oldest period first. Admins reading a
   // member's history naturally scan from launch (June 2026) forward.
@@ -134,6 +140,7 @@ function DetailStripBody({
             onReconcile={onReconcile}
             onOpenEdit={onOpenEdit}
             onOpenReallocate={onOpenReallocate}
+            readOnly={readOnly}
             showMemberCol={false}
           />
         ))}

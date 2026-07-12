@@ -36,12 +36,16 @@ export function MonthlyInflowsTable({
   total,
   totalCount,
   closedPeriods,
+  canEdit,
 }: {
   rows: MonthlyInflowRow[];
   total: number;
   totalCount: number;
   /** Months locked by the monthly close — edits rejected until reopened. */
   closedPeriods: string[];
+  /** Super-admin write tier — read-only admins see lock state but can't
+   *  toggle it. */
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [openPeriod, setOpenPeriod] = useState<string | null>(null);
@@ -110,6 +114,7 @@ export function MonthlyInflowsTable({
                   canExpand={canExpand}
                   isClosed={closedSet.has(r.period)}
                   isLockBusy={lockBusy === r.period}
+                  canEdit={canEdit}
                   onToggle={() =>
                     setOpenPeriod(isOpen ? null : canExpand ? r.period : null)
                   }
@@ -155,6 +160,7 @@ function FragmentRow({
   canExpand,
   isClosed,
   isLockBusy,
+  canEdit,
   onToggle,
   onToggleLock,
 }: {
@@ -163,6 +169,7 @@ function FragmentRow({
   canExpand: boolean;
   isClosed: boolean;
   isLockBusy: boolean;
+  canEdit: boolean;
   onToggle: () => void;
   onToggleLock: () => void;
 }) {
@@ -207,6 +214,7 @@ function FragmentRow({
           R{r.cumulative.toLocaleString("en-ZA")}
         </td>
         <td className="py-2.5 text-right">
+          {canEdit && (
           <button
             type="button"
             onClick={onToggleLock}
@@ -231,6 +239,7 @@ function FragmentRow({
               <LockOpen className="h-3.5 w-3.5" />
             )}
           </button>
+          )}
         </td>
       </tr>
       {isOpen && (
