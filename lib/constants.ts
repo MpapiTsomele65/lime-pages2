@@ -6,16 +6,24 @@ export const NAV_LINKS = [
   { label: "Lime Advisory", href: "/advisory" },
 ] as const;
 
-export const NAV_MORE_LINKS = [
+export const NAV_MORE_LINKS: readonly {
+  label: string;
+  href: string;
+  desc: string;
+  /** Optional chip rendered next to the label, e.g. "Beta". */
+  badge?: string;
+}[] = [
+  { label: "Lime Travel", href: "/travel", desc: "Group trip pools", badge: "Beta" },
   { label: "Lemonade Station", href: "/lemonade-station", desc: "For founders & SMMEs" },
   { label: "Behind the Pages", href: "/about", desc: "Our story & mission" },
-] as const;
+];
 
 export const FOOTER_NAV = {
   navigate: [
     { label: "Home", href: "/" },
     { label: "Lehumo", href: "/lehumo" },
     { label: "Lime Capital", href: "/capital" },
+    { label: "Lime Travel", href: "/travel" },
     { label: "Lemonade Station", href: "/lemonade-station" },
     { label: "Lime Services", href: "/services" },
     { label: "Lime Advisory", href: "/advisory" },

@@ -12,6 +12,7 @@ const SOURCES: [LeadSource, ...LeadSource[]] = [
   "Onboarding — Step 1",
   "Referral Form",
   "Waitlist",
+  "Lime Travel — Waitlist",
   "Other",
 ];
 

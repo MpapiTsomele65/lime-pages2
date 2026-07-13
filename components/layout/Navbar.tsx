@@ -209,12 +209,19 @@ export default function Navbar() {
                                 : "hover:bg-snow"
                             }`}
                           >
-                            <span
-                              className={`text-sm font-bold ${
-                                isActive ? "text-navy" : "text-ink"
-                              }`}
-                            >
-                              {link.label}
+                            <span className="flex items-center gap-1.5">
+                              <span
+                                className={`text-sm font-bold ${
+                                  isActive ? "text-navy" : "text-ink"
+                                }`}
+                              >
+                                {link.label}
+                              </span>
+                              {link.badge && (
+                                <span className="rounded-full bg-gradient-to-r from-lime to-teal px-2 py-px text-[9.5px] font-extrabold uppercase tracking-[0.08em] text-ink">
+                                  {link.badge}
+                                </span>
+                              )}
                             </span>
                             <span className="text-xs text-muted leading-snug">
                               {link.desc}
@@ -343,11 +350,16 @@ export default function Navbar() {
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-teal" />
                       )}
                       <span
-                        className={`block text-[20px] font-semibold ${
+                        className={`flex items-center gap-2 text-[20px] font-semibold ${
                           isActive ? "text-navy" : "text-ink hover:text-teal"
                         }`}
                       >
                         {link.label}
+                        {link.badge && (
+                          <span className="rounded-full bg-gradient-to-r from-lime to-teal px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-ink">
+                            {link.badge}
+                          </span>
+                        )}
                       </span>
                       <span className="block text-xs text-muted mt-0.5">
                         {link.desc}

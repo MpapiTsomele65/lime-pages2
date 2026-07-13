@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Lime Travel destination thumbnails are served from Unsplash (their
+  // license permits commercial use). next/image needs the host
+  // allowlisted to optimise remote images.
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
+    // Next 16 only serves qualities listed here (default [75]); the home
+    // hero requests quality 80.
+    qualities: [75, 80],
+  },
   // Cap @vercel/blob client retries from its default of 10 to 2.
   // The lib reads `process.env.VERCEL_BLOB_RETRIES` literally inside
   // browser code; without inlining via Next's `env` config, the

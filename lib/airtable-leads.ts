@@ -24,6 +24,7 @@ export type LeadSource =
   | "Onboarding — Step 1"
   | "Referral Form"
   | "Waitlist"
+  | "Lime Travel — Waitlist"
   | "Other";
 
 export type LeadStatus = "New" | "Contacted" | "Converted" | "Dropped";
