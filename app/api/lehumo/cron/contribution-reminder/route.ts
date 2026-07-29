@@ -9,6 +9,7 @@ import {
 import {
   LEHUMO_FIRST_DUE_PERIOD,
   LEHUMO_LAST_DUE_PERIOD,
+  isEngagedMember,
   type MemberPlan,
 } from "@/lib/definitions";
 
@@ -62,12 +63,22 @@ function formatPeriodLabel(period: string, now: Date = new Date()): string {
  *   - 15th SAST 9am → kind=first (gentle nudge)
  *   - 25th SAST 9am → kind=final (last automated reminder)
  *
- * For each Active member who has NOT paid the current SAST period,
+ * For each ENGAGED member who has NOT paid the current SAST period,
  * we send the appropriate reminder template. Paid members never see
- * the email. Non-Active members (Prospect / Onboarding / On Hold /
- * Exited) are skipped — Onboarding members haven't set up payments
- * yet (the SetUpPaymentsCard handles that surface), and Exited
- * members shouldn't be chased.
+ * the email.
+ *
+ * "Engaged" (see isEngagedMember) is anyone who is either already
+ * Active, or has submitted at least one KYC document, or has ever had
+ * money land — regardless of which status flag an admin has set. This
+ * deliberately covers members who are still mid-onboarding but are
+ * already contributing; gating on `status === "Active"` meant they
+ * quietly received nothing, because status only flips to Active once
+ * KYC is fully verified.
+ *
+ * Exited and On Hold members are never emailed, even though they may
+ * satisfy those activity signals from historical data — an exited
+ * member shouldn't be chased, and an on-hold member has deliberately
+ * paused. Prospects with no documents and no payments stay out too.
  *
  * Auth: Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` with
  * each scheduled invocation. We reject anything else with 401 so
@@ -178,13 +189,22 @@ export async function GET(request: NextRequest) {
         .map((c) => c.memberId),
     );
 
-    // ── Iterate Active members, skip the ones who've paid ───────
+    // ── Iterate engaged members, skip the ones who've paid ──────
     // Send sequentially rather than Promise.all'ing the lot — Resend
     // has a 10 req/sec rate limit on the free tier and we'd rather
     // pay an extra ~0.3s of cron runtime than risk a partial blast
     // where half the cohort gets emailed and half gets a 429.
+    //
+    // Audience is `isEngagedMember`, not `status === "Active"`. Status
+    // only reaches Active once KYC is fully verified, so members who
+    // were mid-onboarding — including ones already contributing —
+    // silently received no reminders. Engaged widens this to anyone
+    // who has submitted at least one KYC document or has ever had money
+    // land, while still hard-excluding Exited and On Hold members.
+    // `listAllMembers()` hydrates contributionRows, so the all-time
+    // payment check costs no extra Airtable round-trip.
     for (const member of members) {
-      if (member.status !== "Active") {
+      if (!isEngagedMember(member)) {
         skipped++;
         continue;
       }

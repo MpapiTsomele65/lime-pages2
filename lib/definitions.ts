@@ -1216,6 +1216,84 @@ export function hasBeneficiary(member: LehumoMember): boolean {
   );
 }
 
+/**
+ * Whether a member has submitted at least one KYC/FICA document.
+ *
+ * Only two document slots exist (ID and proof of address). The Airtable
+ * mapper normalises an empty attachment array to `undefined`, so presence
+ * is simply a non-empty array — but we use the `?.length ?? 0` form that
+ * every upload route already uses, which is also safe against raw
+ * (unmapped) Airtable payloads.
+ */
+export function hasAnyKycDocument(member: LehumoMember): boolean {
+  return (
+    (member.kycIdDocument?.length ?? 0) > 0 ||
+    (member.kycProofOfAddress?.length ?? 0) > 0
+  );
+}
+
+/**
+ * Whether any money has ever landed for this member, across all periods.
+ *
+ * Counts two cases:
+ *   • a row marked Paid — a full month settled, and
+ *   • a Pending row carrying a non-zero `amountReceived` — a partial EFT.
+ *     The allocator only flips a row to Paid when the payment fully covers
+ *     the shortfall, so a member who has paid something but not a whole
+ *     month still reads as Pending and would otherwise look like a
+ *     never-payer.
+ *
+ * Periods before LEHUMO_FIRST_DUE_PERIOD are ignored so the pre-launch
+ * seed row can't be mistaken for a real contribution.
+ *
+ * Reads the hydrated `contributionRows` — populated by `listAllMembers()`
+ * and the per-member hydration paths. If hydration failed the field is
+ * undefined and this returns false, which degrades safely (the caller
+ * falls back to whatever status-based rule it had).
+ */
+export function hasEverContributed(member: LehumoMember): boolean {
+  return (member.contributionRows ?? []).some(
+    (row) =>
+      row.period >= LEHUMO_FIRST_DUE_PERIOD &&
+      (row.status === CONTRIBUTION_STATUS.paid ||
+        (row.amountReceived ?? 0) > 0),
+  );
+}
+
+/**
+ * Whether a member counts as "active" for engagement purposes — i.e. is
+ * someone the trust should still be talking to about money.
+ *
+ * Broader than `status === "Active"`, which in practice only becomes true
+ * once KYC is fully verified. A member who has started submitting
+ * documents, or who has already contributed, is engaged regardless of
+ * where the admin has moved their status flag — and previously fell
+ * silently outside the contribution reminders.
+ *
+ * Exited and On Hold are hard exclusions: an exited member may well have
+ * historical contributions and documents on file, and an on-hold member
+ * has deliberately paused, so neither should ever be chased for payment.
+ *
+ * Prospects are held to the stricter signal only: money must have
+ * actually landed. A prospect hasn't committed to joining, so a stray
+ * uploaded document alone doesn't make them fair game for payment
+ * reminders — but a paying "Prospect" is a real member whose status
+ * flag simply hasn't caught up.
+ */
+export function isEngagedMember(member: LehumoMember): boolean {
+  if (
+    member.status === MEMBER_STATUS.exited ||
+    member.status === MEMBER_STATUS.onHold
+  ) {
+    return false;
+  }
+  if (member.status === MEMBER_STATUS.active) return true;
+  if (member.status === MEMBER_STATUS.prospect) {
+    return hasEverContributed(member);
+  }
+  return hasAnyKycDocument(member) || hasEverContributed(member);
+}
+
 // ─── Emergency Access (member loans against own contributions) ─────
 /**
  * Months of contributions a member must have on record before any of

@@ -204,8 +204,20 @@ export async function setMonthPayment(
     const key = buildContributionKey(member.memberNumber, period);
     const row = await getContributionByKey(key);
     if (row && row.status === CONTRIBUTION_STATUS.paid) {
+      // Full void-style clear, not just a status flip. Leaving
+      // amountReceived / paymentDate behind made the row read as a
+      // partial payment ("money landed") to downstream checks like
+      // hasEverContributed — a tick-then-untick must leave the row
+      // indistinguishable from one never touched (amountExpected
+      // stays, matching voidContribution's contract).
       await updateContribution(row.id, {
         status: CONTRIBUTION_STATUS.pending,
+        amountReceived: 0,
+        paymentReference: "",
+        paymentDate: "",
+        reconciled: false,
+        reconciledBy: "",
+        reconciledAt: "",
         notes: "Admin-untick via month toggle",
       });
     }
