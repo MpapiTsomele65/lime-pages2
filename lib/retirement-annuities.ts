@@ -140,7 +140,15 @@ export interface RaProduct {
   id: string;
   provider: string;
   productName: string;
-  /** The specific fund the costs and returns belong to, when there is one. */
+  /**
+   * The fund's full registered name, exactly as it appears on the
+   * provider's minimum disclosure document — including the "Fund" suffix
+   * and unit class, because the class materially changes the fee (Old
+   * Mutual's A class costs more than its B1 for identical exposure).
+   * A reader should be able to paste this straight into a fund search.
+   *
+   * Null for self-directed platforms, which have no default fund.
+   */
   fundName: string | null;
   shape: RaShape;
   /**
@@ -176,7 +184,7 @@ export const READY_MADE_RAS: RaProduct[] = [
     id: "sygnia-skeleton-70",
     provider: "Sygnia",
     productName: "Sygnia Retirement Annuity",
-    fundName: "Sygnia Skeleton Balanced 70 (Class A)",
+    fundName: "Sygnia Skeleton Balanced 70 Fund (Class A)",
     shape: "ready-made",
     allInPct: 0.9,
     feeBreakdown:
@@ -205,7 +213,7 @@ export const READY_MADE_RAS: RaProduct[] = [
     id: "10x-your-future",
     provider: "10X Investments",
     productName: "10X Retirement Annuity",
-    fundName: "10X Your Future Fund",
+    fundName: "10X Your Future Fund (Class A)",
     shape: "ready-made",
     allInPct: 1.04,
     feeBreakdown:

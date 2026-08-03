@@ -241,9 +241,12 @@ function TableBlock({
 
       <div className="rounded-2xl border border-border overflow-hidden">
         {/* Header row — hidden on mobile, where each card stacks instead */}
-        <div className="hidden md:grid grid-cols-[2.2fr_1fr_1.4fr_0.9fr] gap-4 px-5 py-3 bg-snow border-b border-border">
+        <div className="hidden md:grid grid-cols-[1.15fr_2fr_0.9fr_1.15fr_0.75fr] gap-4 px-5 py-3 bg-snow border-b border-border">
           <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-subtle">
-            Provider &amp; fund
+            Provider
+          </span>
+          <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-subtle">
+            {platformOnly ? "Fund choice" : "Fund"}
           </span>
           <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-subtle text-right">
             {platformOnly ? "Platform fee" : "All-in cost"}
@@ -267,7 +270,7 @@ function TableBlock({
                 type="button"
                 onClick={() => setOpenId(open ? null : p.id)}
                 aria-expanded={open}
-                className="w-full text-left px-5 py-4 hover:bg-snow/70 transition-colors md:grid md:grid-cols-[2.2fr_1fr_1.4fr_0.9fr] md:gap-4 md:items-center flex flex-col gap-2"
+                className="w-full text-left px-5 py-4 hover:bg-snow/70 transition-colors md:grid md:grid-cols-[1.15fr_2fr_0.9fr_1.15fr_0.75fr] md:gap-4 md:items-center flex flex-col gap-2"
               >
                 {/* Provider */}
                 <div className="flex items-start gap-3">
@@ -278,10 +281,29 @@ function TableBlock({
                     <p className="text-[14.5px] font-semibold text-navy leading-tight">
                       {p.provider}
                     </p>
-                    <p className="text-[12px] text-subtle leading-snug mt-0.5">
-                      {p.fundName ?? p.productName}
+                    <p className="text-[11.5px] text-subtle leading-snug mt-0.5 md:hidden">
+                      {p.productName}
                     </p>
                   </div>
+                </div>
+
+                {/* Fund — the exact registered name, so it can be searched */}
+                <div className="pl-9 md:pl-0 min-w-0">
+                  {p.fundName ? (
+                    <>
+                      <p className="text-[13px] font-medium text-navy leading-snug">
+                        {p.fundName}
+                      </p>
+                      <p className="hidden md:block text-[11px] text-subtle leading-snug mt-0.5">
+                        {p.productName}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[12.5px] text-subtle leading-snug italic">
+                      No default fund &mdash; you choose from the platform&rsquo;s
+                      range
+                    </p>
+                  )}
                 </div>
 
                 {/* Cost */}
