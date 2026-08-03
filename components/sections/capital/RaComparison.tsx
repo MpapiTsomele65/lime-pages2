@@ -51,7 +51,10 @@ export default function RaComparison() {
   const [openId, setOpenId] = useState<string | null>(readyMade[0]?.id ?? null);
 
   return (
-    <section className="bg-white py-16 sm:py-20 lg:py-24" id="ra-comparison">
+    <section
+      className="scroll-mt-[124px] bg-white py-16 sm:py-20 lg:py-24"
+      id="ra-comparison"
+    >
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 18 }}

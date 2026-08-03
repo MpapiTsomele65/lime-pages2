@@ -123,7 +123,10 @@ export default function RiskProfiler() {
   const tier = viewTier ? profileById(viewTier) : result;
 
   return (
-    <section className="bg-snow py-16 sm:py-20 lg:py-24" id="risk-profile">
+    <section
+      className="scroll-mt-[124px] bg-snow py-16 sm:py-20 lg:py-24"
+      id="risk-profile"
+    >
       <Container>
         {/* Header */}
         <motion.div

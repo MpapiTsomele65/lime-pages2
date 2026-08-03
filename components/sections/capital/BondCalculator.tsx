@@ -198,7 +198,10 @@ export default function BondCalculator() {
   }
 
   return (
-    <section className="bg-snow py-16 sm:py-20 lg:py-24" id="home-loan-accelerator">
+    <section
+      className="scroll-mt-[124px] bg-snow py-16 sm:py-20 lg:py-24"
+      id="home-loan-accelerator"
+    >
       <Container>
         {/* Header */}
         <motion.div

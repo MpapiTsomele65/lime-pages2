@@ -79,7 +79,10 @@ export default function RaCalculator() {
   const tooYoung = inputs.retirementAge < EARLIEST_RETIREMENT_AGE;
 
   return (
-    <section className="bg-snow py-16 sm:py-20 lg:py-24" id="ra-calculator">
+    <section
+      className="scroll-mt-[124px] bg-snow py-16 sm:py-20 lg:py-24"
+      id="ra-calculator"
+    >
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 18 }}

@@ -31,6 +31,8 @@ import WillsEstates from "@/components/sections/capital/WillsEstates";
 import RetirementAnnuityGuide from "@/components/sections/capital/RetirementAnnuityGuide";
 import RaCalculator from "@/components/sections/capital/RaCalculator";
 import RaComparison from "@/components/sections/capital/RaComparison";
+import CapitalSectionNav from "@/components/sections/capital/CapitalSectionNav";
+import CapitalToolsLauncher from "@/components/sections/capital/CapitalToolsLauncher";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -88,7 +90,9 @@ function SectionDivider({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div id={id} className="bg-snow border-y border-border">
+    // scroll-mt clears the fixed navbar (70px) + sticky section nav (~48px)
+    // so a jump from CapitalSectionNav lands with the label visible.
+    <div id={id} className="scroll-mt-[124px] bg-snow border-y border-border">
       <Container>
         <motion.div
           initial={{ opacity: 0, x: -12 }}
@@ -169,6 +173,13 @@ export default function CapitalPage() {
         </Container>
       </section>
 
+      {/* ═══ STICKY SECTION NAV ═══ */}
+      {/* Sits directly after the hero so it pins for the whole page. */}
+      <CapitalSectionNav />
+
+      {/* ═══ TOOLS LAUNCHER ═══ */}
+      <CapitalToolsLauncher />
+
       {/* ═══ LEARNING TRACKS ═══ */}
       <section className="py-16 sm:py-20 bg-white">
         <Container>
@@ -231,7 +242,7 @@ export default function CapitalPage() {
 
       <InvestingGuide />
 
-      <div id="fund-performance" />
+      <div id="fund-performance" className="scroll-mt-[124px]" />
       <FundComparison />
 
       {/* ═══ RISK PROFILER ═══ */}
