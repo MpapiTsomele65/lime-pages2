@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { ArrowRight, Star } from "lucide-react";
-import { LaunchCountdown } from "@/components/sections/lehumo/LaunchCountdown";
 
 function formatZAR(n: number): string {
   return `R${Math.round(n).toLocaleString("en-ZA")}`;
@@ -142,10 +141,11 @@ export function LehumoTeaser({
             </motion.div>
 
             {/* Founding-member conversion block (moved here from the home
-                hero to keep the hero simple). Deadline message → spot
-                scarcity → primary action → social proof → member sign-in. */}
-            <LaunchCountdown showClock={false} align="left" className="mb-5" />
-
+                hero to keep the hero simple). Spot scarcity → primary
+                action → social proof → member sign-in.
+                The month's contribution-deadline line that used to lead
+                this block was member-facing copy on a prospect surface,
+                so scarcity now opens it. */}
             {spotsLeft !== null && (
               <div className="mb-6">
                 <span className="inline-flex items-center gap-2 rounded-full border border-lime/30 bg-lime/[0.07] px-4 py-1.5 text-[13px] font-semibold text-lime">

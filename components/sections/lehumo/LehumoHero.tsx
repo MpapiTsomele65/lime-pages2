@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { LaunchCountdown } from "./LaunchCountdown";
 
 const fadeUp = {
   initial: { opacity: 0, y: 28 },
@@ -81,11 +80,12 @@ export function LehumoHero({
           30 Founding Members. 5 Years. R2 Million. One shared mission — Save, Buy, and Protect assets for the next generation.
         </p>
 
-        {/* Countdown — urgency (first-contribution deadline) */}
-        <LaunchCountdown className="mb-6" />
-
-        {/* Scarcity — founding spots remaining. Stacks real scarcity on
-            top of the deadline urgency. Hidden if stats didn't load. */}
+        {/* Scarcity — founding spots remaining. This is now the hero's
+            single urgency device. It previously sat under a countdown to
+            the current month's contribution deadline, but that clock
+            spoke to existing members (who use the portal, not this page)
+            and competed with the one piece of urgency a prospect can
+            actually act on. */}
         {spotsLeft !== null && (
           <div className="flex justify-center mb-7">
             <span className="inline-flex items-center gap-2 rounded-full border border-lime/30 bg-lime/[0.07] px-4 py-1.5 text-[13px] font-semibold text-lime">
