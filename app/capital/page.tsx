@@ -15,6 +15,7 @@ import {
   FileText,
   Gauge,
   Layers,
+  PiggyBank,
 } from "lucide-react";
 import BondCalculator from "@/components/sections/capital/BondCalculator";
 import { ReadingProgressBar } from "@/components/ui/ReadingProgressBar";
@@ -27,6 +28,9 @@ import LehumoTeaser from "@/components/sections/capital/LehumoTeaser";
 import InvestorsLikeYou from "@/components/sections/capital/InvestorsLikeYou";
 import GettingStarted from "@/components/sections/capital/GettingStarted";
 import WillsEstates from "@/components/sections/capital/WillsEstates";
+import RetirementAnnuityGuide from "@/components/sections/capital/RetirementAnnuityGuide";
+import RaCalculator from "@/components/sections/capital/RaCalculator";
+import RaComparison from "@/components/sections/capital/RaComparison";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -245,6 +249,16 @@ export default function CapitalPage() {
         icon={Layers}
       />
       <StarterBaskets />
+
+      {/* ═══ RETIREMENT ANNUITIES ═══ */}
+      <SectionDivider
+        label="Retirement Annuities"
+        id="retirement-annuities"
+        icon={PiggyBank}
+      />
+      <RetirementAnnuityGuide />
+      <RaCalculator />
+      <RaComparison />
 
       {/* ═══ HOME LOAN ACCELERATOR ═══ */}
       <SectionDivider
